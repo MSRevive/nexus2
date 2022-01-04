@@ -36,7 +36,7 @@ func Init(next http.HandlerFunc) http.HandlerFunc {
     
     //IP Auth
     if session.Config.APIAuth.EnforceIP {
-      if _,ok := session.Config.APIAuth.IPAllowed[ip]; !ok {
+      if _,ok := session.IPList[ip]; !ok {
         log.Log.Errorf("%s Is not authorized.", ip)
         http.Error(res, http.StatusText(401), http.StatusUnauthorized)
         return

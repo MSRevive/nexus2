@@ -8,6 +8,9 @@ import(
 
 var (
   Config config
+  IPList map[string]int8
+  BanList map[int64]int8
+  MapList map[uint32]int8
 )
 
 type config struct {
@@ -30,13 +33,13 @@ type config struct {
     EnforceKey bool
     EnforceIP bool
     Key string
-    IPAllowed map[string]int8
+    IPListFile string
   }
   Verify struct {
     EnforceBan bool
     EnforceMap bool
-    BanList map[string]int64
-    MapList map[string]uint32
+    BanListFile string
+    MapListFile string
     SCHash uint32
   }
   Log struct {
