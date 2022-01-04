@@ -1,0 +1,29 @@
+[Core]
+Port = 1337
+IP = "127.0.0.1"
+MaxRequests = 500 # Max amount of requests in time range of MaxAge
+MaxAge = 1 # Max age of ratelimiter bucket in minutes
+Graceful = 15 # Request timeout in minutes
+RootPath = "api/v1" 
+
+[TLS]
+Enable = false
+Port = 1337
+CertFile = ""
+KeyFile = ""
+
+[ApiAuth]
+EnforceKey = false # Enforce game servers to use API key
+EnforceIP = false # Enforce IP whitelist
+Key = "" # API key
+IPListFile = "./runtime/ipwhitelist.json" 
+
+[Verify]
+EnforceMap = false # Enforce map hash check
+EnforceBan = false # Enforce player "FN" bans
+MapListFile = "./runtime/game/maps.json"
+BanListFile = "./runtime/game/bans.json"
+SCHash = 125454
+
+[Log]
+Dir = "./runtime/logs/" # Where should we keep the bot log file.
