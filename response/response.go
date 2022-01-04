@@ -3,8 +3,6 @@ package response
 import (
 	"encoding/json"
 	"net/http"
-  
-  "github.com/msrevive/nexus2/model"
 )
 
 type response struct {
