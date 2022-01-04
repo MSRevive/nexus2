@@ -30,8 +30,8 @@ type config struct {
     EnforceBan bool
     EnforceMap bool
     BanList map[string]int64
-    MapList map[string]int32
-    SCHash int32
+    MapList map[string]uint32
+    SCHash uint32
   }
   Log struct {
     Dir string
