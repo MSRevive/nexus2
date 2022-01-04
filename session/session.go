@@ -9,7 +9,7 @@ import(
 var (
   Config config
   IPList map[string]int8
-  BanList map[int64]int8
+  BanList map[uint64]int8
   MapList map[uint32]int8
 )
 

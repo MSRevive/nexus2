@@ -52,12 +52,6 @@ func main() {
       panic(err)
     }
   }else{
-    srv = &http.Server{
-      Handler: router,
-      Addr: address,
-      WriteTimeout: 15 * time.Second,
-      ReadTimeout: 15 * time.Second,
-    }
     log.Log.Printf("Listening on: %v", session.Config.Core.Port)
     if err := srv.ListenAndServe(); err != nil {
       panic(err)
