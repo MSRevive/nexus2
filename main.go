@@ -44,7 +44,16 @@ func main() {
   //doRoutes(router)
   
   log.Log.Println("Webserver is now running.")
-  srv.ListenAndServe()
+  if session.Config.TLS.Enable {
+    if err := srv.ListenAndServeTLS(session.Config.TLS.Certfile, session.Config.TLS.KeyFile, nil); err != nil {
+      panic(err)
+    }
+  }else{
+    if err := srv.ListenAndServe(); err != nil {
+      panic(err)
+    }
+  }
+  log.Log.Printf("Listening on %s", session.Config.Core.Port)
   
   defer srv.Shutdown(ctx)
 }

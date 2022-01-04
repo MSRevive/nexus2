@@ -20,6 +20,12 @@ type config struct {
     Graceful time.Duration
     RootPath string
   }
+  TLS struct {
+    Enable bool
+    Port int
+    CertFile string
+    KeyFile string
+  }
   ApiAuth struct {
     EnforceKey bool
     EnforceIP bool
