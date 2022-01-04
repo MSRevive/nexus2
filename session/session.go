@@ -15,7 +15,7 @@ var (
 
 type config struct {
   Core struct {
-    WebPort int
+    Port int
     IP string
     MaxThreads int
     MaxRequests int
@@ -38,8 +38,8 @@ type config struct {
   Verify struct {
     EnforceBan bool
     EnforceMap bool
-    BanListFile string
     MapListFile string
+    BanListFile string
     SCHash uint32
   }
   Log struct {
