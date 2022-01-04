@@ -7,5 +7,5 @@ import (
 )
 
 func registerRoutes(r *mux.Router) {
-  r.Subrouter()
+  r.Subrouter().PathPrefix(session.Config.Core.RootPath)
 }

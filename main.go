@@ -1,14 +1,12 @@
 package main
 
 import(
-  "os"
   "time"
-  "syscall"
   "runtime"
   "strconv"
   "context"
   "net/http"
-  "os/signal"
+  "crypto/tls"
 
   "github.com/msrevive/nexus2/session"
   "github.com/msrevive/nexus2/log"
@@ -30,30 +28,41 @@ func main() {
   }
   
   //Web server
+  var srv *http.Server
   address := session.Config.Core.IP+":"+strconv.Itoa(session.Config.Core.Port)
-  router := mux.NewRouter().PathPrefix(session.Config.Core.RootPath)
-  srv := &http.Server{
+  router := mux.NewRouter()
+  srv = &http.Server{
     Handler: router,
     Addr: address,
     WriteTimeout: 15 * time.Second,
     ReadTimeout: 15 * time.Second,
   }
-  ctx, cancel := context.WithTimeout(context.Background(), session.Config.ApiAuth.Graceful * time.Second)
+  ctx, cancel := context.WithTimeout(context.Background(), session.Config.Core.Graceful * time.Second)
   defer cancel()
   
   //doRoutes(router)
   
-  log.Log.Println("Webserver is now running.")
   if session.Config.TLS.Enable {
-    if err := srv.ListenAndServeTLS(session.Config.TLS.Certfile, session.Config.TLS.KeyFile, nil); err != nil {
+    cert,_ := tls.LoadX509KeyPair(session.Config.TLS.CertFile, session.Config.TLS.KeyFile)
+    srv.TLSConfig = &tls.Config{
+      Certificates: []tls.Certificate{cert},
+    }
+    log.Log.Printf("Listening on: %v TLS", session.Config.Core.Port)
+    if err := srv.ListenAndServeTLS("", ""); err != nil {
       panic(err)
     }
   }else{
+    srv = &http.Server{
+      Handler: router,
+      Addr: address,
+      WriteTimeout: 15 * time.Second,
+      ReadTimeout: 15 * time.Second,
+    }
+    log.Log.Printf("Listening on: %v", session.Config.Core.Port)
     if err := srv.ListenAndServe(); err != nil {
       panic(err)
     }
   }
-  log.Log.Printf("Listening on %s", session.Config.Core.Port)
   
   defer srv.Shutdown(ctx)
 }

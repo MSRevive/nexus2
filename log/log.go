@@ -25,7 +25,7 @@ func InitLogging(filename string, dir string) {
     MaxSize: 5 * auralog.Megabyte,
   }
 
-  Api = auralog.New(auralog.Config{
+  Log = auralog.New(auralog.Config{
     Output: io.MultiWriter(os.Stdout, file),
     Prefix: "[API] ",
     Level: auralog.LogLevelDebug,
