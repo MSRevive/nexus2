@@ -24,6 +24,7 @@ func Raw(w http.ResponseWriter, status bool, code int, err error, data interface
 		resp.Error = err.Error()
 	}
   
+	w.Header().Set("Content-Type", "application/json")
   json.NewEncoder(w).Encode(resp)
 }
 
