@@ -2,7 +2,10 @@ package middleware
 
 import(
   "net"
+  "time"
+  "strings"
   "net/http"
+  "runtime/debug"
   
   "github.com/msrevive/nexus2/session"
   "github.com/msrevive/nexus2/log"
@@ -28,25 +31,46 @@ func getIP(req *http.Request) string {
   return ip
 }
 
-func Init(next http.HandlerFunc) http.HandlerFunc {
-  return func(res http.ResponseWriter, req *http.Request){
-    ip := getIP(req)
+func Log(next http.Handler) http.Handler {
+  return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+    start := time.Now()
+    //next.ServeHttp(res, req)
+    next.ServeHTTP(res, req)
+    log.Log.Printf("%s %s %s", req.Method, req.RequestURI, time.Since(start))
+  })
+}
 
-    log.Log.Errorf("Request sent from %s", ip)
+func PanicRecovery(next http.Handler) http.Handler {
+  return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+    defer func() {
+      if panic := recover(); panic != nil {
+        http.Error(res, http.StatusText(501), http.StatusInternalServerError)
+        log.Log.Errorln("501: We have encountered an error with the last request.")
+        log.Log.Errorf("501: Error: %s", panic.(error).Error())
+        log.Log.Errorf(string(debug.Stack()))
+      }
+    }()
+    next.ServeHTTP(res, req)
+  })
+}
+
+func Auth(next http.HandlerFunc) http.HandlerFunc {
+  return func(res http.ResponseWriter, req *http.Request) {
+    ip := getIP(req)
     
     //IP Auth
-    if session.Config.APIAuth.EnforceIP {
+    if session.Config.ApiAuth.EnforceIP {
       if _,ok := session.IPList[ip]; !ok {
-        log.Log.Errorf("%s Is not authorized.", ip)
+        log.Log.Printf("%s Is not authorized.", ip)
         http.Error(res, http.StatusText(401), http.StatusUnauthorized)
         return
       }
     }
     
     //API Key Auth
-    if session.Config.APIAuth.EnforceKey {
+    if session.Config.ApiAuth.EnforceKey {
       if req.Header.Get("Authorization") != session.Config.ApiAuth.Key {
-        log.Log.Errorf("%s failed API key check.", ip)
+        log.Log.Printf("%s failed API key check.", ip)
         http.Error(res, http.StatusText(401), http.StatusUnauthorized)
         return
       }

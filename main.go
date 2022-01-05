@@ -9,6 +9,7 @@ import(
   "crypto/tls"
 
   "github.com/msrevive/nexus2/session"
+  "github.com/msrevive/nexus2/middleware"
   "github.com/msrevive/nexus2/log"
   
   "github.com/gorilla/mux"
@@ -31,6 +32,8 @@ func main() {
   var srv *http.Server
   address := session.Config.Core.IP+":"+strconv.Itoa(session.Config.Core.Port)
   router := mux.NewRouter()
+  middleware.Log(router)
+  middleware.PanicRecovery(router)
   srv = &http.Server{
     Handler: router,
     Addr: address,
