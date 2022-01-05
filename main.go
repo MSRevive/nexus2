@@ -10,6 +10,7 @@ import(
 
   "github.com/msrevive/nexus2/session"
   "github.com/msrevive/nexus2/middleware"
+  "github.com/msrevive/nexus2/controller"
   "github.com/msrevive/nexus2/log"
   
   "github.com/gorilla/mux"
@@ -28,12 +29,10 @@ func main() {
     runtime.GOMAXPROCS(session.Config.Core.MaxThreads)
   }
   
-  //Web server
+  //variables for web server
   var srv *http.Server
   address := session.Config.Core.IP+":"+strconv.Itoa(session.Config.Core.Port)
   router := mux.NewRouter()
-  middleware.Log(router)
-  middleware.PanicRecovery(router)
   srv = &http.Server{
     Handler: router,
     Addr: address,
@@ -43,8 +42,15 @@ func main() {
   ctx, cancel := context.WithTimeout(context.Background(), session.Config.Core.Graceful * time.Second)
   defer cancel()
   
-  //doRoutes(router)
+  //middleware
+  router.Use(middleware.Log)
+  router.Use(middleware.PanicRecovery)
   
+  //our routes for via API
+  c := controller.New(router.PathPrefix(session.Config.Core.RootPath).Subrouter())
+  c.R.HandleFunc("/", middleware.Auth(c.TestRoot))
+  
+  //start the web server
   if session.Config.TLS.Enable {
     cert,_ := tls.LoadX509KeyPair(session.Config.TLS.CertFile, session.Config.TLS.KeyFile)
     srv.TLSConfig = &tls.Config{
