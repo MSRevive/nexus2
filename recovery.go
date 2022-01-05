@@ -9,7 +9,7 @@ import (
 
 func panicRecovery() {
   if panic := recover(); panic != nil {
-    log.Log.Errorln("Nexus has encountered an unrecoverable error and as crashed.")
+    log.Log.Errorln("We have encountered an unrecoverable error and crashed.")
     log.Log.Errorln("Crash Information: " + panic.(error).Error())
 
     stack := make([]byte, 65536)
