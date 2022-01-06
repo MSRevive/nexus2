@@ -25,6 +25,11 @@ type config struct {
     Graceful time.Duration
     RootPath string
   }
+  RateLimit struct {
+    Enable bool
+    MaxRequests int
+    MaxAge time.Duration
+  }
   TLS struct {
     Enable bool
     Port int

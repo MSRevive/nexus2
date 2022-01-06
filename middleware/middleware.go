@@ -75,16 +75,18 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
       }
     }
 
-    if globalLimiter == nil {
-      log.Log.Debugln("Creating global rate limiter.")
-      globalLimiter = rate.NewLimiter(1, session.Config.Core.MaxRequests, session.Config.Core.MaxAge, 0)
-    }
-
-    globalLimiter.CheckTime()
-    if globalLimiter.IsAllowed() == false {
-      log.Log.Println("Too many global requests sent.")
-      http.Error(res, http.StatusText(429), http.StatusTooManyRequests)
-      return
+    if session.Config.RateLimit.Enable {
+      if globalLimiter == nil {
+        log.Log.Debugln("Creating global rate limiter.")
+        globalLimiter = rate.NewLimiter(1, session.Config.RateLimit.MaxRequests, session.Config.RateLimit.MaxAge, 0)
+      }
+  
+      globalLimiter.CheckTime()
+      if globalLimiter.IsAllowed() == false {
+        log.Log.Println("Too many global requests sent.")
+        http.Error(res, http.StatusText(429), http.StatusTooManyRequests)
+        return
+      }
     }
 
     next(res, req)

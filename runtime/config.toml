@@ -1,10 +1,13 @@
 [Core]
 Port = 1337
 IP = "127.0.0.1"
-MaxRequests = 500 # Max amount of requests in time range of MaxAge
-MaxAge = 1 # Max age of ratelimiter bucket in minutes
 Graceful = 15 # Request timeout in minutes
 RootPath = "/api/v1" 
+
+[RateLimit]
+Enable = false
+MaxRequests = 500 # Max amount of requests in time range of MaxAge
+MaxAge = 1 # Max age of ratelimiter bucket in minutes
 
 [TLS]
 Enable = false
