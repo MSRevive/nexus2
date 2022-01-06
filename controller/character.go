@@ -9,36 +9,36 @@ import (
 )
 
 //GET map/character/
-func (c *controller) GetAllCharacters(res http.ResponseWriter, req *http.Request) {
-  response.OK(res, "{}")
+func (c *controller) GetAllCharacters(w http.ResponseWriter, r *http.Request) {
+  response.Result(w, true)
 }
 
 //GET map/character/{steamid}
-func (c *controller) GetCharacters(res http.ResponseWriter, req *http.Request) {
-  response.OK(res, "{}")
+func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
+  response.Result(w, true)
 }
 
 //GET map/character/{steamid}/{slot}
-func (c *controller) GetCharacter(res http.ResponseWriter, req *http.Request) {
-  response.OK(res, "{}")
+func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
+  response.Result(w, true)
 }
 
 //GET map/character/id/{uid}
-func (c *controller) GetCharacterByID(res http.ResponseWriter, req *http.Request) {
-  response.OK(res, "{}")
+func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
+  response.Result(w, true)
 }
 
 //POST map/character/
-func (c *controller) PostCharacter(res http.ResponseWriter, req *http.Request) {
-  response.OK(res, "{}")
+func (c *controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
+  response.Result(w, true)
 }
 
 //PUT map/character/{uid}
-func (c *controller) PutCharacter(res http.ResponseWriter, req *http.Request) {
-  response.OK(res, "{}")
+func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
+  response.Result(w, true)
 }
 
 //DELETE map/character/{uid}
-func (c *controller) DeleteCharacter(res http.ResponseWriter, req *http.Request) {
-  response.OK(res, "{}")
+func (c *controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
+  response.Result(w, true)
 }
