@@ -29,6 +29,12 @@ func main() {
     runtime.GOMAXPROCS(session.Config.Core.MaxThreads)
   }
   
+  //Load json files.
+  if session.Config.ApiAuth.
+  session.LoadIPList(session.Config.ApiAuth.IPListFile)
+  session.LoadMapList(session.Config.Verify.MapListFile)
+  session.LoadBanList(session.Config.Verify.BanListFile)
+  
   //variables for web server
   var srv *http.Server
   address := session.Config.Core.IP+":"+strconv.Itoa(session.Config.Core.Port)
@@ -46,9 +52,22 @@ func main() {
   router.Use(middleware.Log)
   router.Use(middleware.PanicRecovery)
   
-  //our routes for via API
-  c := controller.New(router.PathPrefix(session.Config.Core.RootPath).Subrouter())
-  c.R.HandleFunc("/", middleware.Auth(c.TestRoot))
+  //api routes
+  apic := controller.New(router.PathPrefix(session.Config.Core.RootPath).Subrouter())
+  apic.R.HandleFunc("/", middleware.Auth(apic.TestRoot)).Methods(http.MethodGet)
+  apic.R.HandleFunc("/map/{name}/{hash}", middleware.Auth(apic.GetMapVerify)).Methods(http.MethodGet)
+  apic.R.HandleFunc("/ban/{steamid}", middleware.Auth(apic.GetBanVerify)).Methods(http.MethodGet)
+  apic.R.HandleFunc("/sc/{hash}", middleware.Auth(apic.GetSCVerify)).Methods(http.MethodGet)
+  
+  //character routes
+  charc := controller.New(router.PathPrefix(session.Config.Core.RootPath+"/character").Subrouter())
+  charc.R.HandleFunc("/", middleware.Auth(charc.GetAllCharacters)).Methods(http.MethodGet)
+  charc.R.HandleFunc("/{steamid}", middleware.Auth(charc.GetCharacters)).Methods(http.MethodGet)
+  charc.R.HandleFunc("/{steamid}/{slot}", middleware.Auth(charc.GetCharacter)).Methods(http.MethodGet)
+  charc.R.HandleFunc("/id/{uid}", middleware.Auth(charc.GetCharacterByID)).Methods(http.MethodGet)
+  charc.R.HandleFunc("/", middleware.Auth(charc.PostCharacter)).Methods(http.MethodPost)
+  charc.R.HandleFunc("/{uid}", middleware.Auth(charc.PutCharacter)).Methods(http.MethodPut)
+  charc.R.HandleFunc("/{uid}", middleware.Auth(charc.DeleteCharacter)).Methods(http.MethodDelete)
   
   //start the web server
   if session.Config.TLS.Enable {
@@ -56,12 +75,12 @@ func main() {
     srv.TLSConfig = &tls.Config{
       Certificates: []tls.Certificate{cert},
     }
-    log.Log.Printf("Listening on: %v TLS", session.Config.Core.Port)
+    log.Log.Printf("Listening on: %s TLS", address)
     if err := srv.ListenAndServeTLS("", ""); err != nil {
       panic(err)
     }
   }else{
-    log.Log.Printf("Listening on: %v", session.Config.Core.Port)
+    log.Log.Printf("Listening on: %s", address)
     if err := srv.ListenAndServe(); err != nil {
       panic(err)
     }

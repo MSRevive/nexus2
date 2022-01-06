@@ -18,6 +18,6 @@ func New(router *mux.Router) *controller {
   }
 }
 
-func (r *controller) TestRoot(res http.ResponseWriter, req *http.Request) {
+func (c *controller) TestRoot(res http.ResponseWriter, req *http.Request) {
   response.OK(res, "{}")
 }
