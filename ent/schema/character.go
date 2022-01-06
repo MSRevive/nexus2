@@ -14,7 +14,7 @@ type Character struct {
 func (Character) Fields() []ent.Field {
 	[]ent.Field{
 		field.UUID("id", uuid.UUID{}).
-			Unique().
+			Immutable().
 			Default(uuid.New),
 		field.Uint64("steamid"),
 		field.Byte("slot").
