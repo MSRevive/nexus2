@@ -18,3 +18,4 @@
 runtime/game/*
 dev/*
 *.log
+*.db
