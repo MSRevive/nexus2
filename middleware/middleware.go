@@ -34,8 +34,8 @@ func getIP(req *http.Request) string {
 func Log(next http.Handler) http.Handler {
   return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
     start := time.Now()
-    log.Log.Printf("%s %s %s", req.Method, req.RequestURI, time.Since(start))
     next.ServeHTTP(res, req)
+    log.Log.Printf("%s %s from %s (%v)", req.Method, req.RequestURI, getIP(req), time.Since(start))
   })
 }
 
