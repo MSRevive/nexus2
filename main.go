@@ -48,6 +48,17 @@ func main() {
     }
   }
   
+  //Connect database.
+  /*
+  session.Client, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
+  if err != nil {
+    log.Log.Fatal("failed to open connection to sqlite3: %v", err)
+  }
+  if err := session.Client.Schema.Create(context.Background()); err != nil {
+		log.Fatalf("failed to create schema resources: %v", err)
+	}
+  defer session.Client.Close()*/
+  
   //variables for web server
   var srv *http.Server
   address := session.Config.Core.IP+":"+strconv.Itoa(session.Config.Core.Port)
@@ -90,12 +101,12 @@ func main() {
     }
     log.Log.Printf("Listening on: %s TLS", address)
     if err := srv.ListenAndServeTLS("", ""); err != nil {
-      panic(err)
+      log.Log.Fatalf("failed to serve over HTTPS: %v", err)
     }
   }else{
     log.Log.Printf("Listening on: %s", address)
     if err := srv.ListenAndServe(); err != nil {
-      panic(err)
+      log.Log.Fatalf("failed to serve over HTTP: %v", err)
     }
   }
   

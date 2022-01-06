@@ -5,10 +5,13 @@ import(
   "encoding/json"
   "io/ioutil"
 
+  //"github.com/msrevive/nexus2/ent"
+
   "github.com/BurntSushi/toml"
 )
 
 var (
+  //Client *ent.Client
   Config config
   IPList map[string]int8
   BanList map[uint64]int8
