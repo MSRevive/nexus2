@@ -2,6 +2,8 @@ package session
 
 import(
   "time"
+  "encoding/json"
+  "io/ioutil"
 
   "github.com/BurntSushi/toml"
 )
@@ -53,5 +55,38 @@ func LoadConfig(path string) error {
     return err
   }
 
+  return nil
+}
+
+func LoadIPList(path string) error {
+  file,err := ioutil.ReadFile(path)
+  if err != nil {
+    return err
+  }
+  
+  _ = json.Unmarshal([]byte(file), &IPList)
+  
+  return nil
+}
+
+func LoadMapList(path string) error {
+  file,err := ioutil.ReadFile(path)
+  if err != nil {
+    return err
+  }
+  
+  _ = json.Unmarshal([]byte(file), &MapList)
+  
+  return nil
+}
+
+func LoadBanList(path string) error {
+  file,err := ioutil.ReadFile(path)
+  if err != nil {
+    return err
+  }
+  
+  _ = json.Unmarshal([]byte(file), &BanList)
+  
   return nil
 }

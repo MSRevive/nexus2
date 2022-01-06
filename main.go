@@ -30,10 +30,23 @@ func main() {
   }
   
   //Load json files.
-  if session.Config.ApiAuth.
-  session.LoadIPList(session.Config.ApiAuth.IPListFile)
-  session.LoadMapList(session.Config.Verify.MapListFile)
-  session.LoadBanList(session.Config.Verify.BanListFile)
+  if session.Config.ApiAuth.EnforceIP {
+    if err := session.LoadIPList(session.Config.ApiAuth.IPListFile); err != nil {
+      log.Log.Warnln("Failed to load IP list.")
+    }
+  }
+  
+  if session.Config.Verify.EnforceMap {
+    if err := session.LoadMapList(session.Config.Verify.MapListFile); err != nil {
+      log.Log.Warnln("Failed to load Map list.")
+    }
+  }
+  
+  if session.Config.Verify.EnforceBan {
+    if err := session.LoadBanList(session.Config.Verify.BanListFile); err != nil {
+      log.Log.Warnln("Failed to load Ban list.")
+    }
+  }
   
   //variables for web server
   var srv *http.Server
