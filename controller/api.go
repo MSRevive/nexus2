@@ -1,24 +1,79 @@
 package controller
 
 import (
+  "strconv"
   "net/http"
   
   "github.com/msrevive/nexus2/response"
+  "github.com/msrevive/nexus2/session"
   
-  //"github.com/gorilla/mux"
+  "github.com/gorilla/mux"
 )
 
 //GET map/{name}/{hash}
-func (c *controller) GetMapVerify(res http.ResponseWriter, req *http.Request) {
-  response.OK(res, "{}")
+func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
+  if !session.Config.Verify.EnforceMap {
+    response.Result(w, true)
+    return
+  }
+  
+  vars := mux.Vars(r)
+  name := vars["name"]
+  hash, err := strconv.ParseUint(vars["hash"], 10, 32)
+  if err != nil {
+    response.BadRequest(w, err)
+    return
+  }
+  
+  if res,_ := session.MapList[name]; res == uint32(hash) {
+    response.Result(w, true)
+    return
+  }
+  
+  response.Result(w, false)
 }
 
 //GET ban/{steamid}
-func (c *controller) GetBanVerify(res http.ResponseWriter, req *http.Request) {
-  response.OK(res, "{}")
+//in this case false means player isn't banned
+func (c *controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
+  if !session.Config.Verify.EnforceBan {
+    response.Result(w, false)
+    return
+  }
+  
+  vars := mux.Vars(r)
+  steamid, err := strconv.ParseUint(vars["steamid"], 10, 64)
+  if err != nil {
+    response.BadRequest(w, err)
+    return
+  }
+  
+  if _,ok := session.BanList[steamid]; ok {
+    response.Result(w, true)
+    return
+  }
+  
+  response.Result(w, false)
 }
 
 //GET sc/{hash}
-func (c *controller) GetSCVerify(res http.ResponseWriter, req *http.Request) {
-  response.OK(res, "{}")
+func (c *controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
+  if !session.Config.Verify.EnforceSC {
+    response.Result(w, true)
+    return
+  }
+  
+  vars := mux.Vars(r)
+  hash, err := strconv.ParseUint(vars["hash"], 10, 32)
+  if err != nil {
+    response.BadRequest(w, err)
+    return
+  }
+  
+  if session.Config.Verify.SCHash == uint32(hash) {
+    response.Result(w, true)
+    return
+  }
+  
+  response.Result(w, false)
 }

@@ -24,6 +24,7 @@ IPListFile = "./runtime/ipwhitelist.json"
 [Verify]
 EnforceMap = false # Enforce map hash check
 EnforceBan = false # Enforce player "FN" bans
+EnforceSC = false
 MapListFile = "./runtime/game/maps.json"
 BanListFile = "./runtime/game/bans.json"
 SCHash = 125454

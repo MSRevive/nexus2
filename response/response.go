@@ -12,6 +12,10 @@ type response struct {
   Data interface{} `json:"data"`
 }
 
+type responseResult struct {
+	result bool
+}
+
 func Raw(w http.ResponseWriter, status bool, code int, err error, data interface{}) {
   resp := response{
 		Status: status,
@@ -30,6 +34,11 @@ func Raw(w http.ResponseWriter, status bool, code int, err error, data interface
 
 func OK(w http.ResponseWriter, data interface{}) {
   Raw(w, true, http.StatusOK, nil, data)
+}
+
+func Result(w http.ResponseWriter, b bool) {
+	resp := responseResult{result: b}
+	Raw(w, true, http.StatusOK, nil, resp)
 }
 
 func BadRequest(w http.ResponseWriter, err error) {

@@ -5,17 +5,17 @@ import(
   "encoding/json"
   "io/ioutil"
 
-  //"github.com/msrevive/nexus2/ent"
+  "github.com/msrevive/nexus2/ent"
 
   "github.com/BurntSushi/toml"
 )
 
 var (
-  //Client *ent.Client
+  Client *ent.Client
   Config config
-  IPList map[string]int8
-  BanList map[uint64]int8
-  MapList map[uint32]int8
+  IPList map[string]bool
+  BanList map[uint64]bool
+  MapList map[string]uint32
 )
 
 type config struct {
@@ -48,6 +48,7 @@ type config struct {
   Verify struct {
     EnforceBan bool
     EnforceMap bool
+    EnforceSC bool
     MapListFile string
     BanListFile string
     SCHash uint32
