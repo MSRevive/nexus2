@@ -3,6 +3,8 @@ package schema
 import (
 	"github.com/google/uuid"
 	"entgo.io/ent"
+	"entgo.io/ent/schema/field"
+	//"entgo.io/ent/schema/edge"
 )
 
 // Character holds the schema definition for the Character entity.
@@ -12,18 +14,18 @@ type Character struct {
 
 // Fields of the Character.
 func (Character) Fields() []ent.Field {
-	[]ent.Field{
+	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
 		field.Uint64("steamid"),
-		field.Byte("slot").
+		field.Uint8("slot").
 			Positive(),
 		field.String("name").
 			NotEmpty(),
-		field.Byte("gender").
+		field.Uint8("gender").
 			Positive(),
-		field.Byte("race").
+		field.Uint8("race").
 			Positive(),
 		field.String("flags").
 			NotEmpty().
@@ -46,8 +48,10 @@ func (Character) Fields() []ent.Field {
 		field.String("pets").
 			NotEmpty().
 			Default("{}"),
-		field.Int("health"),
-		field.Int("mana"),
+		field.Int("health").
+			Positive(),
+		field.Int("mana").
+			Positive(),
 		field.String("equipped").
 			NotEmpty().
 			Default("{}"),
