@@ -12,6 +12,7 @@ import(
   "github.com/msrevive/nexus2/middleware"
   "github.com/msrevive/nexus2/controller"
   "github.com/msrevive/nexus2/log"
+  _ "github.com/msrevive/nexus2/sqlite3"
   
   "github.com/gorilla/mux"
 )
