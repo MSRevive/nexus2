@@ -2,7 +2,8 @@
 Port = 1337
 IP = "127.0.0.1"
 Graceful = 15 # Request timeout in minutes
-RootPath = "/api/v1" 
+RootPath = "/api/v1"
+DBFile = "./runtime/characters.db"
 
 [RateLimit]
 Enable = false

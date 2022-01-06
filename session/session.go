@@ -23,10 +23,9 @@ type config struct {
     Port int
     IP string
     MaxThreads int
-    MaxRequests int
-    MaxAge time.Duration
     Graceful time.Duration
     RootPath string
+    DBFile string
   }
   RateLimit struct {
     Enable bool

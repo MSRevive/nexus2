@@ -12,6 +12,7 @@ import(
   "github.com/msrevive/nexus2/middleware"
   "github.com/msrevive/nexus2/controller"
   "github.com/msrevive/nexus2/log"
+  "github.com/msrevive/nexus2/ent"
   _ "github.com/msrevive/nexus2/sqlite3"
   
   "github.com/gorilla/mux"
@@ -50,15 +51,16 @@ func main() {
   }
   
   //Connect database.
-  /*
-  session.Client, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
+  //client, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
+  client, err := ent.Open("sqlite3", session.Config.Core.DBFile)
   if err != nil {
-    log.Log.Fatal("failed to open connection to sqlite3: %v", err)
+    log.Log.Fatalf("failed to open connection to sqlite3: %v", err)
   }
-  if err := session.Client.Schema.Create(context.Background()); err != nil {
-		log.Fatalf("failed to create schema resources: %v", err)
+  if err := client.Schema.Create(context.Background()); err != nil {
+		log.Log.Fatalf("failed to create schema resources: %v", err)
 	}
-  defer session.Client.Close()*/
+  session.Client = client
+  defer session.Client.Close()
   
   //variables for web server
   var srv *http.Server
