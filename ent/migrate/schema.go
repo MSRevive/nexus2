@@ -39,6 +39,18 @@ var (
 		Name:       "characters",
 		Columns:    CharactersColumns,
 		PrimaryKey: []*schema.Column{CharactersColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "character_id",
+				Unique:  true,
+				Columns: []*schema.Column{CharactersColumns[0]},
+			},
+			{
+				Name:    "character_steamid_slot",
+				Unique:  false,
+				Columns: []*schema.Column{CharactersColumns[1], CharactersColumns[2]},
+			},
+		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
