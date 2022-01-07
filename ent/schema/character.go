@@ -18,7 +18,8 @@ func (Character) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Immutable().
 			Default(uuid.New),
-		field.Uint64("steamid"),
+		field.Uint64("steamid").
+			Positive(),
 		field.Uint8("slot").
 			Positive(),
 		field.String("name").

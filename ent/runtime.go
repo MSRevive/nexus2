@@ -14,6 +14,10 @@ import (
 func init() {
 	characterFields := schema.Character{}.Fields()
 	_ = characterFields
+	// characterDescSteamid is the schema descriptor for steamid field.
+	characterDescSteamid := characterFields[1].Descriptor()
+	// character.SteamidValidator is a validator for the "steamid" field. It is called by the builders before save.
+	character.SteamidValidator = characterDescSteamid.Validators[0].(func(uint64) error)
 	// characterDescSlot is the schema descriptor for slot field.
 	characterDescSlot := characterFields[2].Descriptor()
 	// character.SlotValidator is a validator for the "slot" field. It is called by the builders before save.

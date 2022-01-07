@@ -360,6 +360,11 @@ func (cc *CharacterCreate) check() error {
 	if _, ok := cc.mutation.Steamid(); !ok {
 		return &ValidationError{Name: "steamid", err: errors.New(`ent: missing required field "steamid"`)}
 	}
+	if v, ok := cc.mutation.Steamid(); ok {
+		if err := character.SteamidValidator(v); err != nil {
+			return &ValidationError{Name: "steamid", err: fmt.Errorf(`ent: validator failed for field "steamid": %w`, err)}
+		}
+	}
 	if _, ok := cc.mutation.Slot(); !ok {
 		return &ValidationError{Name: "slot", err: errors.New(`ent: missing required field "slot"`)}
 	}

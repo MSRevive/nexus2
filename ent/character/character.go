@@ -97,6 +97,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// SteamidValidator is a validator for the "steamid" field. It is called by the builders before save.
+	SteamidValidator func(uint64) error
 	// SlotValidator is a validator for the "slot" field. It is called by the builders before save.
 	SlotValidator func(uint8) error
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.

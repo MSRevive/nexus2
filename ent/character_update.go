@@ -361,6 +361,11 @@ func (cu *CharacterUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (cu *CharacterUpdate) check() error {
+	if v, ok := cu.mutation.Steamid(); ok {
+		if err := character.SteamidValidator(v); err != nil {
+			return &ValidationError{Name: "steamid", err: fmt.Errorf("ent: validator failed for field \"steamid\": %w", err)}
+		}
+	}
 	if v, ok := cu.mutation.Slot(); ok {
 		if err := character.SlotValidator(v); err != nil {
 			return &ValidationError{Name: "slot", err: fmt.Errorf("ent: validator failed for field \"slot\": %w", err)}
@@ -1058,6 +1063,11 @@ func (cuo *CharacterUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (cuo *CharacterUpdateOne) check() error {
+	if v, ok := cuo.mutation.Steamid(); ok {
+		if err := character.SteamidValidator(v); err != nil {
+			return &ValidationError{Name: "steamid", err: fmt.Errorf("ent: validator failed for field \"steamid\": %w", err)}
+		}
+	}
 	if v, ok := cuo.mutation.Slot(); ok {
 		if err := character.SlotValidator(v); err != nil {
 			return &ValidationError{Name: "slot", err: fmt.Errorf("ent: validator failed for field \"slot\": %w", err)}
