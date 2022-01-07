@@ -4,13 +4,19 @@ import (
   "net/http"
   
   "github.com/msrevive/nexus2/response"
+  "github.com/msrevive/nexus2/service"
   
   //"github.com/gorilla/mux"
 )
 
 //GET map/character/
 func (c *controller) GetAllCharacters(w http.ResponseWriter, r *http.Request) {
-  response.Result(w, true)
+  chars, err := service.New(r.Context()).CharGetAll()
+  if err != nil {
+    response.BadRequest(w, err)
+  }
+  
+  response.OK(w, chars)
 }
 
 //GET map/character/{steamid}
