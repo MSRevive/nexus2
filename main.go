@@ -33,26 +33,29 @@ func main() {
   
   //Load json files.
   if session.Config.ApiAuth.EnforceIP {
+    log.Log.Printf("Loading IP list from %s", session.Config.ApiAuth.IPListFile)
     if err := session.LoadIPList(session.Config.ApiAuth.IPListFile); err != nil {
       log.Log.Warnln("Failed to load IP list.")
     }
   }
   
   if session.Config.Verify.EnforceMap {
+    log.Log.Printf("Loading Map list from %s", session.Config.Verify.MapListFile)
     if err := session.LoadMapList(session.Config.Verify.MapListFile); err != nil {
       log.Log.Warnln("Failed to load Map list.")
     }
   }
   
   if session.Config.Verify.EnforceBan {
+    log.Log.Printf("Loading Ban list from %s", session.Config.Verify.BanListFile)
     if err := session.LoadBanList(session.Config.Verify.BanListFile); err != nil {
       log.Log.Warnln("Failed to load Ban list.")
     }
   }
   
   //Connect database.
-  //client, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-  client, err := ent.Open("sqlite3", session.Config.Core.DBFile)
+  log.Log.Println("Connecting to database")
+  client, err := ent.Open("sqlite3", session.Config.Core.DBString)
   if err != nil {
     log.Log.Fatalf("failed to open connection to sqlite3: %v", err)
   }

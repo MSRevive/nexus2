@@ -25,7 +25,7 @@ type config struct {
     MaxThreads int
     Graceful time.Duration
     RootPath string
-    DBFile string
+    DBString string
   }
   RateLimit struct {
     Enable bool
