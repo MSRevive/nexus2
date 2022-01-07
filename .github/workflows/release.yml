@@ -17,12 +17,14 @@ jobs:
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o build/msnexus2_linux_amd64 -v .
       - name: compress binary
         run: upx build/msnexus2_linux_amd64 && chmod +x build/msnexus2_linux_amd64
+      - name: copy runtime directory
+        run: cp -avr ./runtime/ ./build/
+      - name: tar release
+        run: tar -czvf ~/msnexus2.tar.gz build
       - name: extract changelog
         env:
           REF: ${{ github.ref }}
         run: sed -n "/^## ${REF:10}/,/^## /{/^## /b;p}" CHANGELOG.md > ./RELEASE_CHANGELOG
-      - name: tar release
-        run: tar -czvf ~/msnexus2.tar.gz build/msnexus2_linux_amd64
       - name: create release
         id: create_release
         uses: actions/create-release@v1
