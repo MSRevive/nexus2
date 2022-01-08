@@ -92,7 +92,7 @@ func IDLTE(id uuid.UUID) predicate.Character {
 }
 
 // Steamid applies equality check predicate on the "steamid" field. It's identical to SteamidEQ.
-func Steamid(v uint64) predicate.Character {
+func Steamid(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldSteamid), v))
 	})
@@ -246,21 +246,21 @@ func Sheaths(v string) predicate.Character {
 }
 
 // SteamidEQ applies the EQ predicate on the "steamid" field.
-func SteamidEQ(v uint64) predicate.Character {
+func SteamidEQ(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldSteamid), v))
 	})
 }
 
 // SteamidNEQ applies the NEQ predicate on the "steamid" field.
-func SteamidNEQ(v uint64) predicate.Character {
+func SteamidNEQ(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.NEQ(s.C(FieldSteamid), v))
 	})
 }
 
 // SteamidIn applies the In predicate on the "steamid" field.
-func SteamidIn(vs ...uint64) predicate.Character {
+func SteamidIn(vs ...string) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -277,7 +277,7 @@ func SteamidIn(vs ...uint64) predicate.Character {
 }
 
 // SteamidNotIn applies the NotIn predicate on the "steamid" field.
-func SteamidNotIn(vs ...uint64) predicate.Character {
+func SteamidNotIn(vs ...string) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -294,30 +294,65 @@ func SteamidNotIn(vs ...uint64) predicate.Character {
 }
 
 // SteamidGT applies the GT predicate on the "steamid" field.
-func SteamidGT(v uint64) predicate.Character {
+func SteamidGT(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GT(s.C(FieldSteamid), v))
 	})
 }
 
 // SteamidGTE applies the GTE predicate on the "steamid" field.
-func SteamidGTE(v uint64) predicate.Character {
+func SteamidGTE(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GTE(s.C(FieldSteamid), v))
 	})
 }
 
 // SteamidLT applies the LT predicate on the "steamid" field.
-func SteamidLT(v uint64) predicate.Character {
+func SteamidLT(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LT(s.C(FieldSteamid), v))
 	})
 }
 
 // SteamidLTE applies the LTE predicate on the "steamid" field.
-func SteamidLTE(v uint64) predicate.Character {
+func SteamidLTE(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldSteamid), v))
+	})
+}
+
+// SteamidContains applies the Contains predicate on the "steamid" field.
+func SteamidContains(v string) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldSteamid), v))
+	})
+}
+
+// SteamidHasPrefix applies the HasPrefix predicate on the "steamid" field.
+func SteamidHasPrefix(v string) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldSteamid), v))
+	})
+}
+
+// SteamidHasSuffix applies the HasSuffix predicate on the "steamid" field.
+func SteamidHasSuffix(v string) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldSteamid), v))
+	})
+}
+
+// SteamidEqualFold applies the EqualFold predicate on the "steamid" field.
+func SteamidEqualFold(v string) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldSteamid), v))
+	})
+}
+
+// SteamidContainsFold applies the ContainsFold predicate on the "steamid" field.
+func SteamidContainsFold(v string) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldSteamid), v))
 	})
 }
 

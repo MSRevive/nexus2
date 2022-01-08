@@ -17,7 +17,7 @@ type Character struct {
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
 	// Steamid holds the value of the "steamid" field.
-	Steamid uint64 `json:"steamid,omitempty"`
+	Steamid string `json:"steamid,omitempty"`
 	// Slot holds the value of the "slot" field.
 	Slot int `json:"slot,omitempty"`
 	// Name holds the value of the "name" field.
@@ -67,9 +67,9 @@ func (*Character) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case character.FieldSteamid, character.FieldSlot, character.FieldGender, character.FieldRace, character.FieldKills, character.FieldGold, character.FieldHealth, character.FieldMana:
+		case character.FieldSlot, character.FieldGender, character.FieldRace, character.FieldKills, character.FieldGold, character.FieldHealth, character.FieldMana:
 			values[i] = new(sql.NullInt64)
-		case character.FieldName, character.FieldFlags, character.FieldQuickslots, character.FieldQuests, character.FieldGuild, character.FieldSkills, character.FieldPets, character.FieldEquipped, character.FieldLefthand, character.FieldRighthand, character.FieldSpells, character.FieldSpellbook, character.FieldBags, character.FieldSheaths:
+		case character.FieldSteamid, character.FieldName, character.FieldFlags, character.FieldQuickslots, character.FieldQuests, character.FieldGuild, character.FieldSkills, character.FieldPets, character.FieldEquipped, character.FieldLefthand, character.FieldRighthand, character.FieldSpells, character.FieldSpellbook, character.FieldBags, character.FieldSheaths:
 			values[i] = new(sql.NullString)
 		case character.FieldID:
 			values[i] = new(uuid.UUID)
@@ -95,10 +95,10 @@ func (c *Character) assignValues(columns []string, values []interface{}) error {
 				c.ID = *value
 			}
 		case character.FieldSteamid:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field steamid", values[i])
 			} else if value.Valid {
-				c.Steamid = uint64(value.Int64)
+				c.Steamid = value.String
 			}
 		case character.FieldSlot:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -255,7 +255,7 @@ func (c *Character) String() string {
 	builder.WriteString("Character(")
 	builder.WriteString(fmt.Sprintf("id=%v", c.ID))
 	builder.WriteString(", steamid=")
-	builder.WriteString(fmt.Sprintf("%v", c.Steamid))
+	builder.WriteString(c.Steamid)
 	builder.WriteString(", slot=")
 	builder.WriteString(fmt.Sprintf("%v", c.Slot))
 	builder.WriteString(", name=")

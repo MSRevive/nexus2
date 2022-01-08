@@ -254,7 +254,7 @@ func (cq *CharacterQuery) Clone() *CharacterQuery {
 // Example:
 //
 //	var v []struct {
-//		Steamid uint64 `json:"steamid,omitempty"`
+//		Steamid string `json:"steamid,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -281,7 +281,7 @@ func (cq *CharacterQuery) GroupBy(field string, fields ...string) *CharacterGrou
 // Example:
 //
 //	var v []struct {
-//		Steamid uint64 `json:"steamid,omitempty"`
+//		Steamid string `json:"steamid,omitempty"`
 //	}
 //
 //	client.Character.Query().

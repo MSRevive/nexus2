@@ -28,15 +28,8 @@ func (cu *CharacterUpdate) Where(ps ...predicate.Character) *CharacterUpdate {
 }
 
 // SetSteamid sets the "steamid" field.
-func (cu *CharacterUpdate) SetSteamid(u uint64) *CharacterUpdate {
-	cu.mutation.ResetSteamid()
-	cu.mutation.SetSteamid(u)
-	return cu
-}
-
-// AddSteamid adds u to the "steamid" field.
-func (cu *CharacterUpdate) AddSteamid(u int64) *CharacterUpdate {
-	cu.mutation.AddSteamid(u)
+func (cu *CharacterUpdate) SetSteamid(s string) *CharacterUpdate {
+	cu.mutation.SetSteamid(s)
 	return cu
 }
 
@@ -362,11 +355,6 @@ func (cu *CharacterUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (cu *CharacterUpdate) check() error {
-	if v, ok := cu.mutation.Steamid(); ok {
-		if err := character.SteamidValidator(v); err != nil {
-			return &ValidationError{Name: "steamid", err: fmt.Errorf(`ent: validator failed for field "Character.steamid": %w`, err)}
-		}
-	}
 	if v, ok := cu.mutation.Slot(); ok {
 		if err := character.SlotValidator(v); err != nil {
 			return &ValidationError{Name: "slot", err: fmt.Errorf(`ent: validator failed for field "Character.slot": %w`, err)}
@@ -480,14 +468,7 @@ func (cu *CharacterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cu.mutation.Steamid(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint64,
-			Value:  value,
-			Column: character.FieldSteamid,
-		})
-	}
-	if value, ok := cu.mutation.AddedSteamid(); ok {
-		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint64,
+			Type:   field.TypeString,
 			Value:  value,
 			Column: character.FieldSteamid,
 		})
@@ -708,15 +689,8 @@ type CharacterUpdateOne struct {
 }
 
 // SetSteamid sets the "steamid" field.
-func (cuo *CharacterUpdateOne) SetSteamid(u uint64) *CharacterUpdateOne {
-	cuo.mutation.ResetSteamid()
-	cuo.mutation.SetSteamid(u)
-	return cuo
-}
-
-// AddSteamid adds u to the "steamid" field.
-func (cuo *CharacterUpdateOne) AddSteamid(u int64) *CharacterUpdateOne {
-	cuo.mutation.AddSteamid(u)
+func (cuo *CharacterUpdateOne) SetSteamid(s string) *CharacterUpdateOne {
+	cuo.mutation.SetSteamid(s)
 	return cuo
 }
 
@@ -1049,11 +1023,6 @@ func (cuo *CharacterUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (cuo *CharacterUpdateOne) check() error {
-	if v, ok := cuo.mutation.Steamid(); ok {
-		if err := character.SteamidValidator(v); err != nil {
-			return &ValidationError{Name: "steamid", err: fmt.Errorf(`ent: validator failed for field "Character.steamid": %w`, err)}
-		}
-	}
 	if v, ok := cuo.mutation.Slot(); ok {
 		if err := character.SlotValidator(v); err != nil {
 			return &ValidationError{Name: "slot", err: fmt.Errorf(`ent: validator failed for field "Character.slot": %w`, err)}
@@ -1184,14 +1153,7 @@ func (cuo *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, e
 	}
 	if value, ok := cuo.mutation.Steamid(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint64,
-			Value:  value,
-			Column: character.FieldSteamid,
-		})
-	}
-	if value, ok := cuo.mutation.AddedSteamid(); ok {
-		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint64,
+			Type:   field.TypeString,
 			Value:  value,
 			Column: character.FieldSteamid,
 		})

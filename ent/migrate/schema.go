@@ -11,7 +11,7 @@ var (
 	// CharactersColumns holds the columns for the "characters" table.
 	CharactersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "steamid", Type: field.TypeUint64},
+		{Name: "steamid", Type: field.TypeString},
 		{Name: "slot", Type: field.TypeInt},
 		{Name: "name", Type: field.TypeString},
 		{Name: "gender", Type: field.TypeInt},

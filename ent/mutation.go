@@ -33,8 +33,7 @@ type CharacterMutation struct {
 	op            Op
 	typ           string
 	id            *uuid.UUID
-	steamid       *uint64
-	addsteamid    *int64
+	steamid       *string
 	slot          *int
 	addslot       *int
 	name          *string
@@ -174,13 +173,12 @@ func (m *CharacterMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 }
 
 // SetSteamid sets the "steamid" field.
-func (m *CharacterMutation) SetSteamid(u uint64) {
-	m.steamid = &u
-	m.addsteamid = nil
+func (m *CharacterMutation) SetSteamid(s string) {
+	m.steamid = &s
 }
 
 // Steamid returns the value of the "steamid" field in the mutation.
-func (m *CharacterMutation) Steamid() (r uint64, exists bool) {
+func (m *CharacterMutation) Steamid() (r string, exists bool) {
 	v := m.steamid
 	if v == nil {
 		return
@@ -191,7 +189,7 @@ func (m *CharacterMutation) Steamid() (r uint64, exists bool) {
 // OldSteamid returns the old "steamid" field's value of the Character entity.
 // If the Character object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldSteamid(ctx context.Context) (v uint64, err error) {
+func (m *CharacterMutation) OldSteamid(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldSteamid is only allowed on UpdateOne operations")
 	}
@@ -205,28 +203,9 @@ func (m *CharacterMutation) OldSteamid(ctx context.Context) (v uint64, err error
 	return oldValue.Steamid, nil
 }
 
-// AddSteamid adds u to the "steamid" field.
-func (m *CharacterMutation) AddSteamid(u int64) {
-	if m.addsteamid != nil {
-		*m.addsteamid += u
-	} else {
-		m.addsteamid = &u
-	}
-}
-
-// AddedSteamid returns the value that was added to the "steamid" field in this mutation.
-func (m *CharacterMutation) AddedSteamid() (r int64, exists bool) {
-	v := m.addsteamid
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
 // ResetSteamid resets all changes to the "steamid" field.
 func (m *CharacterMutation) ResetSteamid() {
 	m.steamid = nil
-	m.addsteamid = nil
 }
 
 // SetSlot sets the "slot" field.
@@ -1326,7 +1305,7 @@ func (m *CharacterMutation) OldField(ctx context.Context, name string) (ent.Valu
 func (m *CharacterMutation) SetField(name string, value ent.Value) error {
 	switch name {
 	case character.FieldSteamid:
-		v, ok := value.(uint64)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -1487,9 +1466,6 @@ func (m *CharacterMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *CharacterMutation) AddedFields() []string {
 	var fields []string
-	if m.addsteamid != nil {
-		fields = append(fields, character.FieldSteamid)
-	}
 	if m.addslot != nil {
 		fields = append(fields, character.FieldSlot)
 	}
@@ -1519,8 +1495,6 @@ func (m *CharacterMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *CharacterMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
-	case character.FieldSteamid:
-		return m.AddedSteamid()
 	case character.FieldSlot:
 		return m.AddedSlot()
 	case character.FieldGender:
@@ -1544,13 +1518,6 @@ func (m *CharacterMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *CharacterMutation) AddField(name string, value ent.Value) error {
 	switch name {
-	case character.FieldSteamid:
-		v, ok := value.(int64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddSteamid(v)
-		return nil
 	case character.FieldSlot:
 		v, ok := value.(int)
 		if !ok {

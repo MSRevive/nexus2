@@ -21,8 +21,8 @@ type CharacterCreate struct {
 }
 
 // SetSteamid sets the "steamid" field.
-func (cc *CharacterCreate) SetSteamid(u uint64) *CharacterCreate {
-	cc.mutation.SetSteamid(u)
+func (cc *CharacterCreate) SetSteamid(s string) *CharacterCreate {
+	cc.mutation.SetSteamid(s)
 	return cc
 }
 
@@ -360,11 +360,6 @@ func (cc *CharacterCreate) check() error {
 	if _, ok := cc.mutation.Steamid(); !ok {
 		return &ValidationError{Name: "steamid", err: errors.New(`ent: missing required field "Character.steamid"`)}
 	}
-	if v, ok := cc.mutation.Steamid(); ok {
-		if err := character.SteamidValidator(v); err != nil {
-			return &ValidationError{Name: "steamid", err: fmt.Errorf(`ent: validator failed for field "Character.steamid": %w`, err)}
-		}
-	}
 	if _, ok := cc.mutation.Slot(); !ok {
 		return &ValidationError{Name: "slot", err: errors.New(`ent: missing required field "Character.slot"`)}
 	}
@@ -556,7 +551,7 @@ func (cc *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := cc.mutation.Steamid(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint64,
+			Type:   field.TypeString,
 			Value:  value,
 			Column: character.FieldSteamid,
 		})
