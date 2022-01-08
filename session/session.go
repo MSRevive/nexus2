@@ -55,6 +55,7 @@ type config struct {
     SCHash uint32
   }
   Log struct {
+    Level string
     Dir string
   }
 }

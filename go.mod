@@ -8,5 +8,5 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/mattn/go-sqlite3 v1.14.10
-	github.com/saintwish/auralog v1.0.0
+	github.com/saintwish/auralog v1.0.1
 )

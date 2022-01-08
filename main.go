@@ -31,7 +31,7 @@ func main() {
   }
   
   //Initiate logging
-  log.InitLogging("server.log", session.Config.Log.Dir)
+  log.InitLogging("server.log", session.Config.Log.Dir, session.Config.Log.Level)
   
   if session.Dbg {
     log.Log.Warnln("Running in Debug mode, do not use in production!")

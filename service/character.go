@@ -31,8 +31,8 @@ func (s *service) CharactersGetBySteamid(sid string) ([]*ent.Character, error) {
 func (s *service) CharacterGetBySteamidSlot(sid string, slt int) ([]*ent.Character, error) {
   char, err := s.client.Character.Query().Where(
     character.And(
-      character.SteamidEQ(sid),
-      character.SlotEQ(slt),
+      character.Steamid(sid),
+      character.Slot(slt),
     ),
   ).All(s.ctx)
   if err != nil {

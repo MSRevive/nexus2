@@ -31,4 +31,5 @@ BanListFile = "./runtime/game/bans.json"
 SCHash = 125454
 
 [Log]
+Level = "debug"
 Dir = "./runtime/logs/" # Where should we keep the bot log file.
