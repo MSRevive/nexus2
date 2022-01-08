@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql"
@@ -34,7 +35,7 @@ func (cu *CharacterUpdate) SetSteamid(u uint64) *CharacterUpdate {
 }
 
 // AddSteamid adds u to the "steamid" field.
-func (cu *CharacterUpdate) AddSteamid(u uint64) *CharacterUpdate {
+func (cu *CharacterUpdate) AddSteamid(u int64) *CharacterUpdate {
 	cu.mutation.AddSteamid(u)
 	return cu
 }
@@ -47,7 +48,7 @@ func (cu *CharacterUpdate) SetSlot(u uint8) *CharacterUpdate {
 }
 
 // AddSlot adds u to the "slot" field.
-func (cu *CharacterUpdate) AddSlot(u uint8) *CharacterUpdate {
+func (cu *CharacterUpdate) AddSlot(u int8) *CharacterUpdate {
 	cu.mutation.AddSlot(u)
 	return cu
 }
@@ -66,7 +67,7 @@ func (cu *CharacterUpdate) SetGender(u uint8) *CharacterUpdate {
 }
 
 // AddGender adds u to the "gender" field.
-func (cu *CharacterUpdate) AddGender(u uint8) *CharacterUpdate {
+func (cu *CharacterUpdate) AddGender(u int8) *CharacterUpdate {
 	cu.mutation.AddGender(u)
 	return cu
 }
@@ -79,7 +80,7 @@ func (cu *CharacterUpdate) SetRace(u uint8) *CharacterUpdate {
 }
 
 // AddRace adds u to the "race" field.
-func (cu *CharacterUpdate) AddRace(u uint8) *CharacterUpdate {
+func (cu *CharacterUpdate) AddRace(u int8) *CharacterUpdate {
 	cu.mutation.AddRace(u)
 	return cu
 }
@@ -153,7 +154,7 @@ func (cu *CharacterUpdate) SetGold(u uint32) *CharacterUpdate {
 }
 
 // AddGold adds u to the "gold" field.
-func (cu *CharacterUpdate) AddGold(u uint32) *CharacterUpdate {
+func (cu *CharacterUpdate) AddGold(u int32) *CharacterUpdate {
 	cu.mutation.AddGold(u)
 	return cu
 }
@@ -363,112 +364,112 @@ func (cu *CharacterUpdate) ExecX(ctx context.Context) {
 func (cu *CharacterUpdate) check() error {
 	if v, ok := cu.mutation.Steamid(); ok {
 		if err := character.SteamidValidator(v); err != nil {
-			return &ValidationError{Name: "steamid", err: fmt.Errorf("ent: validator failed for field \"steamid\": %w", err)}
+			return &ValidationError{Name: "steamid", err: fmt.Errorf(`ent: validator failed for field "Character.steamid": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Slot(); ok {
 		if err := character.SlotValidator(v); err != nil {
-			return &ValidationError{Name: "slot", err: fmt.Errorf("ent: validator failed for field \"slot\": %w", err)}
+			return &ValidationError{Name: "slot", err: fmt.Errorf(`ent: validator failed for field "Character.slot": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Name(); ok {
 		if err := character.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Character.name": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Gender(); ok {
 		if err := character.GenderValidator(v); err != nil {
-			return &ValidationError{Name: "gender", err: fmt.Errorf("ent: validator failed for field \"gender\": %w", err)}
+			return &ValidationError{Name: "gender", err: fmt.Errorf(`ent: validator failed for field "Character.gender": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Race(); ok {
 		if err := character.RaceValidator(v); err != nil {
-			return &ValidationError{Name: "race", err: fmt.Errorf("ent: validator failed for field \"race\": %w", err)}
+			return &ValidationError{Name: "race", err: fmt.Errorf(`ent: validator failed for field "Character.race": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Flags(); ok {
 		if err := character.FlagsValidator(v); err != nil {
-			return &ValidationError{Name: "flags", err: fmt.Errorf("ent: validator failed for field \"flags\": %w", err)}
+			return &ValidationError{Name: "flags", err: fmt.Errorf(`ent: validator failed for field "Character.flags": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Quickslots(); ok {
 		if err := character.QuickslotsValidator(v); err != nil {
-			return &ValidationError{Name: "quickslots", err: fmt.Errorf("ent: validator failed for field \"quickslots\": %w", err)}
+			return &ValidationError{Name: "quickslots", err: fmt.Errorf(`ent: validator failed for field "Character.quickslots": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Quests(); ok {
 		if err := character.QuestsValidator(v); err != nil {
-			return &ValidationError{Name: "quests", err: fmt.Errorf("ent: validator failed for field \"quests\": %w", err)}
+			return &ValidationError{Name: "quests", err: fmt.Errorf(`ent: validator failed for field "Character.quests": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Guild(); ok {
 		if err := character.GuildValidator(v); err != nil {
-			return &ValidationError{Name: "guild", err: fmt.Errorf("ent: validator failed for field \"guild\": %w", err)}
+			return &ValidationError{Name: "guild", err: fmt.Errorf(`ent: validator failed for field "Character.guild": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Kills(); ok {
 		if err := character.KillsValidator(v); err != nil {
-			return &ValidationError{Name: "kills", err: fmt.Errorf("ent: validator failed for field \"kills\": %w", err)}
+			return &ValidationError{Name: "kills", err: fmt.Errorf(`ent: validator failed for field "Character.kills": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Gold(); ok {
 		if err := character.GoldValidator(v); err != nil {
-			return &ValidationError{Name: "gold", err: fmt.Errorf("ent: validator failed for field \"gold\": %w", err)}
+			return &ValidationError{Name: "gold", err: fmt.Errorf(`ent: validator failed for field "Character.gold": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Skills(); ok {
 		if err := character.SkillsValidator(v); err != nil {
-			return &ValidationError{Name: "skills", err: fmt.Errorf("ent: validator failed for field \"skills\": %w", err)}
+			return &ValidationError{Name: "skills", err: fmt.Errorf(`ent: validator failed for field "Character.skills": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Pets(); ok {
 		if err := character.PetsValidator(v); err != nil {
-			return &ValidationError{Name: "pets", err: fmt.Errorf("ent: validator failed for field \"pets\": %w", err)}
+			return &ValidationError{Name: "pets", err: fmt.Errorf(`ent: validator failed for field "Character.pets": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Health(); ok {
 		if err := character.HealthValidator(v); err != nil {
-			return &ValidationError{Name: "health", err: fmt.Errorf("ent: validator failed for field \"health\": %w", err)}
+			return &ValidationError{Name: "health", err: fmt.Errorf(`ent: validator failed for field "Character.health": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Mana(); ok {
 		if err := character.ManaValidator(v); err != nil {
-			return &ValidationError{Name: "mana", err: fmt.Errorf("ent: validator failed for field \"mana\": %w", err)}
+			return &ValidationError{Name: "mana", err: fmt.Errorf(`ent: validator failed for field "Character.mana": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Equipped(); ok {
 		if err := character.EquippedValidator(v); err != nil {
-			return &ValidationError{Name: "equipped", err: fmt.Errorf("ent: validator failed for field \"equipped\": %w", err)}
+			return &ValidationError{Name: "equipped", err: fmt.Errorf(`ent: validator failed for field "Character.equipped": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Lefthand(); ok {
 		if err := character.LefthandValidator(v); err != nil {
-			return &ValidationError{Name: "lefthand", err: fmt.Errorf("ent: validator failed for field \"lefthand\": %w", err)}
+			return &ValidationError{Name: "lefthand", err: fmt.Errorf(`ent: validator failed for field "Character.lefthand": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Righthand(); ok {
 		if err := character.RighthandValidator(v); err != nil {
-			return &ValidationError{Name: "righthand", err: fmt.Errorf("ent: validator failed for field \"righthand\": %w", err)}
+			return &ValidationError{Name: "righthand", err: fmt.Errorf(`ent: validator failed for field "Character.righthand": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Spells(); ok {
 		if err := character.SpellsValidator(v); err != nil {
-			return &ValidationError{Name: "spells", err: fmt.Errorf("ent: validator failed for field \"spells\": %w", err)}
+			return &ValidationError{Name: "spells", err: fmt.Errorf(`ent: validator failed for field "Character.spells": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Spellbook(); ok {
 		if err := character.SpellbookValidator(v); err != nil {
-			return &ValidationError{Name: "spellbook", err: fmt.Errorf("ent: validator failed for field \"spellbook\": %w", err)}
+			return &ValidationError{Name: "spellbook", err: fmt.Errorf(`ent: validator failed for field "Character.spellbook": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Bags(); ok {
 		if err := character.BagsValidator(v); err != nil {
-			return &ValidationError{Name: "bags", err: fmt.Errorf("ent: validator failed for field \"bags\": %w", err)}
+			return &ValidationError{Name: "bags", err: fmt.Errorf(`ent: validator failed for field "Character.bags": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.Sheaths(); ok {
 		if err := character.SheathsValidator(v); err != nil {
-			return &ValidationError{Name: "sheaths", err: fmt.Errorf("ent: validator failed for field \"sheaths\": %w", err)}
+			return &ValidationError{Name: "sheaths", err: fmt.Errorf(`ent: validator failed for field "Character.sheaths": %w`, err)}
 		}
 	}
 	return nil
@@ -729,7 +730,7 @@ func (cuo *CharacterUpdateOne) SetSteamid(u uint64) *CharacterUpdateOne {
 }
 
 // AddSteamid adds u to the "steamid" field.
-func (cuo *CharacterUpdateOne) AddSteamid(u uint64) *CharacterUpdateOne {
+func (cuo *CharacterUpdateOne) AddSteamid(u int64) *CharacterUpdateOne {
 	cuo.mutation.AddSteamid(u)
 	return cuo
 }
@@ -742,7 +743,7 @@ func (cuo *CharacterUpdateOne) SetSlot(u uint8) *CharacterUpdateOne {
 }
 
 // AddSlot adds u to the "slot" field.
-func (cuo *CharacterUpdateOne) AddSlot(u uint8) *CharacterUpdateOne {
+func (cuo *CharacterUpdateOne) AddSlot(u int8) *CharacterUpdateOne {
 	cuo.mutation.AddSlot(u)
 	return cuo
 }
@@ -761,7 +762,7 @@ func (cuo *CharacterUpdateOne) SetGender(u uint8) *CharacterUpdateOne {
 }
 
 // AddGender adds u to the "gender" field.
-func (cuo *CharacterUpdateOne) AddGender(u uint8) *CharacterUpdateOne {
+func (cuo *CharacterUpdateOne) AddGender(u int8) *CharacterUpdateOne {
 	cuo.mutation.AddGender(u)
 	return cuo
 }
@@ -774,7 +775,7 @@ func (cuo *CharacterUpdateOne) SetRace(u uint8) *CharacterUpdateOne {
 }
 
 // AddRace adds u to the "race" field.
-func (cuo *CharacterUpdateOne) AddRace(u uint8) *CharacterUpdateOne {
+func (cuo *CharacterUpdateOne) AddRace(u int8) *CharacterUpdateOne {
 	cuo.mutation.AddRace(u)
 	return cuo
 }
@@ -848,7 +849,7 @@ func (cuo *CharacterUpdateOne) SetGold(u uint32) *CharacterUpdateOne {
 }
 
 // AddGold adds u to the "gold" field.
-func (cuo *CharacterUpdateOne) AddGold(u uint32) *CharacterUpdateOne {
+func (cuo *CharacterUpdateOne) AddGold(u int32) *CharacterUpdateOne {
 	cuo.mutation.AddGold(u)
 	return cuo
 }
@@ -1065,112 +1066,112 @@ func (cuo *CharacterUpdateOne) ExecX(ctx context.Context) {
 func (cuo *CharacterUpdateOne) check() error {
 	if v, ok := cuo.mutation.Steamid(); ok {
 		if err := character.SteamidValidator(v); err != nil {
-			return &ValidationError{Name: "steamid", err: fmt.Errorf("ent: validator failed for field \"steamid\": %w", err)}
+			return &ValidationError{Name: "steamid", err: fmt.Errorf(`ent: validator failed for field "Character.steamid": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Slot(); ok {
 		if err := character.SlotValidator(v); err != nil {
-			return &ValidationError{Name: "slot", err: fmt.Errorf("ent: validator failed for field \"slot\": %w", err)}
+			return &ValidationError{Name: "slot", err: fmt.Errorf(`ent: validator failed for field "Character.slot": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Name(); ok {
 		if err := character.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf("ent: validator failed for field \"name\": %w", err)}
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Character.name": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Gender(); ok {
 		if err := character.GenderValidator(v); err != nil {
-			return &ValidationError{Name: "gender", err: fmt.Errorf("ent: validator failed for field \"gender\": %w", err)}
+			return &ValidationError{Name: "gender", err: fmt.Errorf(`ent: validator failed for field "Character.gender": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Race(); ok {
 		if err := character.RaceValidator(v); err != nil {
-			return &ValidationError{Name: "race", err: fmt.Errorf("ent: validator failed for field \"race\": %w", err)}
+			return &ValidationError{Name: "race", err: fmt.Errorf(`ent: validator failed for field "Character.race": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Flags(); ok {
 		if err := character.FlagsValidator(v); err != nil {
-			return &ValidationError{Name: "flags", err: fmt.Errorf("ent: validator failed for field \"flags\": %w", err)}
+			return &ValidationError{Name: "flags", err: fmt.Errorf(`ent: validator failed for field "Character.flags": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Quickslots(); ok {
 		if err := character.QuickslotsValidator(v); err != nil {
-			return &ValidationError{Name: "quickslots", err: fmt.Errorf("ent: validator failed for field \"quickslots\": %w", err)}
+			return &ValidationError{Name: "quickslots", err: fmt.Errorf(`ent: validator failed for field "Character.quickslots": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Quests(); ok {
 		if err := character.QuestsValidator(v); err != nil {
-			return &ValidationError{Name: "quests", err: fmt.Errorf("ent: validator failed for field \"quests\": %w", err)}
+			return &ValidationError{Name: "quests", err: fmt.Errorf(`ent: validator failed for field "Character.quests": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Guild(); ok {
 		if err := character.GuildValidator(v); err != nil {
-			return &ValidationError{Name: "guild", err: fmt.Errorf("ent: validator failed for field \"guild\": %w", err)}
+			return &ValidationError{Name: "guild", err: fmt.Errorf(`ent: validator failed for field "Character.guild": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Kills(); ok {
 		if err := character.KillsValidator(v); err != nil {
-			return &ValidationError{Name: "kills", err: fmt.Errorf("ent: validator failed for field \"kills\": %w", err)}
+			return &ValidationError{Name: "kills", err: fmt.Errorf(`ent: validator failed for field "Character.kills": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Gold(); ok {
 		if err := character.GoldValidator(v); err != nil {
-			return &ValidationError{Name: "gold", err: fmt.Errorf("ent: validator failed for field \"gold\": %w", err)}
+			return &ValidationError{Name: "gold", err: fmt.Errorf(`ent: validator failed for field "Character.gold": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Skills(); ok {
 		if err := character.SkillsValidator(v); err != nil {
-			return &ValidationError{Name: "skills", err: fmt.Errorf("ent: validator failed for field \"skills\": %w", err)}
+			return &ValidationError{Name: "skills", err: fmt.Errorf(`ent: validator failed for field "Character.skills": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Pets(); ok {
 		if err := character.PetsValidator(v); err != nil {
-			return &ValidationError{Name: "pets", err: fmt.Errorf("ent: validator failed for field \"pets\": %w", err)}
+			return &ValidationError{Name: "pets", err: fmt.Errorf(`ent: validator failed for field "Character.pets": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Health(); ok {
 		if err := character.HealthValidator(v); err != nil {
-			return &ValidationError{Name: "health", err: fmt.Errorf("ent: validator failed for field \"health\": %w", err)}
+			return &ValidationError{Name: "health", err: fmt.Errorf(`ent: validator failed for field "Character.health": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Mana(); ok {
 		if err := character.ManaValidator(v); err != nil {
-			return &ValidationError{Name: "mana", err: fmt.Errorf("ent: validator failed for field \"mana\": %w", err)}
+			return &ValidationError{Name: "mana", err: fmt.Errorf(`ent: validator failed for field "Character.mana": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Equipped(); ok {
 		if err := character.EquippedValidator(v); err != nil {
-			return &ValidationError{Name: "equipped", err: fmt.Errorf("ent: validator failed for field \"equipped\": %w", err)}
+			return &ValidationError{Name: "equipped", err: fmt.Errorf(`ent: validator failed for field "Character.equipped": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Lefthand(); ok {
 		if err := character.LefthandValidator(v); err != nil {
-			return &ValidationError{Name: "lefthand", err: fmt.Errorf("ent: validator failed for field \"lefthand\": %w", err)}
+			return &ValidationError{Name: "lefthand", err: fmt.Errorf(`ent: validator failed for field "Character.lefthand": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Righthand(); ok {
 		if err := character.RighthandValidator(v); err != nil {
-			return &ValidationError{Name: "righthand", err: fmt.Errorf("ent: validator failed for field \"righthand\": %w", err)}
+			return &ValidationError{Name: "righthand", err: fmt.Errorf(`ent: validator failed for field "Character.righthand": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Spells(); ok {
 		if err := character.SpellsValidator(v); err != nil {
-			return &ValidationError{Name: "spells", err: fmt.Errorf("ent: validator failed for field \"spells\": %w", err)}
+			return &ValidationError{Name: "spells", err: fmt.Errorf(`ent: validator failed for field "Character.spells": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Spellbook(); ok {
 		if err := character.SpellbookValidator(v); err != nil {
-			return &ValidationError{Name: "spellbook", err: fmt.Errorf("ent: validator failed for field \"spellbook\": %w", err)}
+			return &ValidationError{Name: "spellbook", err: fmt.Errorf(`ent: validator failed for field "Character.spellbook": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Bags(); ok {
 		if err := character.BagsValidator(v); err != nil {
-			return &ValidationError{Name: "bags", err: fmt.Errorf("ent: validator failed for field \"bags\": %w", err)}
+			return &ValidationError{Name: "bags", err: fmt.Errorf(`ent: validator failed for field "Character.bags": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Sheaths(); ok {
 		if err := character.SheathsValidator(v); err != nil {
-			return &ValidationError{Name: "sheaths", err: fmt.Errorf("ent: validator failed for field \"sheaths\": %w", err)}
+			return &ValidationError{Name: "sheaths", err: fmt.Errorf(`ent: validator failed for field "Character.sheaths": %w`, err)}
 		}
 	}
 	return nil
@@ -1189,7 +1190,7 @@ func (cuo *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, e
 	}
 	id, ok := cuo.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Character.ID for update")}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Character.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
 	if fields := cuo.fields; len(fields) > 0 {
