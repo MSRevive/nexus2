@@ -90,14 +90,6 @@ func init() {
 	character.DefaultEquipped = characterDescEquipped.Default.(string)
 	// character.EquippedValidator is a validator for the "equipped" field. It is called by the builders before save.
 	character.EquippedValidator = characterDescEquipped.Validators[0].(func(string) error)
-	// characterDescLefthand is the schema descriptor for lefthand field.
-	characterDescLefthand := characterFields[17].Descriptor()
-	// character.LefthandValidator is a validator for the "lefthand" field. It is called by the builders before save.
-	character.LefthandValidator = characterDescLefthand.Validators[0].(func(string) error)
-	// characterDescRighthand is the schema descriptor for righthand field.
-	characterDescRighthand := characterFields[18].Descriptor()
-	// character.RighthandValidator is a validator for the "righthand" field. It is called by the builders before save.
-	character.RighthandValidator = characterDescRighthand.Validators[0].(func(string) error)
 	// characterDescSpells is the schema descriptor for spells field.
 	characterDescSpells := characterFields[19].Descriptor()
 	// character.DefaultSpells holds the default value on creation for the spells field.

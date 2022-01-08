@@ -57,10 +57,8 @@ func (Character) Fields() []ent.Field {
 		field.String("equipped").
 			NotEmpty().
 			Default("{}"),
-		field.String("lefthand").
-			NotEmpty(),
-		field.String("righthand").
-			NotEmpty(),
+		field.String("lefthand"),
+		field.String("righthand"),
 		field.String("spells").
 			NotEmpty().
 			Default("{}"),

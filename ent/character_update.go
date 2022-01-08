@@ -442,16 +442,6 @@ func (cu *CharacterUpdate) check() error {
 			return &ValidationError{Name: "equipped", err: fmt.Errorf(`ent: validator failed for field "Character.equipped": %w`, err)}
 		}
 	}
-	if v, ok := cu.mutation.Lefthand(); ok {
-		if err := character.LefthandValidator(v); err != nil {
-			return &ValidationError{Name: "lefthand", err: fmt.Errorf(`ent: validator failed for field "Character.lefthand": %w`, err)}
-		}
-	}
-	if v, ok := cu.mutation.Righthand(); ok {
-		if err := character.RighthandValidator(v); err != nil {
-			return &ValidationError{Name: "righthand", err: fmt.Errorf(`ent: validator failed for field "Character.righthand": %w`, err)}
-		}
-	}
 	if v, ok := cu.mutation.Spells(); ok {
 		if err := character.SpellsValidator(v); err != nil {
 			return &ValidationError{Name: "spells", err: fmt.Errorf(`ent: validator failed for field "Character.spells": %w`, err)}
@@ -1142,16 +1132,6 @@ func (cuo *CharacterUpdateOne) check() error {
 	if v, ok := cuo.mutation.Equipped(); ok {
 		if err := character.EquippedValidator(v); err != nil {
 			return &ValidationError{Name: "equipped", err: fmt.Errorf(`ent: validator failed for field "Character.equipped": %w`, err)}
-		}
-	}
-	if v, ok := cuo.mutation.Lefthand(); ok {
-		if err := character.LefthandValidator(v); err != nil {
-			return &ValidationError{Name: "lefthand", err: fmt.Errorf(`ent: validator failed for field "Character.lefthand": %w`, err)}
-		}
-	}
-	if v, ok := cuo.mutation.Righthand(); ok {
-		if err := character.RighthandValidator(v); err != nil {
-			return &ValidationError{Name: "righthand", err: fmt.Errorf(`ent: validator failed for field "Character.righthand": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Spells(); ok {

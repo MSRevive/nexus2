@@ -141,10 +141,6 @@ var (
 	DefaultEquipped string
 	// EquippedValidator is a validator for the "equipped" field. It is called by the builders before save.
 	EquippedValidator func(string) error
-	// LefthandValidator is a validator for the "lefthand" field. It is called by the builders before save.
-	LefthandValidator func(string) error
-	// RighthandValidator is a validator for the "righthand" field. It is called by the builders before save.
-	RighthandValidator func(string) error
 	// DefaultSpells holds the default value on creation for the "spells" field.
 	DefaultSpells string
 	// SpellsValidator is a validator for the "spells" field. It is called by the builders before save.

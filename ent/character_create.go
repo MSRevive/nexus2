@@ -488,18 +488,8 @@ func (cc *CharacterCreate) check() error {
 	if _, ok := cc.mutation.Lefthand(); !ok {
 		return &ValidationError{Name: "lefthand", err: errors.New(`ent: missing required field "Character.lefthand"`)}
 	}
-	if v, ok := cc.mutation.Lefthand(); ok {
-		if err := character.LefthandValidator(v); err != nil {
-			return &ValidationError{Name: "lefthand", err: fmt.Errorf(`ent: validator failed for field "Character.lefthand": %w`, err)}
-		}
-	}
 	if _, ok := cc.mutation.Righthand(); !ok {
 		return &ValidationError{Name: "righthand", err: errors.New(`ent: missing required field "Character.righthand"`)}
-	}
-	if v, ok := cc.mutation.Righthand(); ok {
-		if err := character.RighthandValidator(v); err != nil {
-			return &ValidationError{Name: "righthand", err: fmt.Errorf(`ent: validator failed for field "Character.righthand": %w`, err)}
-		}
 	}
 	if _, ok := cc.mutation.Spells(); !ok {
 		return &ValidationError{Name: "spells", err: errors.New(`ent: missing required field "Character.spells"`)}
