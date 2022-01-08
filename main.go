@@ -22,7 +22,7 @@ import(
 
 func main() {
   var cdir string
-  flag.StringVar(&cdir, "cdir", "./runtime/config.toml", "Where to load the config file.")
+  flag.StringVar(&cdir, "cfile", "./runtime/config.toml", "Where to load the config file.")
   flag.BoolVar(&session.Dbg, "dbg", false, "Run with debug mode.")
   flag.Parse()
   
@@ -78,7 +78,7 @@ func main() {
   
   //variables for web server
   var srv *http.Server
-  address := session.Config.Core.IP+":"+strconv.Itoa(session.Config.Core.Port)
+  address := session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.Port)
   router := mux.NewRouter()
   srv = &http.Server{
     Handler: router,
