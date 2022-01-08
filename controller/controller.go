@@ -26,10 +26,7 @@ func (c *controller) TestRoot(w http.ResponseWriter, r *http.Request) {
       response.BadRequest(w, err)
       return
     }
-    
-    response.Result(w, true)
-    return
   }
   
-  response.OK(w, "{}")
+  response.Result(w, true)
 }

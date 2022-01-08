@@ -97,15 +97,15 @@ func main() {
   apic := controller.New(router.PathPrefix(session.Config.Core.RootPath).Subrouter())
   apic.R.HandleFunc("/", middleware.Auth(apic.TestRoot)).Methods(http.MethodGet)
   apic.R.HandleFunc("/map/{name}/{hash}", middleware.Auth(apic.GetMapVerify)).Methods(http.MethodGet)
-  apic.R.HandleFunc("/ban/{steamid}", middleware.Auth(apic.GetBanVerify)).Methods(http.MethodGet)
+  apic.R.HandleFunc("/ban/{steamid:[0-9]+}", middleware.Auth(apic.GetBanVerify)).Methods(http.MethodGet)
   apic.R.HandleFunc("/sc/{hash}", middleware.Auth(apic.GetSCVerify)).Methods(http.MethodGet)
   
   //character routes
   charc := controller.New(router.PathPrefix(session.Config.Core.RootPath+"/character").Subrouter())
   charc.R.HandleFunc("/", middleware.Auth(charc.GetAllCharacters)).Methods(http.MethodGet)
-  charc.R.HandleFunc("/{steamid}", middleware.Auth(charc.GetCharacters)).Methods(http.MethodGet)
-  charc.R.HandleFunc("/{steamid}/{slot}", middleware.Auth(charc.GetCharacter)).Methods(http.MethodGet)
   charc.R.HandleFunc("/id/{uid}", middleware.Auth(charc.GetCharacterByID)).Methods(http.MethodGet)
+  charc.R.HandleFunc("/{steamid:[0-9]+}", middleware.Auth(charc.GetCharacters)).Methods(http.MethodGet)
+  charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}", middleware.Auth(charc.GetCharacter)).Methods(http.MethodGet)
   charc.R.HandleFunc("/", middleware.Auth(charc.PostCharacter)).Methods(http.MethodPost)
   charc.R.HandleFunc("/{uid}", middleware.Auth(charc.PutCharacter)).Methods(http.MethodPut)
   charc.R.HandleFunc("/{uid}", middleware.Auth(charc.DeleteCharacter)).Methods(http.MethodDelete)

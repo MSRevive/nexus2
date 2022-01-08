@@ -21,7 +21,7 @@ func New(ctx context.Context) *service {
 
 func (s *service) Debug() error {
   _, err := s.client.Character.Create().
-  SetSteamid(76561198092541763).
+  SetSteamid("76561198092541763").
   SetSlot(1).
   SetName("Test Char").
   SetGender(1).

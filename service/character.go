@@ -17,11 +17,10 @@ func (s *service) CharactersGetAll() ([]*ent.Character, error) {
   return chars, nil
 }
 
-func (s *service) CharactersGetBySteamid(sid uint64) ([]*ent.Character, error) {
+func (s *service) CharactersGetBySteamid(sid string) ([]*ent.Character, error) {
   chars, err := s.client.Character.Query().Where(
-    character.SteamidEQ(sid),
+    character.Steamid(sid),
   ).All(s.ctx)
-  
   if err != nil {
     return nil, err
   }
@@ -29,13 +28,13 @@ func (s *service) CharactersGetBySteamid(sid uint64) ([]*ent.Character, error) {
   return chars, nil
 }
 
-func (s *service) CharacterGetBySteamidSlot(sid uint64, slt int) (*ent.Character, error) {
+func (s *service) CharacterGetBySteamidSlot(sid string, slt int) ([]*ent.Character, error) {
   char, err := s.client.Character.Query().Where(
     character.And(
       character.SteamidEQ(sid),
       character.SlotEQ(slt),
     ),
-  ).Only(s.ctx)
+  ).All(s.ctx)
   if err != nil {
     return nil, err
   }
