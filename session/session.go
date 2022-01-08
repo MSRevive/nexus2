@@ -13,6 +13,8 @@ import(
 var (
   Client *ent.Client
   Config config
+  Dbg bool
+  
   IPList map[string]bool
   BanList map[uint64]bool
   MapList map[string]uint32

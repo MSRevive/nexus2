@@ -5,6 +5,7 @@ import(
   "runtime"
   "strconv"
   "context"
+  "flag"
   "net/http"
   "crypto/tls"
 
@@ -20,12 +21,21 @@ import(
 )
 
 func main() {
-  if err := session.LoadConfig("./runtime/config.toml"); err != nil {
+  var cdir string
+  flag.StringVar(&cdir, "cdir", "./runtime/config.toml", "Where to load the config file.")
+  flag.BoolVar(&session.Dbg, "dbg", false, "Run with debug mode.")
+  flag.Parse()
+  
+  if err := session.LoadConfig(cdir); err != nil {
     panic(err)
   }
   
   //Initiate logging
   log.InitLogging("server.log", session.Config.Log.Dir)
+  
+  if session.Dbg {
+    log.Log.Warnln("Running in Debug mode, do not use in production!")
+  }
   
   //Max threads allowed.
   if session.Config.Core.MaxThreads != 0 {

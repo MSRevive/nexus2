@@ -18,3 +18,35 @@ func New(ctx context.Context) *service {
     client: session.Client,
   }
 }
+
+func (s *service) Debug() error {
+  _, err := s.client.Character.Create().
+  SetSteamid(76561198092541763).
+  SetSlot(1).
+  SetName("Test Char").
+  SetGender(1).
+  SetRace(1).
+  SetFlags("{}").
+  SetQuickslots("{}").
+  SetQuests("{}").
+  SetGuild("").
+  SetKills(0).
+  SetGold(0).
+  SetSkills("{}").
+  SetPets("{}").
+  SetHealth(5).
+  SetMana(10).
+  SetEquipped("{}").
+  SetLefthand("").
+  SetRighthand("").
+  SetSpells("{}").
+  SetSpellbook("{}").
+  SetBags("{}").
+  SetSheaths("{}").
+  Save(s.ctx)
+  if err != nil {
+    return err
+  }
+  
+  return nil
+}
