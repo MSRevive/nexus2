@@ -3,7 +3,7 @@ Port = 1337
 IP = "127.0.0.1"
 Graceful = 15 # Request timeout in minutes
 RootPath = "/api/v1"
-DBString = "./runtime/characters.db" # file:ent?mode=memory&cache=shared&_fk=1
+DBString = "file:./runtime/chars.db?cache=shared&mode=rwc&_fk=1" # file:ent?cache=shared&mode=memory&_fk=1
 
 [RateLimit]
 Enable = false
