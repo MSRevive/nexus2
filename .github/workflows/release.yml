@@ -16,7 +16,7 @@ jobs:
       - name: get build tools
         run: sudo apt-get -y install build-essential
       - name: build
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o build/msnexus2_linux_amd64 -v .
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o build/msnexus2_linux_amd64 -v .
       - name: compress binary
         run: upx build/msnexus2_linux_amd64 && chmod +x build/msnexus2_linux_amd64
       - name: copy runtime directory
@@ -44,6 +44,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /home/runner/msnexus.tar.gz
+          asset_path: /home/runner/msnexus2.tar.gz
           asset_name: msnexus2.tar.gz
           asset_content_type: application/octet-stream
