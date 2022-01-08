@@ -10,7 +10,6 @@ import (
 type service struct {
   ctx context.Context
   client *ent.Client
-  
 }
 
 func New(ctx context.Context) *service {
