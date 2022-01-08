@@ -21,7 +21,7 @@ func init() {
 	// characterDescSlot is the schema descriptor for slot field.
 	characterDescSlot := characterFields[2].Descriptor()
 	// character.SlotValidator is a validator for the "slot" field. It is called by the builders before save.
-	character.SlotValidator = characterDescSlot.Validators[0].(func(uint8) error)
+	character.SlotValidator = characterDescSlot.Validators[0].(func(int) error)
 	// characterDescName is the schema descriptor for name field.
 	characterDescName := characterFields[3].Descriptor()
 	// character.NameValidator is a validator for the "name" field. It is called by the builders before save.
@@ -29,11 +29,11 @@ func init() {
 	// characterDescGender is the schema descriptor for gender field.
 	characterDescGender := characterFields[4].Descriptor()
 	// character.GenderValidator is a validator for the "gender" field. It is called by the builders before save.
-	character.GenderValidator = characterDescGender.Validators[0].(func(uint8) error)
+	character.GenderValidator = characterDescGender.Validators[0].(func(int) error)
 	// characterDescRace is the schema descriptor for race field.
 	characterDescRace := characterFields[5].Descriptor()
 	// character.RaceValidator is a validator for the "race" field. It is called by the builders before save.
-	character.RaceValidator = characterDescRace.Validators[0].(func(uint8) error)
+	character.RaceValidator = characterDescRace.Validators[0].(func(int) error)
 	// characterDescFlags is the schema descriptor for flags field.
 	characterDescFlags := characterFields[6].Descriptor()
 	// character.DefaultFlags holds the default value on creation for the flags field.
@@ -59,11 +59,11 @@ func init() {
 	// characterDescKills is the schema descriptor for kills field.
 	characterDescKills := characterFields[10].Descriptor()
 	// character.KillsValidator is a validator for the "kills" field. It is called by the builders before save.
-	character.KillsValidator = characterDescKills.Validators[0].(func(int16) error)
+	character.KillsValidator = characterDescKills.Validators[0].(func(int) error)
 	// characterDescGold is the schema descriptor for gold field.
 	characterDescGold := characterFields[11].Descriptor()
 	// character.GoldValidator is a validator for the "gold" field. It is called by the builders before save.
-	character.GoldValidator = characterDescGold.Validators[0].(func(uint32) error)
+	character.GoldValidator = characterDescGold.Validators[0].(func(int) error)
 	// characterDescSkills is the schema descriptor for skills field.
 	characterDescSkills := characterFields[12].Descriptor()
 	// character.DefaultSkills holds the default value on creation for the skills field.

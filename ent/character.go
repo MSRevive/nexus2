@@ -19,13 +19,13 @@ type Character struct {
 	// Steamid holds the value of the "steamid" field.
 	Steamid uint64 `json:"steamid,omitempty"`
 	// Slot holds the value of the "slot" field.
-	Slot uint8 `json:"slot,omitempty"`
+	Slot int `json:"slot,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Gender holds the value of the "gender" field.
-	Gender uint8 `json:"gender,omitempty"`
+	Gender int `json:"gender,omitempty"`
 	// Race holds the value of the "race" field.
-	Race uint8 `json:"race,omitempty"`
+	Race int `json:"race,omitempty"`
 	// Flags holds the value of the "flags" field.
 	Flags string `json:"flags,omitempty"`
 	// Quickslots holds the value of the "quickslots" field.
@@ -35,9 +35,9 @@ type Character struct {
 	// Guild holds the value of the "guild" field.
 	Guild string `json:"guild,omitempty"`
 	// Kills holds the value of the "kills" field.
-	Kills int16 `json:"kills,omitempty"`
+	Kills int `json:"kills,omitempty"`
 	// Gold holds the value of the "gold" field.
-	Gold uint32 `json:"gold,omitempty"`
+	Gold int `json:"gold,omitempty"`
 	// Skills holds the value of the "skills" field.
 	Skills string `json:"skills,omitempty"`
 	// Pets holds the value of the "pets" field.
@@ -104,7 +104,7 @@ func (c *Character) assignValues(columns []string, values []interface{}) error {
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field slot", values[i])
 			} else if value.Valid {
-				c.Slot = uint8(value.Int64)
+				c.Slot = int(value.Int64)
 			}
 		case character.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -116,13 +116,13 @@ func (c *Character) assignValues(columns []string, values []interface{}) error {
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field gender", values[i])
 			} else if value.Valid {
-				c.Gender = uint8(value.Int64)
+				c.Gender = int(value.Int64)
 			}
 		case character.FieldRace:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field race", values[i])
 			} else if value.Valid {
-				c.Race = uint8(value.Int64)
+				c.Race = int(value.Int64)
 			}
 		case character.FieldFlags:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -152,13 +152,13 @@ func (c *Character) assignValues(columns []string, values []interface{}) error {
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field kills", values[i])
 			} else if value.Valid {
-				c.Kills = int16(value.Int64)
+				c.Kills = int(value.Int64)
 			}
 		case character.FieldGold:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field gold", values[i])
 			} else if value.Valid {
-				c.Gold = uint32(value.Int64)
+				c.Gold = int(value.Int64)
 			}
 		case character.FieldSkills:
 			if value, ok := values[i].(*sql.NullString); !ok {

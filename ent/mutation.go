@@ -35,21 +35,21 @@ type CharacterMutation struct {
 	id            *uuid.UUID
 	steamid       *uint64
 	addsteamid    *int64
-	slot          *uint8
-	addslot       *int8
+	slot          *int
+	addslot       *int
 	name          *string
-	gender        *uint8
-	addgender     *int8
-	race          *uint8
-	addrace       *int8
+	gender        *int
+	addgender     *int
+	race          *int
+	addrace       *int
 	flags         *string
 	quickslots    *string
 	quests        *string
 	guild         *string
-	kills         *int16
-	addkills      *int16
-	gold          *uint32
-	addgold       *int32
+	kills         *int
+	addkills      *int
+	gold          *int
+	addgold       *int
 	skills        *string
 	pets          *string
 	health        *int
@@ -230,13 +230,13 @@ func (m *CharacterMutation) ResetSteamid() {
 }
 
 // SetSlot sets the "slot" field.
-func (m *CharacterMutation) SetSlot(u uint8) {
-	m.slot = &u
+func (m *CharacterMutation) SetSlot(i int) {
+	m.slot = &i
 	m.addslot = nil
 }
 
 // Slot returns the value of the "slot" field in the mutation.
-func (m *CharacterMutation) Slot() (r uint8, exists bool) {
+func (m *CharacterMutation) Slot() (r int, exists bool) {
 	v := m.slot
 	if v == nil {
 		return
@@ -247,7 +247,7 @@ func (m *CharacterMutation) Slot() (r uint8, exists bool) {
 // OldSlot returns the old "slot" field's value of the Character entity.
 // If the Character object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldSlot(ctx context.Context) (v uint8, err error) {
+func (m *CharacterMutation) OldSlot(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldSlot is only allowed on UpdateOne operations")
 	}
@@ -261,17 +261,17 @@ func (m *CharacterMutation) OldSlot(ctx context.Context) (v uint8, err error) {
 	return oldValue.Slot, nil
 }
 
-// AddSlot adds u to the "slot" field.
-func (m *CharacterMutation) AddSlot(u int8) {
+// AddSlot adds i to the "slot" field.
+func (m *CharacterMutation) AddSlot(i int) {
 	if m.addslot != nil {
-		*m.addslot += u
+		*m.addslot += i
 	} else {
-		m.addslot = &u
+		m.addslot = &i
 	}
 }
 
 // AddedSlot returns the value that was added to the "slot" field in this mutation.
-func (m *CharacterMutation) AddedSlot() (r int8, exists bool) {
+func (m *CharacterMutation) AddedSlot() (r int, exists bool) {
 	v := m.addslot
 	if v == nil {
 		return
@@ -322,13 +322,13 @@ func (m *CharacterMutation) ResetName() {
 }
 
 // SetGender sets the "gender" field.
-func (m *CharacterMutation) SetGender(u uint8) {
-	m.gender = &u
+func (m *CharacterMutation) SetGender(i int) {
+	m.gender = &i
 	m.addgender = nil
 }
 
 // Gender returns the value of the "gender" field in the mutation.
-func (m *CharacterMutation) Gender() (r uint8, exists bool) {
+func (m *CharacterMutation) Gender() (r int, exists bool) {
 	v := m.gender
 	if v == nil {
 		return
@@ -339,7 +339,7 @@ func (m *CharacterMutation) Gender() (r uint8, exists bool) {
 // OldGender returns the old "gender" field's value of the Character entity.
 // If the Character object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldGender(ctx context.Context) (v uint8, err error) {
+func (m *CharacterMutation) OldGender(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldGender is only allowed on UpdateOne operations")
 	}
@@ -353,17 +353,17 @@ func (m *CharacterMutation) OldGender(ctx context.Context) (v uint8, err error) 
 	return oldValue.Gender, nil
 }
 
-// AddGender adds u to the "gender" field.
-func (m *CharacterMutation) AddGender(u int8) {
+// AddGender adds i to the "gender" field.
+func (m *CharacterMutation) AddGender(i int) {
 	if m.addgender != nil {
-		*m.addgender += u
+		*m.addgender += i
 	} else {
-		m.addgender = &u
+		m.addgender = &i
 	}
 }
 
 // AddedGender returns the value that was added to the "gender" field in this mutation.
-func (m *CharacterMutation) AddedGender() (r int8, exists bool) {
+func (m *CharacterMutation) AddedGender() (r int, exists bool) {
 	v := m.addgender
 	if v == nil {
 		return
@@ -378,13 +378,13 @@ func (m *CharacterMutation) ResetGender() {
 }
 
 // SetRace sets the "race" field.
-func (m *CharacterMutation) SetRace(u uint8) {
-	m.race = &u
+func (m *CharacterMutation) SetRace(i int) {
+	m.race = &i
 	m.addrace = nil
 }
 
 // Race returns the value of the "race" field in the mutation.
-func (m *CharacterMutation) Race() (r uint8, exists bool) {
+func (m *CharacterMutation) Race() (r int, exists bool) {
 	v := m.race
 	if v == nil {
 		return
@@ -395,7 +395,7 @@ func (m *CharacterMutation) Race() (r uint8, exists bool) {
 // OldRace returns the old "race" field's value of the Character entity.
 // If the Character object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldRace(ctx context.Context) (v uint8, err error) {
+func (m *CharacterMutation) OldRace(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRace is only allowed on UpdateOne operations")
 	}
@@ -409,17 +409,17 @@ func (m *CharacterMutation) OldRace(ctx context.Context) (v uint8, err error) {
 	return oldValue.Race, nil
 }
 
-// AddRace adds u to the "race" field.
-func (m *CharacterMutation) AddRace(u int8) {
+// AddRace adds i to the "race" field.
+func (m *CharacterMutation) AddRace(i int) {
 	if m.addrace != nil {
-		*m.addrace += u
+		*m.addrace += i
 	} else {
-		m.addrace = &u
+		m.addrace = &i
 	}
 }
 
 // AddedRace returns the value that was added to the "race" field in this mutation.
-func (m *CharacterMutation) AddedRace() (r int8, exists bool) {
+func (m *CharacterMutation) AddedRace() (r int, exists bool) {
 	v := m.addrace
 	if v == nil {
 		return
@@ -578,13 +578,13 @@ func (m *CharacterMutation) ResetGuild() {
 }
 
 // SetKills sets the "kills" field.
-func (m *CharacterMutation) SetKills(i int16) {
+func (m *CharacterMutation) SetKills(i int) {
 	m.kills = &i
 	m.addkills = nil
 }
 
 // Kills returns the value of the "kills" field in the mutation.
-func (m *CharacterMutation) Kills() (r int16, exists bool) {
+func (m *CharacterMutation) Kills() (r int, exists bool) {
 	v := m.kills
 	if v == nil {
 		return
@@ -595,7 +595,7 @@ func (m *CharacterMutation) Kills() (r int16, exists bool) {
 // OldKills returns the old "kills" field's value of the Character entity.
 // If the Character object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldKills(ctx context.Context) (v int16, err error) {
+func (m *CharacterMutation) OldKills(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldKills is only allowed on UpdateOne operations")
 	}
@@ -610,7 +610,7 @@ func (m *CharacterMutation) OldKills(ctx context.Context) (v int16, err error) {
 }
 
 // AddKills adds i to the "kills" field.
-func (m *CharacterMutation) AddKills(i int16) {
+func (m *CharacterMutation) AddKills(i int) {
 	if m.addkills != nil {
 		*m.addkills += i
 	} else {
@@ -619,7 +619,7 @@ func (m *CharacterMutation) AddKills(i int16) {
 }
 
 // AddedKills returns the value that was added to the "kills" field in this mutation.
-func (m *CharacterMutation) AddedKills() (r int16, exists bool) {
+func (m *CharacterMutation) AddedKills() (r int, exists bool) {
 	v := m.addkills
 	if v == nil {
 		return
@@ -634,13 +634,13 @@ func (m *CharacterMutation) ResetKills() {
 }
 
 // SetGold sets the "gold" field.
-func (m *CharacterMutation) SetGold(u uint32) {
-	m.gold = &u
+func (m *CharacterMutation) SetGold(i int) {
+	m.gold = &i
 	m.addgold = nil
 }
 
 // Gold returns the value of the "gold" field in the mutation.
-func (m *CharacterMutation) Gold() (r uint32, exists bool) {
+func (m *CharacterMutation) Gold() (r int, exists bool) {
 	v := m.gold
 	if v == nil {
 		return
@@ -651,7 +651,7 @@ func (m *CharacterMutation) Gold() (r uint32, exists bool) {
 // OldGold returns the old "gold" field's value of the Character entity.
 // If the Character object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldGold(ctx context.Context) (v uint32, err error) {
+func (m *CharacterMutation) OldGold(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldGold is only allowed on UpdateOne operations")
 	}
@@ -665,17 +665,17 @@ func (m *CharacterMutation) OldGold(ctx context.Context) (v uint32, err error) {
 	return oldValue.Gold, nil
 }
 
-// AddGold adds u to the "gold" field.
-func (m *CharacterMutation) AddGold(u int32) {
+// AddGold adds i to the "gold" field.
+func (m *CharacterMutation) AddGold(i int) {
 	if m.addgold != nil {
-		*m.addgold += u
+		*m.addgold += i
 	} else {
-		m.addgold = &u
+		m.addgold = &i
 	}
 }
 
 // AddedGold returns the value that was added to the "gold" field in this mutation.
-func (m *CharacterMutation) AddedGold() (r int32, exists bool) {
+func (m *CharacterMutation) AddedGold() (r int, exists bool) {
 	v := m.addgold
 	if v == nil {
 		return
@@ -1333,7 +1333,7 @@ func (m *CharacterMutation) SetField(name string, value ent.Value) error {
 		m.SetSteamid(v)
 		return nil
 	case character.FieldSlot:
-		v, ok := value.(uint8)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -1347,14 +1347,14 @@ func (m *CharacterMutation) SetField(name string, value ent.Value) error {
 		m.SetName(v)
 		return nil
 	case character.FieldGender:
-		v, ok := value.(uint8)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetGender(v)
 		return nil
 	case character.FieldRace:
-		v, ok := value.(uint8)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -1389,14 +1389,14 @@ func (m *CharacterMutation) SetField(name string, value ent.Value) error {
 		m.SetGuild(v)
 		return nil
 	case character.FieldKills:
-		v, ok := value.(int16)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetKills(v)
 		return nil
 	case character.FieldGold:
-		v, ok := value.(uint32)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -1552,35 +1552,35 @@ func (m *CharacterMutation) AddField(name string, value ent.Value) error {
 		m.AddSteamid(v)
 		return nil
 	case character.FieldSlot:
-		v, ok := value.(int8)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddSlot(v)
 		return nil
 	case character.FieldGender:
-		v, ok := value.(int8)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddGender(v)
 		return nil
 	case character.FieldRace:
-		v, ok := value.(int8)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddRace(v)
 		return nil
 	case character.FieldKills:
-		v, ok := value.(int16)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddKills(v)
 		return nil
 	case character.FieldGold:
-		v, ok := value.(int32)
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}

@@ -100,13 +100,13 @@ var (
 	// SteamidValidator is a validator for the "steamid" field. It is called by the builders before save.
 	SteamidValidator func(uint64) error
 	// SlotValidator is a validator for the "slot" field. It is called by the builders before save.
-	SlotValidator func(uint8) error
+	SlotValidator func(int) error
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
 	// GenderValidator is a validator for the "gender" field. It is called by the builders before save.
-	GenderValidator func(uint8) error
+	GenderValidator func(int) error
 	// RaceValidator is a validator for the "race" field. It is called by the builders before save.
-	RaceValidator func(uint8) error
+	RaceValidator func(int) error
 	// DefaultFlags holds the default value on creation for the "flags" field.
 	DefaultFlags string
 	// FlagsValidator is a validator for the "flags" field. It is called by the builders before save.
@@ -122,9 +122,9 @@ var (
 	// GuildValidator is a validator for the "guild" field. It is called by the builders before save.
 	GuildValidator func(string) error
 	// KillsValidator is a validator for the "kills" field. It is called by the builders before save.
-	KillsValidator func(int16) error
+	KillsValidator func(int) error
 	// GoldValidator is a validator for the "gold" field. It is called by the builders before save.
-	GoldValidator func(uint32) error
+	GoldValidator func(int) error
 	// DefaultSkills holds the default value on creation for the "skills" field.
 	DefaultSkills string
 	// SkillsValidator is a validator for the "skills" field. It is called by the builders before save.

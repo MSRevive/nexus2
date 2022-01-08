@@ -41,15 +41,15 @@ func (cu *CharacterUpdate) AddSteamid(u int64) *CharacterUpdate {
 }
 
 // SetSlot sets the "slot" field.
-func (cu *CharacterUpdate) SetSlot(u uint8) *CharacterUpdate {
+func (cu *CharacterUpdate) SetSlot(i int) *CharacterUpdate {
 	cu.mutation.ResetSlot()
-	cu.mutation.SetSlot(u)
+	cu.mutation.SetSlot(i)
 	return cu
 }
 
-// AddSlot adds u to the "slot" field.
-func (cu *CharacterUpdate) AddSlot(u int8) *CharacterUpdate {
-	cu.mutation.AddSlot(u)
+// AddSlot adds i to the "slot" field.
+func (cu *CharacterUpdate) AddSlot(i int) *CharacterUpdate {
+	cu.mutation.AddSlot(i)
 	return cu
 }
 
@@ -60,28 +60,28 @@ func (cu *CharacterUpdate) SetName(s string) *CharacterUpdate {
 }
 
 // SetGender sets the "gender" field.
-func (cu *CharacterUpdate) SetGender(u uint8) *CharacterUpdate {
+func (cu *CharacterUpdate) SetGender(i int) *CharacterUpdate {
 	cu.mutation.ResetGender()
-	cu.mutation.SetGender(u)
+	cu.mutation.SetGender(i)
 	return cu
 }
 
-// AddGender adds u to the "gender" field.
-func (cu *CharacterUpdate) AddGender(u int8) *CharacterUpdate {
-	cu.mutation.AddGender(u)
+// AddGender adds i to the "gender" field.
+func (cu *CharacterUpdate) AddGender(i int) *CharacterUpdate {
+	cu.mutation.AddGender(i)
 	return cu
 }
 
 // SetRace sets the "race" field.
-func (cu *CharacterUpdate) SetRace(u uint8) *CharacterUpdate {
+func (cu *CharacterUpdate) SetRace(i int) *CharacterUpdate {
 	cu.mutation.ResetRace()
-	cu.mutation.SetRace(u)
+	cu.mutation.SetRace(i)
 	return cu
 }
 
-// AddRace adds u to the "race" field.
-func (cu *CharacterUpdate) AddRace(u int8) *CharacterUpdate {
-	cu.mutation.AddRace(u)
+// AddRace adds i to the "race" field.
+func (cu *CharacterUpdate) AddRace(i int) *CharacterUpdate {
+	cu.mutation.AddRace(i)
 	return cu
 }
 
@@ -134,28 +134,28 @@ func (cu *CharacterUpdate) SetGuild(s string) *CharacterUpdate {
 }
 
 // SetKills sets the "kills" field.
-func (cu *CharacterUpdate) SetKills(i int16) *CharacterUpdate {
+func (cu *CharacterUpdate) SetKills(i int) *CharacterUpdate {
 	cu.mutation.ResetKills()
 	cu.mutation.SetKills(i)
 	return cu
 }
 
 // AddKills adds i to the "kills" field.
-func (cu *CharacterUpdate) AddKills(i int16) *CharacterUpdate {
+func (cu *CharacterUpdate) AddKills(i int) *CharacterUpdate {
 	cu.mutation.AddKills(i)
 	return cu
 }
 
 // SetGold sets the "gold" field.
-func (cu *CharacterUpdate) SetGold(u uint32) *CharacterUpdate {
+func (cu *CharacterUpdate) SetGold(i int) *CharacterUpdate {
 	cu.mutation.ResetGold()
-	cu.mutation.SetGold(u)
+	cu.mutation.SetGold(i)
 	return cu
 }
 
-// AddGold adds u to the "gold" field.
-func (cu *CharacterUpdate) AddGold(u int32) *CharacterUpdate {
-	cu.mutation.AddGold(u)
+// AddGold adds i to the "gold" field.
+func (cu *CharacterUpdate) AddGold(i int) *CharacterUpdate {
+	cu.mutation.AddGold(i)
 	return cu
 }
 
@@ -509,14 +509,14 @@ func (cu *CharacterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cu.mutation.Slot(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldSlot,
 		})
 	}
 	if value, ok := cu.mutation.AddedSlot(); ok {
 		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldSlot,
 		})
@@ -530,28 +530,28 @@ func (cu *CharacterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cu.mutation.Gender(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldGender,
 		})
 	}
 	if value, ok := cu.mutation.AddedGender(); ok {
 		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldGender,
 		})
 	}
 	if value, ok := cu.mutation.Race(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldRace,
 		})
 	}
 	if value, ok := cu.mutation.AddedRace(); ok {
 		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldRace,
 		})
@@ -586,28 +586,28 @@ func (cu *CharacterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cu.mutation.Kills(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt16,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldKills,
 		})
 	}
 	if value, ok := cu.mutation.AddedKills(); ok {
 		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt16,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldKills,
 		})
 	}
 	if value, ok := cu.mutation.Gold(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint32,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldGold,
 		})
 	}
 	if value, ok := cu.mutation.AddedGold(); ok {
 		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint32,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldGold,
 		})
@@ -736,15 +736,15 @@ func (cuo *CharacterUpdateOne) AddSteamid(u int64) *CharacterUpdateOne {
 }
 
 // SetSlot sets the "slot" field.
-func (cuo *CharacterUpdateOne) SetSlot(u uint8) *CharacterUpdateOne {
+func (cuo *CharacterUpdateOne) SetSlot(i int) *CharacterUpdateOne {
 	cuo.mutation.ResetSlot()
-	cuo.mutation.SetSlot(u)
+	cuo.mutation.SetSlot(i)
 	return cuo
 }
 
-// AddSlot adds u to the "slot" field.
-func (cuo *CharacterUpdateOne) AddSlot(u int8) *CharacterUpdateOne {
-	cuo.mutation.AddSlot(u)
+// AddSlot adds i to the "slot" field.
+func (cuo *CharacterUpdateOne) AddSlot(i int) *CharacterUpdateOne {
+	cuo.mutation.AddSlot(i)
 	return cuo
 }
 
@@ -755,28 +755,28 @@ func (cuo *CharacterUpdateOne) SetName(s string) *CharacterUpdateOne {
 }
 
 // SetGender sets the "gender" field.
-func (cuo *CharacterUpdateOne) SetGender(u uint8) *CharacterUpdateOne {
+func (cuo *CharacterUpdateOne) SetGender(i int) *CharacterUpdateOne {
 	cuo.mutation.ResetGender()
-	cuo.mutation.SetGender(u)
+	cuo.mutation.SetGender(i)
 	return cuo
 }
 
-// AddGender adds u to the "gender" field.
-func (cuo *CharacterUpdateOne) AddGender(u int8) *CharacterUpdateOne {
-	cuo.mutation.AddGender(u)
+// AddGender adds i to the "gender" field.
+func (cuo *CharacterUpdateOne) AddGender(i int) *CharacterUpdateOne {
+	cuo.mutation.AddGender(i)
 	return cuo
 }
 
 // SetRace sets the "race" field.
-func (cuo *CharacterUpdateOne) SetRace(u uint8) *CharacterUpdateOne {
+func (cuo *CharacterUpdateOne) SetRace(i int) *CharacterUpdateOne {
 	cuo.mutation.ResetRace()
-	cuo.mutation.SetRace(u)
+	cuo.mutation.SetRace(i)
 	return cuo
 }
 
-// AddRace adds u to the "race" field.
-func (cuo *CharacterUpdateOne) AddRace(u int8) *CharacterUpdateOne {
-	cuo.mutation.AddRace(u)
+// AddRace adds i to the "race" field.
+func (cuo *CharacterUpdateOne) AddRace(i int) *CharacterUpdateOne {
+	cuo.mutation.AddRace(i)
 	return cuo
 }
 
@@ -829,28 +829,28 @@ func (cuo *CharacterUpdateOne) SetGuild(s string) *CharacterUpdateOne {
 }
 
 // SetKills sets the "kills" field.
-func (cuo *CharacterUpdateOne) SetKills(i int16) *CharacterUpdateOne {
+func (cuo *CharacterUpdateOne) SetKills(i int) *CharacterUpdateOne {
 	cuo.mutation.ResetKills()
 	cuo.mutation.SetKills(i)
 	return cuo
 }
 
 // AddKills adds i to the "kills" field.
-func (cuo *CharacterUpdateOne) AddKills(i int16) *CharacterUpdateOne {
+func (cuo *CharacterUpdateOne) AddKills(i int) *CharacterUpdateOne {
 	cuo.mutation.AddKills(i)
 	return cuo
 }
 
 // SetGold sets the "gold" field.
-func (cuo *CharacterUpdateOne) SetGold(u uint32) *CharacterUpdateOne {
+func (cuo *CharacterUpdateOne) SetGold(i int) *CharacterUpdateOne {
 	cuo.mutation.ResetGold()
-	cuo.mutation.SetGold(u)
+	cuo.mutation.SetGold(i)
 	return cuo
 }
 
-// AddGold adds u to the "gold" field.
-func (cuo *CharacterUpdateOne) AddGold(u int32) *CharacterUpdateOne {
-	cuo.mutation.AddGold(u)
+// AddGold adds i to the "gold" field.
+func (cuo *CharacterUpdateOne) AddGold(i int) *CharacterUpdateOne {
+	cuo.mutation.AddGold(i)
 	return cuo
 }
 
@@ -1228,14 +1228,14 @@ func (cuo *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, e
 	}
 	if value, ok := cuo.mutation.Slot(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldSlot,
 		})
 	}
 	if value, ok := cuo.mutation.AddedSlot(); ok {
 		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldSlot,
 		})
@@ -1249,28 +1249,28 @@ func (cuo *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, e
 	}
 	if value, ok := cuo.mutation.Gender(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldGender,
 		})
 	}
 	if value, ok := cuo.mutation.AddedGender(); ok {
 		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldGender,
 		})
 	}
 	if value, ok := cuo.mutation.Race(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldRace,
 		})
 	}
 	if value, ok := cuo.mutation.AddedRace(); ok {
 		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldRace,
 		})
@@ -1305,28 +1305,28 @@ func (cuo *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, e
 	}
 	if value, ok := cuo.mutation.Kills(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt16,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldKills,
 		})
 	}
 	if value, ok := cuo.mutation.AddedKills(); ok {
 		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt16,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldKills,
 		})
 	}
 	if value, ok := cuo.mutation.Gold(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint32,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldGold,
 		})
 	}
 	if value, ok := cuo.mutation.AddedGold(); ok {
 		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint32,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldGold,
 		})

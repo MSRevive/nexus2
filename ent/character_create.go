@@ -27,8 +27,8 @@ func (cc *CharacterCreate) SetSteamid(u uint64) *CharacterCreate {
 }
 
 // SetSlot sets the "slot" field.
-func (cc *CharacterCreate) SetSlot(u uint8) *CharacterCreate {
-	cc.mutation.SetSlot(u)
+func (cc *CharacterCreate) SetSlot(i int) *CharacterCreate {
+	cc.mutation.SetSlot(i)
 	return cc
 }
 
@@ -39,14 +39,14 @@ func (cc *CharacterCreate) SetName(s string) *CharacterCreate {
 }
 
 // SetGender sets the "gender" field.
-func (cc *CharacterCreate) SetGender(u uint8) *CharacterCreate {
-	cc.mutation.SetGender(u)
+func (cc *CharacterCreate) SetGender(i int) *CharacterCreate {
+	cc.mutation.SetGender(i)
 	return cc
 }
 
 // SetRace sets the "race" field.
-func (cc *CharacterCreate) SetRace(u uint8) *CharacterCreate {
-	cc.mutation.SetRace(u)
+func (cc *CharacterCreate) SetRace(i int) *CharacterCreate {
+	cc.mutation.SetRace(i)
 	return cc
 }
 
@@ -99,14 +99,14 @@ func (cc *CharacterCreate) SetGuild(s string) *CharacterCreate {
 }
 
 // SetKills sets the "kills" field.
-func (cc *CharacterCreate) SetKills(i int16) *CharacterCreate {
+func (cc *CharacterCreate) SetKills(i int) *CharacterCreate {
 	cc.mutation.SetKills(i)
 	return cc
 }
 
 // SetGold sets the "gold" field.
-func (cc *CharacterCreate) SetGold(u uint32) *CharacterCreate {
-	cc.mutation.SetGold(u)
+func (cc *CharacterCreate) SetGold(i int) *CharacterCreate {
+	cc.mutation.SetGold(i)
 	return cc
 }
 
@@ -579,7 +579,7 @@ func (cc *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := cc.mutation.Slot(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldSlot,
 		})
@@ -595,7 +595,7 @@ func (cc *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := cc.mutation.Gender(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldGender,
 		})
@@ -603,7 +603,7 @@ func (cc *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := cc.mutation.Race(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint8,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldRace,
 		})
@@ -643,7 +643,7 @@ func (cc *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := cc.mutation.Kills(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt16,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldKills,
 		})
@@ -651,7 +651,7 @@ func (cc *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := cc.mutation.Gold(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeUint32,
+			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldGold,
 		})

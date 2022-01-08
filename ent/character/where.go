@@ -99,7 +99,7 @@ func Steamid(v uint64) predicate.Character {
 }
 
 // Slot applies equality check predicate on the "slot" field. It's identical to SlotEQ.
-func Slot(v uint8) predicate.Character {
+func Slot(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldSlot), v))
 	})
@@ -113,14 +113,14 @@ func Name(v string) predicate.Character {
 }
 
 // Gender applies equality check predicate on the "gender" field. It's identical to GenderEQ.
-func Gender(v uint8) predicate.Character {
+func Gender(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldGender), v))
 	})
 }
 
 // Race applies equality check predicate on the "race" field. It's identical to RaceEQ.
-func Race(v uint8) predicate.Character {
+func Race(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldRace), v))
 	})
@@ -155,14 +155,14 @@ func Guild(v string) predicate.Character {
 }
 
 // Kills applies equality check predicate on the "kills" field. It's identical to KillsEQ.
-func Kills(v int16) predicate.Character {
+func Kills(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldKills), v))
 	})
 }
 
 // Gold applies equality check predicate on the "gold" field. It's identical to GoldEQ.
-func Gold(v uint32) predicate.Character {
+func Gold(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldGold), v))
 	})
@@ -322,21 +322,21 @@ func SteamidLTE(v uint64) predicate.Character {
 }
 
 // SlotEQ applies the EQ predicate on the "slot" field.
-func SlotEQ(v uint8) predicate.Character {
+func SlotEQ(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldSlot), v))
 	})
 }
 
 // SlotNEQ applies the NEQ predicate on the "slot" field.
-func SlotNEQ(v uint8) predicate.Character {
+func SlotNEQ(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.NEQ(s.C(FieldSlot), v))
 	})
 }
 
 // SlotIn applies the In predicate on the "slot" field.
-func SlotIn(vs ...uint8) predicate.Character {
+func SlotIn(vs ...int) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -353,7 +353,7 @@ func SlotIn(vs ...uint8) predicate.Character {
 }
 
 // SlotNotIn applies the NotIn predicate on the "slot" field.
-func SlotNotIn(vs ...uint8) predicate.Character {
+func SlotNotIn(vs ...int) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -370,28 +370,28 @@ func SlotNotIn(vs ...uint8) predicate.Character {
 }
 
 // SlotGT applies the GT predicate on the "slot" field.
-func SlotGT(v uint8) predicate.Character {
+func SlotGT(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GT(s.C(FieldSlot), v))
 	})
 }
 
 // SlotGTE applies the GTE predicate on the "slot" field.
-func SlotGTE(v uint8) predicate.Character {
+func SlotGTE(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GTE(s.C(FieldSlot), v))
 	})
 }
 
 // SlotLT applies the LT predicate on the "slot" field.
-func SlotLT(v uint8) predicate.Character {
+func SlotLT(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LT(s.C(FieldSlot), v))
 	})
 }
 
 // SlotLTE applies the LTE predicate on the "slot" field.
-func SlotLTE(v uint8) predicate.Character {
+func SlotLTE(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldSlot), v))
 	})
@@ -509,21 +509,21 @@ func NameContainsFold(v string) predicate.Character {
 }
 
 // GenderEQ applies the EQ predicate on the "gender" field.
-func GenderEQ(v uint8) predicate.Character {
+func GenderEQ(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldGender), v))
 	})
 }
 
 // GenderNEQ applies the NEQ predicate on the "gender" field.
-func GenderNEQ(v uint8) predicate.Character {
+func GenderNEQ(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.NEQ(s.C(FieldGender), v))
 	})
 }
 
 // GenderIn applies the In predicate on the "gender" field.
-func GenderIn(vs ...uint8) predicate.Character {
+func GenderIn(vs ...int) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -540,7 +540,7 @@ func GenderIn(vs ...uint8) predicate.Character {
 }
 
 // GenderNotIn applies the NotIn predicate on the "gender" field.
-func GenderNotIn(vs ...uint8) predicate.Character {
+func GenderNotIn(vs ...int) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -557,49 +557,49 @@ func GenderNotIn(vs ...uint8) predicate.Character {
 }
 
 // GenderGT applies the GT predicate on the "gender" field.
-func GenderGT(v uint8) predicate.Character {
+func GenderGT(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GT(s.C(FieldGender), v))
 	})
 }
 
 // GenderGTE applies the GTE predicate on the "gender" field.
-func GenderGTE(v uint8) predicate.Character {
+func GenderGTE(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GTE(s.C(FieldGender), v))
 	})
 }
 
 // GenderLT applies the LT predicate on the "gender" field.
-func GenderLT(v uint8) predicate.Character {
+func GenderLT(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LT(s.C(FieldGender), v))
 	})
 }
 
 // GenderLTE applies the LTE predicate on the "gender" field.
-func GenderLTE(v uint8) predicate.Character {
+func GenderLTE(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldGender), v))
 	})
 }
 
 // RaceEQ applies the EQ predicate on the "race" field.
-func RaceEQ(v uint8) predicate.Character {
+func RaceEQ(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldRace), v))
 	})
 }
 
 // RaceNEQ applies the NEQ predicate on the "race" field.
-func RaceNEQ(v uint8) predicate.Character {
+func RaceNEQ(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.NEQ(s.C(FieldRace), v))
 	})
 }
 
 // RaceIn applies the In predicate on the "race" field.
-func RaceIn(vs ...uint8) predicate.Character {
+func RaceIn(vs ...int) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -616,7 +616,7 @@ func RaceIn(vs ...uint8) predicate.Character {
 }
 
 // RaceNotIn applies the NotIn predicate on the "race" field.
-func RaceNotIn(vs ...uint8) predicate.Character {
+func RaceNotIn(vs ...int) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -633,28 +633,28 @@ func RaceNotIn(vs ...uint8) predicate.Character {
 }
 
 // RaceGT applies the GT predicate on the "race" field.
-func RaceGT(v uint8) predicate.Character {
+func RaceGT(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GT(s.C(FieldRace), v))
 	})
 }
 
 // RaceGTE applies the GTE predicate on the "race" field.
-func RaceGTE(v uint8) predicate.Character {
+func RaceGTE(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GTE(s.C(FieldRace), v))
 	})
 }
 
 // RaceLT applies the LT predicate on the "race" field.
-func RaceLT(v uint8) predicate.Character {
+func RaceLT(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LT(s.C(FieldRace), v))
 	})
 }
 
 // RaceLTE applies the LTE predicate on the "race" field.
-func RaceLTE(v uint8) predicate.Character {
+func RaceLTE(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldRace), v))
 	})
@@ -1105,21 +1105,21 @@ func GuildContainsFold(v string) predicate.Character {
 }
 
 // KillsEQ applies the EQ predicate on the "kills" field.
-func KillsEQ(v int16) predicate.Character {
+func KillsEQ(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldKills), v))
 	})
 }
 
 // KillsNEQ applies the NEQ predicate on the "kills" field.
-func KillsNEQ(v int16) predicate.Character {
+func KillsNEQ(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.NEQ(s.C(FieldKills), v))
 	})
 }
 
 // KillsIn applies the In predicate on the "kills" field.
-func KillsIn(vs ...int16) predicate.Character {
+func KillsIn(vs ...int) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -1136,7 +1136,7 @@ func KillsIn(vs ...int16) predicate.Character {
 }
 
 // KillsNotIn applies the NotIn predicate on the "kills" field.
-func KillsNotIn(vs ...int16) predicate.Character {
+func KillsNotIn(vs ...int) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -1153,49 +1153,49 @@ func KillsNotIn(vs ...int16) predicate.Character {
 }
 
 // KillsGT applies the GT predicate on the "kills" field.
-func KillsGT(v int16) predicate.Character {
+func KillsGT(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GT(s.C(FieldKills), v))
 	})
 }
 
 // KillsGTE applies the GTE predicate on the "kills" field.
-func KillsGTE(v int16) predicate.Character {
+func KillsGTE(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GTE(s.C(FieldKills), v))
 	})
 }
 
 // KillsLT applies the LT predicate on the "kills" field.
-func KillsLT(v int16) predicate.Character {
+func KillsLT(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LT(s.C(FieldKills), v))
 	})
 }
 
 // KillsLTE applies the LTE predicate on the "kills" field.
-func KillsLTE(v int16) predicate.Character {
+func KillsLTE(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldKills), v))
 	})
 }
 
 // GoldEQ applies the EQ predicate on the "gold" field.
-func GoldEQ(v uint32) predicate.Character {
+func GoldEQ(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldGold), v))
 	})
 }
 
 // GoldNEQ applies the NEQ predicate on the "gold" field.
-func GoldNEQ(v uint32) predicate.Character {
+func GoldNEQ(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.NEQ(s.C(FieldGold), v))
 	})
 }
 
 // GoldIn applies the In predicate on the "gold" field.
-func GoldIn(vs ...uint32) predicate.Character {
+func GoldIn(vs ...int) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -1212,7 +1212,7 @@ func GoldIn(vs ...uint32) predicate.Character {
 }
 
 // GoldNotIn applies the NotIn predicate on the "gold" field.
-func GoldNotIn(vs ...uint32) predicate.Character {
+func GoldNotIn(vs ...int) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -1229,28 +1229,28 @@ func GoldNotIn(vs ...uint32) predicate.Character {
 }
 
 // GoldGT applies the GT predicate on the "gold" field.
-func GoldGT(v uint32) predicate.Character {
+func GoldGT(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GT(s.C(FieldGold), v))
 	})
 }
 
 // GoldGTE applies the GTE predicate on the "gold" field.
-func GoldGTE(v uint32) predicate.Character {
+func GoldGTE(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GTE(s.C(FieldGold), v))
 	})
 }
 
 // GoldLT applies the LT predicate on the "gold" field.
-func GoldLT(v uint32) predicate.Character {
+func GoldLT(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LT(s.C(FieldGold), v))
 	})
 }
 
 // GoldLTE applies the LTE predicate on the "gold" field.
-func GoldLTE(v uint32) predicate.Character {
+func GoldLTE(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldGold), v))
 	})
