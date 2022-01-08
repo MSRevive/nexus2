@@ -119,8 +119,6 @@ var (
 	DefaultQuests string
 	// QuestsValidator is a validator for the "quests" field. It is called by the builders before save.
 	QuestsValidator func(string) error
-	// GuildValidator is a validator for the "guild" field. It is called by the builders before save.
-	GuildValidator func(string) error
 	// KillsValidator is a validator for the "kills" field. It is called by the builders before save.
 	KillsValidator func(int) error
 	// GoldValidator is a validator for the "gold" field. It is called by the builders before save.

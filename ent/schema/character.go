@@ -22,13 +22,13 @@ func (Character) Fields() []ent.Field {
 		field.Uint64("steamid").
 			Positive(),
 		field.Int("slot").
-			Positive(),
+			Min(0),
 		field.String("name").
 			NotEmpty(),
 		field.Int("gender").
-			Positive(),
+			Min(0),
 		field.Int("race").
-			Positive(),
+			Min(0),
 		field.String("flags").
 			NotEmpty().
 			Default("{}"),
@@ -38,12 +38,11 @@ func (Character) Fields() []ent.Field {
 		field.String("quests").
 			NotEmpty().
 			Default("{}"),
-		field.String("guild").
-			NotEmpty(),
+		field.String("guild"),
 		field.Int("kills").
-			Positive(),
+			Min(0),
 		field.Int("gold").
-			Positive(),
+			Min(0),
 		field.String("skills").
 			NotEmpty().
 			Default("{}"),
@@ -51,9 +50,9 @@ func (Character) Fields() []ent.Field {
 			NotEmpty().
 			Default("{}"),
 		field.Int("health").
-			Positive(),
+			Min(0),
 		field.Int("mana").
-			Positive(),
+			Min(0),
 		field.String("equipped").
 			NotEmpty().
 			Default("{}"),

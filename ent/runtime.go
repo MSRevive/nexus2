@@ -52,10 +52,6 @@ func init() {
 	character.DefaultQuests = characterDescQuests.Default.(string)
 	// character.QuestsValidator is a validator for the "quests" field. It is called by the builders before save.
 	character.QuestsValidator = characterDescQuests.Validators[0].(func(string) error)
-	// characterDescGuild is the schema descriptor for guild field.
-	characterDescGuild := characterFields[9].Descriptor()
-	// character.GuildValidator is a validator for the "guild" field. It is called by the builders before save.
-	character.GuildValidator = characterDescGuild.Validators[0].(func(string) error)
 	// characterDescKills is the schema descriptor for kills field.
 	characterDescKills := characterFields[10].Descriptor()
 	// character.KillsValidator is a validator for the "kills" field. It is called by the builders before save.

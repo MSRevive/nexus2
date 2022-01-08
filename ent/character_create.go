@@ -424,11 +424,6 @@ func (cc *CharacterCreate) check() error {
 	if _, ok := cc.mutation.Guild(); !ok {
 		return &ValidationError{Name: "guild", err: errors.New(`ent: missing required field "Character.guild"`)}
 	}
-	if v, ok := cc.mutation.Guild(); ok {
-		if err := character.GuildValidator(v); err != nil {
-			return &ValidationError{Name: "guild", err: fmt.Errorf(`ent: validator failed for field "Character.guild": %w`, err)}
-		}
-	}
 	if _, ok := cc.mutation.Kills(); !ok {
 		return &ValidationError{Name: "kills", err: errors.New(`ent: missing required field "Character.kills"`)}
 	}

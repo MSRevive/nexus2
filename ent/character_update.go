@@ -402,11 +402,6 @@ func (cu *CharacterUpdate) check() error {
 			return &ValidationError{Name: "quests", err: fmt.Errorf(`ent: validator failed for field "Character.quests": %w`, err)}
 		}
 	}
-	if v, ok := cu.mutation.Guild(); ok {
-		if err := character.GuildValidator(v); err != nil {
-			return &ValidationError{Name: "guild", err: fmt.Errorf(`ent: validator failed for field "Character.guild": %w`, err)}
-		}
-	}
 	if v, ok := cu.mutation.Kills(); ok {
 		if err := character.KillsValidator(v); err != nil {
 			return &ValidationError{Name: "kills", err: fmt.Errorf(`ent: validator failed for field "Character.kills": %w`, err)}
@@ -1092,11 +1087,6 @@ func (cuo *CharacterUpdateOne) check() error {
 	if v, ok := cuo.mutation.Quests(); ok {
 		if err := character.QuestsValidator(v); err != nil {
 			return &ValidationError{Name: "quests", err: fmt.Errorf(`ent: validator failed for field "Character.quests": %w`, err)}
-		}
-	}
-	if v, ok := cuo.mutation.Guild(); ok {
-		if err := character.GuildValidator(v); err != nil {
-			return &ValidationError{Name: "guild", err: fmt.Errorf(`ent: validator failed for field "Character.guild": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.Kills(); ok {
