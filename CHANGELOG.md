@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.0-rc5
+* Hopefully fixed autocert not working on non default ports.
+
 ## v1.0.0-rc4
 * Added config for HTTP and HTTPS ports
 

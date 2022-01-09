@@ -119,9 +119,7 @@ func main() {
     }
     
     srv.Addr = session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.HttpsPort)
-    srv.TLSConfig = &tls.Config{
-      GetCertificate: certManager.GetCertificate,
-    }
+    srv.TLSConfig = certManager.TLSConfig()
     
     go http.ListenAndServe(session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.HttpPort), certManager.HTTPHandler(nil))
     
