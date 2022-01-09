@@ -79,11 +79,10 @@ func main() {
   
   //variables for web server
   var srv *http.Server
-  address := session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.Port)
   router := mux.NewRouter()
   srv = &http.Server{
     Handler: router,
-    Addr: address,
+    Addr: session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.HttpPort),
     WriteTimeout: 15 * time.Second,
     ReadTimeout: 15 * time.Second,
   }
@@ -119,18 +118,19 @@ func main() {
       Cache: autocert.DirCache("./runtime/certs"),
     }
     
+    srv.Addr = session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.HttpsPort)
     srv.TLSConfig = &tls.Config{
       GetCertificate: certManager.GetCertificate,
     }
     
-    go http.ListenAndServe(":http", certManager.HTTPHandler(nil))
+    go http.ListenAndServe(session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.HttpPort), certManager.HTTPHandler(nil))
     
-    log.Log.Printf("Listening on: %s TLS", address)
+    log.Log.Printf("Listening on: %s TLS", srv.Addr)
     if err := srv.ListenAndServeTLS("", ""); err != nil {
       log.Log.Fatalf("failed to serve over HTTPS: %v", err)
     }
   }else{
-    log.Log.Printf("Listening on: %s", address)
+    log.Log.Printf("Listening on: %s", srv.Addr)
     if err := srv.ListenAndServe(); err != nil {
       log.Log.Fatalf("failed to serve over HTTP: %v", err)
     }

@@ -23,7 +23,8 @@ var (
 type config struct {
   Core struct {
     Address string
-    Port int
+    HttpPort int
+    HttpsPort int
     MaxThreads int
     Graceful time.Duration
     RootPath string
