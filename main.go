@@ -7,7 +7,6 @@ import(
   "context"
   "flag"
   "net/http"
-  "crypto/tls"
 
   "github.com/msrevive/nexus2/session"
   "github.com/msrevive/nexus2/middleware"
