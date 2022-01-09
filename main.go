@@ -17,6 +17,7 @@ import(
   //_ "github.com/msrevive/nexus2/sqlite3"
   
   "github.com/gorilla/mux"
+  "golang.org/x/crypto/acme/autocert"
   _ "github.com/mattn/go-sqlite3"
 )
 
@@ -111,11 +112,19 @@ func main() {
   charc.R.HandleFunc("/{uid}", middleware.Auth(charc.DeleteCharacter)).Methods(http.MethodDelete)
   
   //start the web server
-  if session.Config.TLS.Enable {
-    cert,_ := tls.LoadX509KeyPair(session.Config.TLS.CertFile, session.Config.TLS.KeyFile)
-    srv.TLSConfig = &tls.Config{
-      Certificates: []tls.Certificate{cert},
+  if session.Config.Cert.Enable {
+    certManager := autocert.Manager{
+      Prompt: autocert.AcceptTOS,
+      HostPolicy: autocert.HostWhitelist(session.Config.Cert.Domain),
+      Cache: autocert.DirCache("./runtime/certs"),
     }
+    
+    srv.TLSConfig = &tls.Config{
+      GetCertificate: certManager.GetCertificate,
+    }
+    
+    go http.ListenAndServe(":http", certManager.HTTPHandler(nil))
+    
     log.Log.Printf("Listening on: %s TLS", address)
     if err := srv.ListenAndServeTLS("", ""); err != nil {
       log.Log.Fatalf("failed to serve over HTTPS: %v", err)

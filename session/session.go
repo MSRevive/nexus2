@@ -34,11 +34,9 @@ type config struct {
     MaxRequests int
     MaxAge time.Duration
   }
-  TLS struct {
+  Cert struct {
     Enable bool
-    Port int
-    CertFile string
-    KeyFile string
+    Domain string
   }
   ApiAuth struct {
     EnforceKey bool

@@ -12,9 +12,7 @@ MaxAge = 1 # Max age of ratelimiter bucket in minutes
 
 [TLS]
 Enable = false
-Port = 1337
-CertFile = ""
-KeyFile = ""
+Domain = ""
 
 [ApiAuth]
 EnforceKey = false # Enforce game servers to use API key
