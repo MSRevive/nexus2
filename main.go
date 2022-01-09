@@ -16,6 +16,7 @@ import(
   //_ "github.com/msrevive/nexus2/sqlite3"
   
   "github.com/gorilla/mux"
+  "golang.org/x/crypto/acme"
   "golang.org/x/crypto/acme/autocert"
   _ "github.com/mattn/go-sqlite3"
 )
@@ -81,7 +82,7 @@ func main() {
   router := mux.NewRouter()
   srv = &http.Server{
     Handler: router,
-    Addr: session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.HttpPort),
+    Addr: session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.Port),
     WriteTimeout: 15 * time.Second,
     ReadTimeout: 15 * time.Second,
   }
@@ -117,10 +118,14 @@ func main() {
       Cache: autocert.DirCache("./runtime/certs"),
     }
     
-    srv.Addr = session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.HttpsPort)
-    srv.TLSConfig = certManager.TLSConfig()
+    srv.TLSConfig.GetCertificate = certManager.GetCertificate
+    srv.TLSConfig.NextProtos = append(srv.TLSConfig.NextProtos, acme.ALPNProto) // enable tls-alpn ACME challenges
     
-    go http.ListenAndServe(session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.HttpPort), certManager.HTTPHandler(nil))
+    go func() {
+      if err := http.ListenAndServe(":http", certManager.HTTPHandler(nil)); err != nil {
+        log.Log.Fatalf("failed to serve autocert server: %v", err)
+      }
+    }()
     
     log.Log.Printf("Listening on: %s TLS", srv.Addr)
     if err := srv.ListenAndServeTLS("", ""); err != nil {
