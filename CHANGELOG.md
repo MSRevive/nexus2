@@ -5,6 +5,7 @@
 * Auto cert http server will now error out if it fails.
 * Enabled tls-alpn ACME challenges for TLS.
 * Switched from TOML to INI config format because it's more standard.
+* Set control headers to further secure the server.
 
 ## v1.0.0-rc5
 * Hopefully fixed autocert not working on non default ports.

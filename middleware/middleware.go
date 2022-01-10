@@ -16,61 +16,71 @@ var (
   globalLimiter *rate.Limiter
 )
 
-func getIP(req *http.Request) string {
-  ip := req.Header.Get("X_Real_IP")
+func getIP(r *http.Request) string {
+  ip := r.Header.Get("X_Real_IP")
   if ip == "" {
-    ips := strings.Split(req.Header.Get("X_Forwarded_For"), ", ")
+    ips := strings.Split(r.Header.Get("X_Forwarded_For"), ", ")
     if ips[0] != "" {
        return ips[0]
     }
 
-    ip,_,_ = net.SplitHostPort(req.RemoteAddr)
+    ip,_,_ = net.SplitHostPort(r.RemoteAddr)
     return ip
   }
 
   return ip
 }
 
+func setControlHeaders(w http.ResponseWriter) {
+  w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
+  // Maximum age allowable under Chromium v76 is 2 hours, so just use that since
+  // anything higher will be ignored (even if other browsers do allow higher values).
+  //
+  // @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age#Directives
+  w.Header().Set("Access-Control-Max-Age", "7200")
+}
+
 func Log(next http.Handler) http.Handler {
-  return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    setControlHeaders(w) //best place to set control headers?
     start := time.Now()
-    next.ServeHTTP(res, req)
-    log.Log.Printf("%s %s from %s (%v)", req.Method, req.RequestURI, getIP(req), time.Since(start))
+    next.ServeHTTP(w, r)
+    log.Log.Printf("%s %s from %s (%v)", r.Method, r.RequestURI, getIP(r), time.Since(start))
   })
 }
 
 func PanicRecovery(next http.Handler) http.Handler {
-  return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     defer func() {
       if panic := recover(); panic != nil {
-        http.Error(res, http.StatusText(501), http.StatusInternalServerError)
+        http.Error(w, http.StatusText(501), http.StatusInternalServerError)
         log.Log.Errorln("501: We have encountered an error with the last request.")
         log.Log.Errorf("501: Error: %s", panic.(error).Error())
         log.Log.Errorf(string(debug.Stack()))
       }
     }()
-    next.ServeHTTP(res, req)
+    next.ServeHTTP(w, r)
   })
 }
 
 func Auth(next http.HandlerFunc) http.HandlerFunc {
-  return func(res http.ResponseWriter, req *http.Request) {
-    ip := getIP(req)
+  return func(w http.ResponseWriter, r *http.Request) {
+    ip := getIP(r)
     
     //IP Auth
     if session.Config.ApiAuth.EnforceIP {
       if _,ok := session.IPList[ip]; !ok {
         log.Log.Printf("%s Is not authorized.", ip)
-        http.Error(res, http.StatusText(401), http.StatusUnauthorized)
+        http.Error(w, http.StatusText(401), http.StatusUnauthorized)
         return
       }
     }
     
     //API Key Auth
     if session.Config.ApiAuth.EnforceKey {
-      if req.Header.Get("Authorization") != session.Config.ApiAuth.Key {
+      if r.Header.Get("Authorization") != session.Config.ApiAuth.Key {
         log.Log.Printf("%s failed API key check.", ip)
-        http.Error(res, http.StatusText(401), http.StatusUnauthorized)
+        http.Error(w, http.StatusText(401), http.StatusUnauthorized)
         return
       }
     }
@@ -84,12 +94,12 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
       globalLimiter.CheckTime()
       if globalLimiter.IsAllowed() == false {
         log.Log.Println("Too many global requests sent.")
-        http.Error(res, http.StatusText(429), http.StatusTooManyRequests)
+        http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
         return
       }
     }
 
-    next(res, req)
+    next(w, r)
     return
   }
 }

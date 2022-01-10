@@ -13,7 +13,6 @@ import(
   "github.com/msrevive/nexus2/controller"
   "github.com/msrevive/nexus2/log"
   "github.com/msrevive/nexus2/ent"
-  //_ "github.com/msrevive/nexus2/sqlite3"
   
   "github.com/gorilla/mux"
   "golang.org/x/crypto/acme"
