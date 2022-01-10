@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.0-rc7
+### Fixed
+* Fixes TLS error when enabled.
+
 ## v1.0.0-rc6
 * Reverted config for HTTP and HTTPS ports, cause it is not needed.
 * Auto cert http server will now error out if it fails.

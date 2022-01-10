@@ -8,6 +8,7 @@ import(
   "flag"
   "fmt"
   "net/http"
+  "crypto/tls"
 
   "github.com/msrevive/nexus2/session"
   "github.com/msrevive/nexus2/middleware"
@@ -102,9 +103,27 @@ func main() {
     Addr: session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.Port),
     WriteTimeout: 15 * time.Second,
     ReadTimeout: 15 * time.Second,
+    // DefaultTLSConfig sets sane defaults to use when configuring the internal
+    // webserver to listen for public connections.
+    //
+    // @see https://blog.cloudflare.com/exposing-go-on-the-internet
+    // credit to https://github.com/pterodactyl/wings/blob/develop/config/config.go
+    TLSConfig: &tls.Config{
+      NextProtos: []string{"h2", "http/1.1"},
+      CipherSuites: []uint16{
+    		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+    		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+    		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+    		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+    		tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+    		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+    	},
+      PreferServerCipherSuites: true,
+      MinVersion: tls.VersionTLS12,
+      MaxVersion: tls.VersionTLS13,
+      CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+    },
   }
-  ctx, cancel := context.WithTimeout(context.Background(), session.Config.Core.Graceful * time.Second)
-  defer cancel()
   
   //middleware
   router.Use(middleware.PanicRecovery)
@@ -130,19 +149,20 @@ func main() {
   charc.R.HandleFunc("/{uid}", middleware.Auth(charc.PutCharacter)).Methods(http.MethodPut)
   charc.R.HandleFunc("/{uid}", middleware.Auth(charc.DeleteCharacter)).Methods(http.MethodDelete)
   
-  //start the web server
   if session.Config.Cert.Enable {
-    certManager := autocert.Manager{
+    cm := autocert.Manager{
       Prompt: autocert.AcceptTOS,
       HostPolicy: autocert.HostWhitelist(session.Config.Cert.Domain),
       Cache: autocert.DirCache("./runtime/certs"),
     }
     
-    srv.TLSConfig.GetCertificate = certManager.GetCertificate
-    srv.TLSConfig.NextProtos = append(srv.TLSConfig.NextProtos, acme.ALPNProto) // enable tls-alpn ACME challenges
+    srv.TLSConfig = &tls.Config{
+      GetCertificate: cm.GetCertificate,
+      NextProtos: append(srv.TLSConfig.NextProtos, acme.ALPNProto), // enable tls-alpn ACME challenges
+    }
     
     go func() {
-      if err := http.ListenAndServe(":http", certManager.HTTPHandler(nil)); err != nil {
+      if err := http.ListenAndServe(":http", cm.HTTPHandler(nil)); err != nil {
         log.Log.Fatalf("failed to serve autocert server: %v", err)
       }
     }()
@@ -157,6 +177,4 @@ func main() {
       log.Log.Fatalf("failed to serve over HTTP: %v", err)
     }
   }
-  
-  defer srv.Shutdown(ctx)
 }
