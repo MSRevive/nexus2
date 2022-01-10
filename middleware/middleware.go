@@ -59,6 +59,24 @@ func PanicRecovery(next http.Handler) http.Handler {
         log.Log.Errorf(string(debug.Stack()))
       }
     }()
+    
+    next.ServeHTTP(w, r)
+  })
+}
+
+func RateLimit(next http.Handler) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    if globalLimiter == nil {
+      globalLimiter = rate.NewLimiter(1, session.Config.RateLimit.MaxRequests, session.Config.RateLimit.MaxAge, 0)
+    }
+
+    globalLimiter.CheckTime()
+    if globalLimiter.IsAllowed() == false {
+      log.Log.Println("Received too many requests.")
+      http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
+      return
+    }
+    
     next.ServeHTTP(w, r)
   })
 }
@@ -81,20 +99,6 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
       if r.Header.Get("Authorization") != session.Config.ApiAuth.Key {
         log.Log.Printf("%s failed API key check.", ip)
         http.Error(w, http.StatusText(401), http.StatusUnauthorized)
-        return
-      }
-    }
-
-    if session.Config.RateLimit.Enable {
-      if globalLimiter == nil {
-        log.Log.Debugln("Creating global rate limiter.")
-        globalLimiter = rate.NewLimiter(1, session.Config.RateLimit.MaxRequests, session.Config.RateLimit.MaxAge, 0)
-      }
-  
-      globalLimiter.CheckTime()
-      if globalLimiter.IsAllowed() == false {
-        log.Log.Println("Too many global requests sent.")
-        http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
         return
       }
     }

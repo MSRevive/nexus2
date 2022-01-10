@@ -89,8 +89,11 @@ func main() {
   defer cancel()
   
   //middleware
-  router.Use(middleware.Log)
   router.Use(middleware.PanicRecovery)
+  router.Use(middleware.Log)
+  if session.Config.RateLimit.Enable {
+    router.Use(middleware.RateLimit)
+  }
   
   //api routes
   apic := controller.New(router.PathPrefix(session.Config.Core.RootPath).Subrouter())
