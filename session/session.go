@@ -7,7 +7,7 @@ import(
 
   "github.com/msrevive/nexus2/ent"
 
-  "github.com/BurntSushi/toml"
+  "gopkg.in/ini.v1"
 )
 
 var (
@@ -59,11 +59,10 @@ type config struct {
 }
 
 func LoadConfig(path string) error {
-  _, err := toml.DecodeFile(path, &Config);
-  if err != nil {
+  if err := ini.MapTo(&Config, path); err != nil {
     return err
   }
-
+  
   return nil
 }
 
