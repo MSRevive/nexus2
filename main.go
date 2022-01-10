@@ -24,17 +24,15 @@ import(
 func initPrint() {
   fmt.Printf(`
     _   __                    ___ 
-   / | / /__  _  ____  ______|__ \
+   / | / /__  _  ____  Nexus2|__ \
   /  |/ / _ \| |/_/ / / / ___/_/ /
  / /|  /  __/>  </ /_/ (__  ) __/ 
 /_/ |_/\___/_/|_|\__,_/____/____/ 
-                                  
+                                
 Copyright © %d, Team MSRebirth
 
 Website: https://msrebirth.net/
-License: https://github.com/MSRevive/nexus2/blob/main/LICENSE`, time.Now().Year())
-  
-  fmt.Print("\n\n")
+License: https://github.com/MSRevive/nexus2/blob/main/LICENSE %s`, time.Now().Year(), "\n\n")
 }
 
 func main() {
