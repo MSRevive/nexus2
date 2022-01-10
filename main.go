@@ -6,6 +6,7 @@ import(
   "strconv"
   "context"
   "flag"
+  "fmt"
   "net/http"
 
   "github.com/msrevive/nexus2/session"
@@ -20,6 +21,22 @@ import(
   _ "github.com/mattn/go-sqlite3"
 )
 
+func initPrint() {
+  fmt.Printf(`
+    _   __                    ___ 
+   / | / /__  _  ____  ______|__ \
+  /  |/ / _ \| |/_/ / / / ___/_/ /
+ / /|  /  __/>  </ /_/ (__  ) __/ 
+/_/ |_/\___/_/|_|\__,_/____/____/ 
+                                  
+Copyright © %d, Team MSRebirth
+
+Website: https://msrebirth.net/
+License: https://github.com/MSRevive/nexus2/blob/main/LICENSE`, time.Now().Year())
+  
+  fmt.Print("\n\n")
+}
+
 func main() {
   var cdir string
   flag.StringVar(&cdir, "cfile", "./runtime/config.toml", "Where to load the config file.")
@@ -29,6 +46,9 @@ func main() {
   if err := session.LoadConfig(cdir); err != nil {
     panic(err)
   }
+  
+  //initial print
+  initPrint()
   
   //Initiate logging
   log.InitLogging("server.log", session.Config.Log.Dir, session.Config.Log.Level)
