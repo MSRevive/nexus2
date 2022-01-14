@@ -2,6 +2,7 @@ package session
 
 import(
   "time"
+  "sync"
   "encoding/json"
   "io/ioutil"
 
@@ -16,8 +17,11 @@ var (
   Dbg bool
   
   IPList map[string]bool
-  BanList map[uint64]bool
+  IPListMutex = new(sync.RWMutex)
+  BanList map[string]bool
+  BanListMutex = new(sync.RWMutex)
   MapList map[string]uint32
+  MapListMutex = new(sync.RWMutex)
 )
 
 type config struct {
@@ -73,7 +77,9 @@ func LoadIPList(path string) error {
     return err
   }
   
+  IPListMutex.Lock()
   _ = json.Unmarshal([]byte(file), &IPList)
+  IPListMutex.Unlock()
   
   return nil
 }
@@ -84,7 +90,9 @@ func LoadMapList(path string) error {
     return err
   }
   
+  MapListMutex.Lock()
   _ = json.Unmarshal([]byte(file), &MapList)
+  MapListMutex.Unlock()
   
   return nil
 }
@@ -95,7 +103,9 @@ func LoadBanList(path string) error {
     return err
   }
   
+  BanListMutex.Lock()
   _ = json.Unmarshal([]byte(file), &BanList)
+  BanListMutex.Unlock()
   
   return nil
 }

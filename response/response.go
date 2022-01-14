@@ -13,7 +13,7 @@ type response struct {
 }
 
 type responseResult struct {
-	result bool
+	result bool `json:"result"`
 }
 
 func Raw(w http.ResponseWriter, status bool, code int, err error, data interface{}) {
@@ -37,8 +37,7 @@ func OK(w http.ResponseWriter, data interface{}) {
 }
 
 func Result(w http.ResponseWriter, b bool) {
-	resp := responseResult{result: b}
-	Raw(w, true, http.StatusOK, nil, resp)
+	Raw(w, true, http.StatusOK, nil, b)
 }
 
 func BadRequest(w http.ResponseWriter, err error) {

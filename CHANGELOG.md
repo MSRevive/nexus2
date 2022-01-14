@@ -8,6 +8,8 @@
 ### Fixed
 * Fixes log rotate not working.
 * Fixes log not appending when resuming log file.
+* Concurrency support for lists.
+* Fixes api/v1 endpoints not returning the result.
 
 ## v1.0.0-rc7
 ### Fixed

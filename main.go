@@ -38,12 +38,12 @@ License: https://github.com/MSRevive/nexus2/blob/main/LICENSE %s`, time.Now().Ye
 }
 
 func main() {
-  var cdir string
-  flag.StringVar(&cdir, "cfile", "./runtime/config.toml", "Where to load the config file.")
+  var cfile string
+  flag.StringVar(&cfile, "cfile", "./runtime/config.toml", "Where to load the config file.")
   flag.BoolVar(&session.Dbg, "dbg", false, "Run with debug mode.")
   flag.Parse()
   
-  if err := session.LoadConfig(cdir); err != nil {
+  if err := session.LoadConfig(cfile); err != nil {
     panic(err)
   }
   
