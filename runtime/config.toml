@@ -31,3 +31,4 @@ SCHash = 125454
 [Log]
 Level = "debug"
 Dir = "./runtime/logs/" # Where should we keep the bot log file.
+ExpireTime = "24h"

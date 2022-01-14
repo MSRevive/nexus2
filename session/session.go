@@ -55,6 +55,7 @@ type config struct {
   Log struct {
     Level string
     Dir string
+    ExpireTime string
   }
 }
 

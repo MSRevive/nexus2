@@ -32,8 +32,9 @@ func initPrint() {
                                 
 Copyright © %d, Team MSRebirth
 
+Version: %s
 Website: https://msrebirth.net/
-License: https://github.com/MSRevive/nexus2/blob/main/LICENSE %s`, time.Now().Year(), "\n\n")
+License: https://github.com/MSRevive/nexus2/blob/main/LICENSE %s`, time.Now().Year(), session.Version, "\n\n")
 }
 
 func main() {
@@ -50,7 +51,7 @@ func main() {
   initPrint()
   
   //Initiate logging
-  log.InitLogging("server.log", session.Config.Log.Dir, session.Config.Log.Level)
+  log.InitLogging("server.log", session.Config.Log.Dir, session.Config.Log.Level, session.Config.Log.ExpireTime)
   
   if session.Dbg {
     log.Log.Warnln("Running in Debug mode, do not use in production!")

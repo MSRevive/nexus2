@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.0.0-rc8
+### Added
+* Adds ExpireTime to config so you can modify when the log rotates.
+* Adds Version to program start so you know what version you're running.
+
+### Fixed
+* Fixes log rotate not working.
+* Fixes log not appending when resuming log file.
+
 ## v1.0.0-rc7
 ### Fixed
 * Fixes TLS error when enabled.

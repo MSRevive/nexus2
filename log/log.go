@@ -17,11 +17,13 @@ var (
   Log *auralog.Logger
 )
 
-func InitLogging(filename string, dir string, level string) {
+func InitLogging(filename string, dir string, level string, expire string) {
+  ex, _ := time.ParseDuration(expire)
+  
   file := &auralog.RotateWriter{
     Dir: dir,
     Filename: filename,
-    ExTime: 24 * time.Hour,
+    ExTime: ex,
     MaxSize: 5 * auralog.Megabyte,
   }
 
