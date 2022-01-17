@@ -86,10 +86,7 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
     ip := getIP(r)
     
     //IP Auth
-    if session.Config.ApiAuth.EnforceIP {
-      session.IPListMutex.RLock()
-      defer session.IPListMutex.RUnlock()
-      
+    if session.Config.ApiAuth.EnforceIP {      
       if _,ok := session.IPList[ip]; !ok {
         log.Log.Printf("%s Is not authorized.", ip)
         http.Error(w, http.StatusText(401), http.StatusUnauthorized)

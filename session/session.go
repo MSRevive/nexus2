@@ -17,11 +17,11 @@ var (
   Dbg bool
   
   IPList map[string]bool
-  IPListMutex = new(sync.RWMutex)
+  iPListMutex = new(sync.RWMutex)
   BanList map[string]bool
-  BanListMutex = new(sync.RWMutex)
+  banListMutex = new(sync.RWMutex)
   MapList map[string]uint32
-  MapListMutex = new(sync.RWMutex)
+  mapListMutex = new(sync.RWMutex)
 )
 
 type config struct {
@@ -77,9 +77,9 @@ func LoadIPList(path string) error {
     return err
   }
   
-  IPListMutex.Lock()
+  iPListMutex.Lock()
   _ = json.Unmarshal([]byte(file), &IPList)
-  IPListMutex.Unlock()
+  iPListMutex.Unlock()
   
   return nil
 }
@@ -90,9 +90,9 @@ func LoadMapList(path string) error {
     return err
   }
   
-  MapListMutex.Lock()
+  mapListMutex.Lock()
   _ = json.Unmarshal([]byte(file), &MapList)
-  MapListMutex.Unlock()
+  mapListMutex.Unlock()
   
   return nil
 }
@@ -103,9 +103,9 @@ func LoadBanList(path string) error {
     return err
   }
   
-  BanListMutex.Lock()
+  banListMutex.Lock()
   _ = json.Unmarshal([]byte(file), &BanList)
-  BanListMutex.Unlock()
+  banListMutex.Unlock()
   
   return nil
 }

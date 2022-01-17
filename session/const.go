@@ -1,3 +1,3 @@
 package session
 
-const Version = "v1.0.0-rc8"
+const Version = "v1.0.0-rc9"

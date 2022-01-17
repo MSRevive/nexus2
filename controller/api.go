@@ -12,9 +12,6 @@ import (
 
 //GET map/{name}/{hash}
 func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
-  session.MapListMutex.RLock()
-  defer session.MapListMutex.RUnlock()
-  
   if !session.Config.Verify.EnforceMap {
     response.Result(w, true)
     return
@@ -40,9 +37,6 @@ func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
 //GET ban/{steamid}
 //in this case false means player isn't banned
 func (c *controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
-  session.BanListMutex.RLock()
-  defer session.BanListMutex.RUnlock()
-  
   if !session.Config.Verify.EnforceBan {
     response.Result(w, false)
     return
