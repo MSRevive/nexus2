@@ -1,8 +1,10 @@
 package response
 
 import (
-	"encoding/json"
+	//"encoding/json"
 	"net/http"
+	
+	"github.com/goccy/go-json"
 )
 
 type response struct {

@@ -3,7 +3,7 @@ package controller
 import (
   "strconv"
   "net/http"
-  "encoding/json"
+  //"encoding/json"
   
   "github.com/msrevive/nexus2/response"
   "github.com/msrevive/nexus2/service"
@@ -12,6 +12,7 @@ import (
   
   "github.com/google/uuid"
   "github.com/gorilla/mux"
+  "github.com/goccy/go-json"
 )
 
 //GET /character/

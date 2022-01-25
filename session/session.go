@@ -3,12 +3,13 @@ package session
 import(
   "time"
   "sync"
-  "encoding/json"
+  //"encoding/json"
   "io/ioutil"
 
   "github.com/msrevive/nexus2/ent"
 
   "gopkg.in/ini.v1"
+  "github.com/goccy/go-json"
 )
 
 var (
