@@ -29,7 +29,7 @@ func initPrint() {
   /  |/ / _ \| |/_/ / / / ___/_/ /
  / /|  /  __/>  </ /_/ (__  ) __/ 
 /_/ |_/\___/_/|_|\__,_/____/____/ 
-                                
+
 Copyright © %d, Team MSRebirth
 
 Version: %s
@@ -156,18 +156,18 @@ func main() {
       HostPolicy: autocert.HostWhitelist(session.Config.Cert.Domain),
       Cache: autocert.DirCache("./runtime/certs"),
     }
-    
+  
     srv.TLSConfig = &tls.Config{
       GetCertificate: cm.GetCertificate,
       NextProtos: append(srv.TLSConfig.NextProtos, acme.ALPNProto), // enable tls-alpn ACME challenges
     }
-    
+  
     go func() {
       if err := http.ListenAndServe(":http", cm.HTTPHandler(nil)); err != nil {
         log.Log.Fatalf("failed to serve autocert server: %v", err)
       }
     }()
-    
+  
     log.Log.Printf("Listening on: %s TLS", srv.Addr)
     if err := srv.ListenAndServeTLS("", ""); err != nil {
       log.Log.Fatalf("failed to serve over HTTPS: %v", err)

@@ -238,6 +238,14 @@ func (cc *CharacterCreate) SetID(u uuid.UUID) *CharacterCreate {
 	return cc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (cc *CharacterCreate) SetNillableID(u *uuid.UUID) *CharacterCreate {
+	if u != nil {
+		cc.SetID(*u)
+	}
+	return cc
+}
+
 // Mutation returns the CharacterMutation object of the builder.
 func (cc *CharacterCreate) Mutation() *CharacterMutation {
 	return cc.mutation

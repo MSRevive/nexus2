@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.0-rc9
+### Changes
+* Updated auralog and entgo dependencies to the latest version
+
 ## v1.0.0-rc8
 ### Added
 * Adds ExpireTime to config so you can modify when the log rotates.

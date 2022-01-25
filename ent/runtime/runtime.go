@@ -5,6 +5,6 @@ package runtime
 // The schema-stitching logic is generated in github.com/msrevive/nexus2/ent/runtime.go
 
 const (
-	Version = "v0.9.2-0.20220105141028-f5fed28782e1"            // Version of ent codegen.
-	Sum     = "h1:U5bEkHER6p/ASubD9//uOudoEQ6Jz3MENVAjrF1RX9U=" // Sum of ent codegen.
+	Version = "v0.10.1-0.20220123202337-898991ac7981"           // Version of ent codegen.
+	Sum     = "h1:lAmFrIABVjMnHpzVPDuhMKr9RrG+e6QMQtZiVudpC2M=" // Sum of ent codegen.
 )
