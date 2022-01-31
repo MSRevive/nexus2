@@ -26,8 +26,8 @@ func (Character) Fields() []ent.Field {
 			NotEmpty(),
 		field.Int("gender").
 			Min(0),
-		field.Int("race").
-			Min(0),
+		field.String("race").
+			NotEmpty(),
 		field.String("flags").
 			NotEmpty().
 			Default("{}"),

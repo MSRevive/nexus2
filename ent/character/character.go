@@ -104,7 +104,7 @@ var (
 	// GenderValidator is a validator for the "gender" field. It is called by the builders before save.
 	GenderValidator func(int) error
 	// RaceValidator is a validator for the "race" field. It is called by the builders before save.
-	RaceValidator func(int) error
+	RaceValidator func(string) error
 	// DefaultFlags holds the default value on creation for the "flags" field.
 	DefaultFlags string
 	// FlagsValidator is a validator for the "flags" field. It is called by the builders before save.

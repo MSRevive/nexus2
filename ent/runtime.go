@@ -29,7 +29,7 @@ func init() {
 	// characterDescRace is the schema descriptor for race field.
 	characterDescRace := characterFields[5].Descriptor()
 	// character.RaceValidator is a validator for the "race" field. It is called by the builders before save.
-	character.RaceValidator = characterDescRace.Validators[0].(func(int) error)
+	character.RaceValidator = characterDescRace.Validators[0].(func(string) error)
 	// characterDescFlags is the schema descriptor for flags field.
 	characterDescFlags := characterFields[6].Descriptor()
 	// character.DefaultFlags holds the default value on creation for the flags field.

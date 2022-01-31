@@ -39,8 +39,7 @@ type CharacterMutation struct {
 	name          *string
 	gender        *int
 	addgender     *int
-	race          *int
-	addrace       *int
+	race          *string
 	flags         *string
 	quickslots    *string
 	quests        *string
@@ -357,13 +356,12 @@ func (m *CharacterMutation) ResetGender() {
 }
 
 // SetRace sets the "race" field.
-func (m *CharacterMutation) SetRace(i int) {
-	m.race = &i
-	m.addrace = nil
+func (m *CharacterMutation) SetRace(s string) {
+	m.race = &s
 }
 
 // Race returns the value of the "race" field in the mutation.
-func (m *CharacterMutation) Race() (r int, exists bool) {
+func (m *CharacterMutation) Race() (r string, exists bool) {
 	v := m.race
 	if v == nil {
 		return
@@ -374,7 +372,7 @@ func (m *CharacterMutation) Race() (r int, exists bool) {
 // OldRace returns the old "race" field's value of the Character entity.
 // If the Character object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldRace(ctx context.Context) (v int, err error) {
+func (m *CharacterMutation) OldRace(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRace is only allowed on UpdateOne operations")
 	}
@@ -388,28 +386,9 @@ func (m *CharacterMutation) OldRace(ctx context.Context) (v int, err error) {
 	return oldValue.Race, nil
 }
 
-// AddRace adds i to the "race" field.
-func (m *CharacterMutation) AddRace(i int) {
-	if m.addrace != nil {
-		*m.addrace += i
-	} else {
-		m.addrace = &i
-	}
-}
-
-// AddedRace returns the value that was added to the "race" field in this mutation.
-func (m *CharacterMutation) AddedRace() (r int, exists bool) {
-	v := m.addrace
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
 // ResetRace resets all changes to the "race" field.
 func (m *CharacterMutation) ResetRace() {
 	m.race = nil
-	m.addrace = nil
 }
 
 // SetFlags sets the "flags" field.
@@ -1333,7 +1312,7 @@ func (m *CharacterMutation) SetField(name string, value ent.Value) error {
 		m.SetGender(v)
 		return nil
 	case character.FieldRace:
-		v, ok := value.(int)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -1472,9 +1451,6 @@ func (m *CharacterMutation) AddedFields() []string {
 	if m.addgender != nil {
 		fields = append(fields, character.FieldGender)
 	}
-	if m.addrace != nil {
-		fields = append(fields, character.FieldRace)
-	}
 	if m.addkills != nil {
 		fields = append(fields, character.FieldKills)
 	}
@@ -1499,8 +1475,6 @@ func (m *CharacterMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedSlot()
 	case character.FieldGender:
 		return m.AddedGender()
-	case character.FieldRace:
-		return m.AddedRace()
 	case character.FieldKills:
 		return m.AddedKills()
 	case character.FieldGold:
@@ -1531,13 +1505,6 @@ func (m *CharacterMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddGender(v)
-		return nil
-	case character.FieldRace:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddRace(v)
 		return nil
 	case character.FieldKills:
 		v, ok := value.(int)

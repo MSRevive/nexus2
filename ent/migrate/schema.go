@@ -15,7 +15,7 @@ var (
 		{Name: "slot", Type: field.TypeInt},
 		{Name: "name", Type: field.TypeString},
 		{Name: "gender", Type: field.TypeInt},
-		{Name: "race", Type: field.TypeInt},
+		{Name: "race", Type: field.TypeString},
 		{Name: "flags", Type: field.TypeString, Default: "{}"},
 		{Name: "quickslots", Type: field.TypeString, Default: "{}"},
 		{Name: "quests", Type: field.TypeString, Default: "{}"},

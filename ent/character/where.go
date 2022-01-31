@@ -120,7 +120,7 @@ func Gender(v int) predicate.Character {
 }
 
 // Race applies equality check predicate on the "race" field. It's identical to RaceEQ.
-func Race(v int) predicate.Character {
+func Race(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldRace), v))
 	})
@@ -620,21 +620,21 @@ func GenderLTE(v int) predicate.Character {
 }
 
 // RaceEQ applies the EQ predicate on the "race" field.
-func RaceEQ(v int) predicate.Character {
+func RaceEQ(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldRace), v))
 	})
 }
 
 // RaceNEQ applies the NEQ predicate on the "race" field.
-func RaceNEQ(v int) predicate.Character {
+func RaceNEQ(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.NEQ(s.C(FieldRace), v))
 	})
 }
 
 // RaceIn applies the In predicate on the "race" field.
-func RaceIn(vs ...int) predicate.Character {
+func RaceIn(vs ...string) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -651,7 +651,7 @@ func RaceIn(vs ...int) predicate.Character {
 }
 
 // RaceNotIn applies the NotIn predicate on the "race" field.
-func RaceNotIn(vs ...int) predicate.Character {
+func RaceNotIn(vs ...string) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -668,30 +668,65 @@ func RaceNotIn(vs ...int) predicate.Character {
 }
 
 // RaceGT applies the GT predicate on the "race" field.
-func RaceGT(v int) predicate.Character {
+func RaceGT(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GT(s.C(FieldRace), v))
 	})
 }
 
 // RaceGTE applies the GTE predicate on the "race" field.
-func RaceGTE(v int) predicate.Character {
+func RaceGTE(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.GTE(s.C(FieldRace), v))
 	})
 }
 
 // RaceLT applies the LT predicate on the "race" field.
-func RaceLT(v int) predicate.Character {
+func RaceLT(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LT(s.C(FieldRace), v))
 	})
 }
 
 // RaceLTE applies the LTE predicate on the "race" field.
-func RaceLTE(v int) predicate.Character {
+func RaceLTE(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldRace), v))
+	})
+}
+
+// RaceContains applies the Contains predicate on the "race" field.
+func RaceContains(v string) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldRace), v))
+	})
+}
+
+// RaceHasPrefix applies the HasPrefix predicate on the "race" field.
+func RaceHasPrefix(v string) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldRace), v))
+	})
+}
+
+// RaceHasSuffix applies the HasSuffix predicate on the "race" field.
+func RaceHasSuffix(v string) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldRace), v))
+	})
+}
+
+// RaceEqualFold applies the EqualFold predicate on the "race" field.
+func RaceEqualFold(v string) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldRace), v))
+	})
+}
+
+// RaceContainsFold applies the ContainsFold predicate on the "race" field.
+func RaceContainsFold(v string) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldRace), v))
 	})
 }
 

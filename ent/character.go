@@ -25,7 +25,7 @@ type Character struct {
 	// Gender holds the value of the "gender" field.
 	Gender int `json:"gender,omitempty"`
 	// Race holds the value of the "race" field.
-	Race int `json:"race,omitempty"`
+	Race string `json:"race,omitempty"`
 	// Flags holds the value of the "flags" field.
 	Flags string `json:"flags,omitempty"`
 	// Quickslots holds the value of the "quickslots" field.
@@ -67,9 +67,9 @@ func (*Character) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case character.FieldSlot, character.FieldGender, character.FieldRace, character.FieldKills, character.FieldGold, character.FieldHealth, character.FieldMana:
+		case character.FieldSlot, character.FieldGender, character.FieldKills, character.FieldGold, character.FieldHealth, character.FieldMana:
 			values[i] = new(sql.NullInt64)
-		case character.FieldSteamid, character.FieldName, character.FieldFlags, character.FieldQuickslots, character.FieldQuests, character.FieldGuild, character.FieldSkills, character.FieldPets, character.FieldEquipped, character.FieldLefthand, character.FieldRighthand, character.FieldSpells, character.FieldSpellbook, character.FieldBags, character.FieldSheaths:
+		case character.FieldSteamid, character.FieldName, character.FieldRace, character.FieldFlags, character.FieldQuickslots, character.FieldQuests, character.FieldGuild, character.FieldSkills, character.FieldPets, character.FieldEquipped, character.FieldLefthand, character.FieldRighthand, character.FieldSpells, character.FieldSpellbook, character.FieldBags, character.FieldSheaths:
 			values[i] = new(sql.NullString)
 		case character.FieldID:
 			values[i] = new(uuid.UUID)
@@ -119,10 +119,10 @@ func (c *Character) assignValues(columns []string, values []interface{}) error {
 				c.Gender = int(value.Int64)
 			}
 		case character.FieldRace:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field race", values[i])
 			} else if value.Valid {
-				c.Race = int(value.Int64)
+				c.Race = value.String
 			}
 		case character.FieldFlags:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -263,7 +263,7 @@ func (c *Character) String() string {
 	builder.WriteString(", gender=")
 	builder.WriteString(fmt.Sprintf("%v", c.Gender))
 	builder.WriteString(", race=")
-	builder.WriteString(fmt.Sprintf("%v", c.Race))
+	builder.WriteString(c.Race)
 	builder.WriteString(", flags=")
 	builder.WriteString(c.Flags)
 	builder.WriteString(", quickslots=")

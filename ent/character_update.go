@@ -66,15 +66,8 @@ func (cu *CharacterUpdate) AddGender(i int) *CharacterUpdate {
 }
 
 // SetRace sets the "race" field.
-func (cu *CharacterUpdate) SetRace(i int) *CharacterUpdate {
-	cu.mutation.ResetRace()
-	cu.mutation.SetRace(i)
-	return cu
-}
-
-// AddRace adds i to the "race" field.
-func (cu *CharacterUpdate) AddRace(i int) *CharacterUpdate {
-	cu.mutation.AddRace(i)
+func (cu *CharacterUpdate) SetRace(s string) *CharacterUpdate {
+	cu.mutation.SetRace(s)
 	return cu
 }
 
@@ -510,14 +503,7 @@ func (cu *CharacterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cu.mutation.Race(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: character.FieldRace,
-		})
-	}
-	if value, ok := cu.mutation.AddedRace(); ok {
-		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
+			Type:   field.TypeString,
 			Value:  value,
 			Column: character.FieldRace,
 		})
@@ -727,15 +713,8 @@ func (cuo *CharacterUpdateOne) AddGender(i int) *CharacterUpdateOne {
 }
 
 // SetRace sets the "race" field.
-func (cuo *CharacterUpdateOne) SetRace(i int) *CharacterUpdateOne {
-	cuo.mutation.ResetRace()
-	cuo.mutation.SetRace(i)
-	return cuo
-}
-
-// AddRace adds i to the "race" field.
-func (cuo *CharacterUpdateOne) AddRace(i int) *CharacterUpdateOne {
-	cuo.mutation.AddRace(i)
+func (cuo *CharacterUpdateOne) SetRace(s string) *CharacterUpdateOne {
+	cuo.mutation.SetRace(s)
 	return cuo
 }
 
@@ -1195,14 +1174,7 @@ func (cuo *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, e
 	}
 	if value, ok := cuo.mutation.Race(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: character.FieldRace,
-		})
-	}
-	if value, ok := cuo.mutation.AddedRace(); ok {
-		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
+			Type:   field.TypeString,
 			Value:  value,
 			Column: character.FieldRace,
 		})

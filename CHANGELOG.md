@@ -1,9 +1,10 @@
 # Changelog
 
-## v1.0.0
+## v1.0.0-rc9
 ### Changes
 * Updated auralog and entgo dependencies to the latest version
 * Switched to a faster json package (go-json) instead of using encoding/json
+* Switch race to string because MSC.
 
 ## v1.0.0-rc8
 ### Added

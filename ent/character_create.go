@@ -45,8 +45,8 @@ func (cc *CharacterCreate) SetGender(i int) *CharacterCreate {
 }
 
 // SetRace sets the "race" field.
-func (cc *CharacterCreate) SetRace(i int) *CharacterCreate {
-	cc.mutation.SetRace(i)
+func (cc *CharacterCreate) SetRace(s string) *CharacterCreate {
+	cc.mutation.SetRace(s)
 	return cc
 }
 
@@ -591,7 +591,7 @@ func (cc *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := cc.mutation.Race(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
+			Type:   field.TypeString,
 			Value:  value,
 			Column: character.FieldRace,
 		})
