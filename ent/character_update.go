@@ -267,20 +267,6 @@ func (cu *CharacterUpdate) SetNillableBags(s *string) *CharacterUpdate {
 	return cu
 }
 
-// SetSheaths sets the "sheaths" field.
-func (cu *CharacterUpdate) SetSheaths(s string) *CharacterUpdate {
-	cu.mutation.SetSheaths(s)
-	return cu
-}
-
-// SetNillableSheaths sets the "sheaths" field if the given value is not nil.
-func (cu *CharacterUpdate) SetNillableSheaths(s *string) *CharacterUpdate {
-	if s != nil {
-		cu.SetSheaths(*s)
-	}
-	return cu
-}
-
 // Mutation returns the CharacterMutation object of the builder.
 func (cu *CharacterUpdate) Mutation() *CharacterMutation {
 	return cu.mutation
@@ -431,11 +417,6 @@ func (cu *CharacterUpdate) check() error {
 	if v, ok := cu.mutation.Bags(); ok {
 		if err := character.BagsValidator(v); err != nil {
 			return &ValidationError{Name: "bags", err: fmt.Errorf(`ent: validator failed for field "Character.bags": %w`, err)}
-		}
-	}
-	if v, ok := cu.mutation.Sheaths(); ok {
-		if err := character.SheathsValidator(v); err != nil {
-			return &ValidationError{Name: "sheaths", err: fmt.Errorf(`ent: validator failed for field "Character.sheaths": %w`, err)}
 		}
 	}
 	return nil
@@ -646,13 +627,6 @@ func (cu *CharacterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeString,
 			Value:  value,
 			Column: character.FieldBags,
-		})
-	}
-	if value, ok := cu.mutation.Sheaths(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: character.FieldSheaths,
 		})
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
@@ -914,20 +888,6 @@ func (cuo *CharacterUpdateOne) SetNillableBags(s *string) *CharacterUpdateOne {
 	return cuo
 }
 
-// SetSheaths sets the "sheaths" field.
-func (cuo *CharacterUpdateOne) SetSheaths(s string) *CharacterUpdateOne {
-	cuo.mutation.SetSheaths(s)
-	return cuo
-}
-
-// SetNillableSheaths sets the "sheaths" field if the given value is not nil.
-func (cuo *CharacterUpdateOne) SetNillableSheaths(s *string) *CharacterUpdateOne {
-	if s != nil {
-		cuo.SetSheaths(*s)
-	}
-	return cuo
-}
-
 // Mutation returns the CharacterMutation object of the builder.
 func (cuo *CharacterUpdateOne) Mutation() *CharacterMutation {
 	return cuo.mutation
@@ -1085,11 +1045,6 @@ func (cuo *CharacterUpdateOne) check() error {
 	if v, ok := cuo.mutation.Bags(); ok {
 		if err := character.BagsValidator(v); err != nil {
 			return &ValidationError{Name: "bags", err: fmt.Errorf(`ent: validator failed for field "Character.bags": %w`, err)}
-		}
-	}
-	if v, ok := cuo.mutation.Sheaths(); ok {
-		if err := character.SheathsValidator(v); err != nil {
-			return &ValidationError{Name: "sheaths", err: fmt.Errorf(`ent: validator failed for field "Character.sheaths": %w`, err)}
 		}
 	}
 	return nil
@@ -1317,13 +1272,6 @@ func (cuo *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, e
 			Type:   field.TypeString,
 			Value:  value,
 			Column: character.FieldBags,
-		})
-	}
-	if value, ok := cuo.mutation.Sheaths(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: character.FieldSheaths,
 		})
 	}
 	_node = &Character{config: cuo.config}

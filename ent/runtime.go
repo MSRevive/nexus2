@@ -100,12 +100,6 @@ func init() {
 	character.DefaultBags = characterDescBags.Default.(string)
 	// character.BagsValidator is a validator for the "bags" field. It is called by the builders before save.
 	character.BagsValidator = characterDescBags.Validators[0].(func(string) error)
-	// characterDescSheaths is the schema descriptor for sheaths field.
-	characterDescSheaths := characterFields[22].Descriptor()
-	// character.DefaultSheaths holds the default value on creation for the sheaths field.
-	character.DefaultSheaths = characterDescSheaths.Default.(string)
-	// character.SheathsValidator is a validator for the "sheaths" field. It is called by the builders before save.
-	character.SheathsValidator = characterDescSheaths.Validators[0].(func(string) error)
 	// characterDescID is the schema descriptor for id field.
 	characterDescID := characterFields[0].Descriptor()
 	// character.DefaultID holds the default value on creation for the id field.

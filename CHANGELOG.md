@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.0-rc10
+### Removed
+* Got rid of sheaths field.
+
+### Changes
+* Switched bags, spells, and equipped to text to support large JSON data.
+* Switched to new migration engine.
+
 ## v1.0.0-rc9
 ### Changes
 * Updated auralog and entgo dependencies to the latest version

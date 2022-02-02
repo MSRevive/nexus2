@@ -26,13 +26,12 @@ var (
 		{Name: "pets", Type: field.TypeString, Default: "{}"},
 		{Name: "health", Type: field.TypeInt},
 		{Name: "mana", Type: field.TypeInt},
-		{Name: "equipped", Type: field.TypeString, Default: "{}"},
+		{Name: "equipped", Type: field.TypeString, Size: 2147483647, Default: "{}"},
 		{Name: "lefthand", Type: field.TypeString},
 		{Name: "righthand", Type: field.TypeString},
-		{Name: "spells", Type: field.TypeString, Default: "{}"},
-		{Name: "spellbook", Type: field.TypeString, Default: "{}"},
-		{Name: "bags", Type: field.TypeString, Default: "{}"},
-		{Name: "sheaths", Type: field.TypeString, Default: "{}"},
+		{Name: "spells", Type: field.TypeString, Size: 2147483647, Default: "{}"},
+		{Name: "spellbook", Type: field.TypeString, Default: "{}", SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "bags", Type: field.TypeString, Size: 2147483647, Default: "{}"},
 	}
 	// CharactersTable holds the schema information for the "characters" table.
 	CharactersTable = &schema.Table{

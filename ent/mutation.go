@@ -60,7 +60,6 @@ type CharacterMutation struct {
 	spells        *string
 	spellbook     *string
 	bags          *string
-	sheaths       *string
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*Character, error)
@@ -1047,42 +1046,6 @@ func (m *CharacterMutation) ResetBags() {
 	m.bags = nil
 }
 
-// SetSheaths sets the "sheaths" field.
-func (m *CharacterMutation) SetSheaths(s string) {
-	m.sheaths = &s
-}
-
-// Sheaths returns the value of the "sheaths" field in the mutation.
-func (m *CharacterMutation) Sheaths() (r string, exists bool) {
-	v := m.sheaths
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSheaths returns the old "sheaths" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldSheaths(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSheaths is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSheaths requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSheaths: %w", err)
-	}
-	return oldValue.Sheaths, nil
-}
-
-// ResetSheaths resets all changes to the "sheaths" field.
-func (m *CharacterMutation) ResetSheaths() {
-	m.sheaths = nil
-}
-
 // Where appends a list predicates to the CharacterMutation builder.
 func (m *CharacterMutation) Where(ps ...predicate.Character) {
 	m.predicates = append(m.predicates, ps...)
@@ -1102,7 +1065,7 @@ func (m *CharacterMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CharacterMutation) Fields() []string {
-	fields := make([]string, 0, 22)
+	fields := make([]string, 0, 21)
 	if m.steamid != nil {
 		fields = append(fields, character.FieldSteamid)
 	}
@@ -1166,9 +1129,6 @@ func (m *CharacterMutation) Fields() []string {
 	if m.bags != nil {
 		fields = append(fields, character.FieldBags)
 	}
-	if m.sheaths != nil {
-		fields = append(fields, character.FieldSheaths)
-	}
 	return fields
 }
 
@@ -1219,8 +1179,6 @@ func (m *CharacterMutation) Field(name string) (ent.Value, bool) {
 		return m.Spellbook()
 	case character.FieldBags:
 		return m.Bags()
-	case character.FieldSheaths:
-		return m.Sheaths()
 	}
 	return nil, false
 }
@@ -1272,8 +1230,6 @@ func (m *CharacterMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldSpellbook(ctx)
 	case character.FieldBags:
 		return m.OldBags(ctx)
-	case character.FieldSheaths:
-		return m.OldSheaths(ctx)
 	}
 	return nil, fmt.Errorf("unknown Character field %s", name)
 }
@@ -1429,13 +1385,6 @@ func (m *CharacterMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetBags(v)
-		return nil
-	case character.FieldSheaths:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSheaths(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Character field %s", name)
@@ -1623,9 +1572,6 @@ func (m *CharacterMutation) ResetField(name string) error {
 		return nil
 	case character.FieldBags:
 		m.ResetBags()
-		return nil
-	case character.FieldSheaths:
-		m.ResetSheaths()
 		return nil
 	}
 	return fmt.Errorf("unknown Character field %s", name)

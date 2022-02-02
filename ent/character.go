@@ -58,8 +58,6 @@ type Character struct {
 	Spellbook string `json:"spellbook,omitempty"`
 	// Bags holds the value of the "bags" field.
 	Bags string `json:"bags,omitempty"`
-	// Sheaths holds the value of the "sheaths" field.
-	Sheaths string `json:"sheaths,omitempty"`
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -69,7 +67,7 @@ func (*Character) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case character.FieldSlot, character.FieldGender, character.FieldKills, character.FieldGold, character.FieldHealth, character.FieldMana:
 			values[i] = new(sql.NullInt64)
-		case character.FieldSteamid, character.FieldName, character.FieldRace, character.FieldFlags, character.FieldQuickslots, character.FieldQuests, character.FieldGuild, character.FieldSkills, character.FieldPets, character.FieldEquipped, character.FieldLefthand, character.FieldRighthand, character.FieldSpells, character.FieldSpellbook, character.FieldBags, character.FieldSheaths:
+		case character.FieldSteamid, character.FieldName, character.FieldRace, character.FieldFlags, character.FieldQuickslots, character.FieldQuests, character.FieldGuild, character.FieldSkills, character.FieldPets, character.FieldEquipped, character.FieldLefthand, character.FieldRighthand, character.FieldSpells, character.FieldSpellbook, character.FieldBags:
 			values[i] = new(sql.NullString)
 		case character.FieldID:
 			values[i] = new(uuid.UUID)
@@ -220,12 +218,6 @@ func (c *Character) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				c.Bags = value.String
 			}
-		case character.FieldSheaths:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field sheaths", values[i])
-			} else if value.Valid {
-				c.Sheaths = value.String
-			}
 		}
 	}
 	return nil
@@ -296,8 +288,6 @@ func (c *Character) String() string {
 	builder.WriteString(c.Spellbook)
 	builder.WriteString(", bags=")
 	builder.WriteString(c.Bags)
-	builder.WriteString(", sheaths=")
-	builder.WriteString(c.Sheaths)
 	builder.WriteByte(')')
 	return builder.String()
 }

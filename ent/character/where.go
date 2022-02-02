@@ -238,13 +238,6 @@ func Bags(v string) predicate.Character {
 	})
 }
 
-// Sheaths applies equality check predicate on the "sheaths" field. It's identical to SheathsEQ.
-func Sheaths(v string) predicate.Character {
-	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldSheaths), v))
-	})
-}
-
 // SteamidEQ applies the EQ predicate on the "steamid" field.
 func SteamidEQ(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
@@ -2363,117 +2356,6 @@ func BagsEqualFold(v string) predicate.Character {
 func BagsContainsFold(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldBags), v))
-	})
-}
-
-// SheathsEQ applies the EQ predicate on the "sheaths" field.
-func SheathsEQ(v string) predicate.Character {
-	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldSheaths), v))
-	})
-}
-
-// SheathsNEQ applies the NEQ predicate on the "sheaths" field.
-func SheathsNEQ(v string) predicate.Character {
-	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldSheaths), v))
-	})
-}
-
-// SheathsIn applies the In predicate on the "sheaths" field.
-func SheathsIn(vs ...string) predicate.Character {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.Character(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.In(s.C(FieldSheaths), v...))
-	})
-}
-
-// SheathsNotIn applies the NotIn predicate on the "sheaths" field.
-func SheathsNotIn(vs ...string) predicate.Character {
-	v := make([]interface{}, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.Character(func(s *sql.Selector) {
-		// if not arguments were provided, append the FALSE constants,
-		// since we can't apply "IN ()". This will make this predicate falsy.
-		if len(v) == 0 {
-			s.Where(sql.False())
-			return
-		}
-		s.Where(sql.NotIn(s.C(FieldSheaths), v...))
-	})
-}
-
-// SheathsGT applies the GT predicate on the "sheaths" field.
-func SheathsGT(v string) predicate.Character {
-	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldSheaths), v))
-	})
-}
-
-// SheathsGTE applies the GTE predicate on the "sheaths" field.
-func SheathsGTE(v string) predicate.Character {
-	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldSheaths), v))
-	})
-}
-
-// SheathsLT applies the LT predicate on the "sheaths" field.
-func SheathsLT(v string) predicate.Character {
-	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldSheaths), v))
-	})
-}
-
-// SheathsLTE applies the LTE predicate on the "sheaths" field.
-func SheathsLTE(v string) predicate.Character {
-	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldSheaths), v))
-	})
-}
-
-// SheathsContains applies the Contains predicate on the "sheaths" field.
-func SheathsContains(v string) predicate.Character {
-	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldSheaths), v))
-	})
-}
-
-// SheathsHasPrefix applies the HasPrefix predicate on the "sheaths" field.
-func SheathsHasPrefix(v string) predicate.Character {
-	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldSheaths), v))
-	})
-}
-
-// SheathsHasSuffix applies the HasSuffix predicate on the "sheaths" field.
-func SheathsHasSuffix(v string) predicate.Character {
-	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldSheaths), v))
-	})
-}
-
-// SheathsEqualFold applies the EqualFold predicate on the "sheaths" field.
-func SheathsEqualFold(v string) predicate.Character {
-	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldSheaths), v))
-	})
-}
-
-// SheathsContainsFold applies the ContainsFold predicate on the "sheaths" field.
-func SheathsContainsFold(v string) predicate.Character {
-	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldSheaths), v))
 	})
 }
 

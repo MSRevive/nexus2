@@ -218,20 +218,6 @@ func (cc *CharacterCreate) SetNillableBags(s *string) *CharacterCreate {
 	return cc
 }
 
-// SetSheaths sets the "sheaths" field.
-func (cc *CharacterCreate) SetSheaths(s string) *CharacterCreate {
-	cc.mutation.SetSheaths(s)
-	return cc
-}
-
-// SetNillableSheaths sets the "sheaths" field if the given value is not nil.
-func (cc *CharacterCreate) SetNillableSheaths(s *string) *CharacterCreate {
-	if s != nil {
-		cc.SetSheaths(*s)
-	}
-	return cc
-}
-
 // SetID sets the "id" field.
 func (cc *CharacterCreate) SetID(u uuid.UUID) *CharacterCreate {
 	cc.mutation.SetID(u)
@@ -352,10 +338,6 @@ func (cc *CharacterCreate) defaults() {
 	if _, ok := cc.mutation.Bags(); !ok {
 		v := character.DefaultBags
 		cc.mutation.SetBags(v)
-	}
-	if _, ok := cc.mutation.Sheaths(); !ok {
-		v := character.DefaultSheaths
-		cc.mutation.SetSheaths(v)
 	}
 	if _, ok := cc.mutation.ID(); !ok {
 		v := character.DefaultID()
@@ -511,14 +493,6 @@ func (cc *CharacterCreate) check() error {
 	if v, ok := cc.mutation.Bags(); ok {
 		if err := character.BagsValidator(v); err != nil {
 			return &ValidationError{Name: "bags", err: fmt.Errorf(`ent: validator failed for field "Character.bags": %w`, err)}
-		}
-	}
-	if _, ok := cc.mutation.Sheaths(); !ok {
-		return &ValidationError{Name: "sheaths", err: errors.New(`ent: missing required field "Character.sheaths"`)}
-	}
-	if v, ok := cc.mutation.Sheaths(); ok {
-		if err := character.SheathsValidator(v); err != nil {
-			return &ValidationError{Name: "sheaths", err: fmt.Errorf(`ent: validator failed for field "Character.sheaths": %w`, err)}
 		}
 	}
 	return nil
@@ -724,14 +698,6 @@ func (cc *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 			Column: character.FieldBags,
 		})
 		_node.Bags = value
-	}
-	if value, ok := cc.mutation.Sheaths(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: character.FieldSheaths,
-		})
-		_node.Sheaths = value
 	}
 	return _node, _spec
 }

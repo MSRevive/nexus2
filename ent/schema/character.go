@@ -3,6 +3,7 @@ package schema
 import (
 	"github.com/google/uuid"
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	//"entgo.io/ent/schema/edge"
@@ -53,20 +54,29 @@ func (Character) Fields() []ent.Field {
 		field.Int("mana").
 			Min(0),
 		field.String("equipped").
+			SchemaType(map[string]string{
+				dialect.SQLite: "text",
+			}).
 			NotEmpty().
 			Default("{}"),
 		field.String("lefthand"),
 		field.String("righthand"),
 		field.String("spells").
+			SchemaType(map[string]string{
+				dialect.SQLite: "text",
+			}).
 			NotEmpty().
 			Default("{}"),
 		field.String("spellbook").
+			SchemaType(map[string]string{
+				dialect.SQLite: "text",
+			}).
 			NotEmpty().
 			Default("{}"),
-		field.String("bags").
-			NotEmpty().
-			Default("{}"),
-		field.String("sheaths").
+		field.Text("bags").
+			SchemaType(map[string]string{
+				dialect.SQLite: "text",
+			}).
 			NotEmpty().
 			Default("{}"),
 	}

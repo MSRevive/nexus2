@@ -42,7 +42,6 @@ func (s *service) Debug() error {
   SetSpells("{}").
   SetSpellbook("{}").
   SetBags("{}").
-  SetSheaths("{}").
   Save(s.ctx)
   if err != nil {
     return err

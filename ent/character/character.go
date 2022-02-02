@@ -53,8 +53,6 @@ const (
 	FieldSpellbook = "spellbook"
 	// FieldBags holds the string denoting the bags field in the database.
 	FieldBags = "bags"
-	// FieldSheaths holds the string denoting the sheaths field in the database.
-	FieldSheaths = "sheaths"
 	// Table holds the table name of the character in the database.
 	Table = "characters"
 )
@@ -83,7 +81,6 @@ var Columns = []string{
 	FieldSpells,
 	FieldSpellbook,
 	FieldBags,
-	FieldSheaths,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -149,10 +146,6 @@ var (
 	DefaultBags string
 	// BagsValidator is a validator for the "bags" field. It is called by the builders before save.
 	BagsValidator func(string) error
-	// DefaultSheaths holds the default value on creation for the "sheaths" field.
-	DefaultSheaths string
-	// SheathsValidator is a validator for the "sheaths" field. It is called by the builders before save.
-	SheathsValidator func(string) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )

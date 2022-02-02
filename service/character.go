@@ -74,7 +74,6 @@ func (s *service) CharacterCreate(newChar ent.Character) (*ent.Character, error)
   SetSpells(newChar.Spells).
   SetSpellbook(newChar.Spellbook).
   SetBags(newChar.Bags).
-  SetSheaths(newChar.Sheaths).
   Save(s.ctx)
   if err != nil {
     return nil, err
@@ -130,7 +129,6 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.Character) (*ent
   SetSpells(updateChar.Spells).
   SetSpellbook(updateChar.Spellbook).
   SetBags(updateChar.Bags).
-  SetSheaths(updateChar.Sheaths).
   Save(s.ctx)
   if err != nil {
     return nil, err

@@ -19,6 +19,7 @@ import(
   "github.com/gorilla/mux"
   "golang.org/x/crypto/acme"
   "golang.org/x/crypto/acme/autocert"
+  "entgo.io/ent/dialect/sql/schema"
   _ "github.com/mattn/go-sqlite3"
 )
 
@@ -90,7 +91,7 @@ func main() {
   if err != nil {
     log.Log.Fatalf("failed to open connection to sqlite3: %v", err)
   }
-  if err := client.Schema.Create(context.Background()); err != nil {
+  if err := client.Schema.Create(context.Background(), schema.WithAtlas(true)); err != nil {
 		log.Log.Fatalf("failed to create schema resources: %v", err)
 	}
   session.Client = client
