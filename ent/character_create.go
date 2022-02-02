@@ -144,9 +144,25 @@ func (cc *CharacterCreate) SetHealth(i int) *CharacterCreate {
 	return cc
 }
 
+// SetNillableHealth sets the "health" field if the given value is not nil.
+func (cc *CharacterCreate) SetNillableHealth(i *int) *CharacterCreate {
+	if i != nil {
+		cc.SetHealth(*i)
+	}
+	return cc
+}
+
 // SetMana sets the "mana" field.
 func (cc *CharacterCreate) SetMana(i int) *CharacterCreate {
 	cc.mutation.SetMana(i)
+	return cc
+}
+
+// SetNillableMana sets the "mana" field if the given value is not nil.
+func (cc *CharacterCreate) SetNillableMana(i *int) *CharacterCreate {
+	if i != nil {
+		cc.SetMana(*i)
+	}
 	return cc
 }
 
@@ -322,6 +338,14 @@ func (cc *CharacterCreate) defaults() {
 	if _, ok := cc.mutation.Pets(); !ok {
 		v := character.DefaultPets
 		cc.mutation.SetPets(v)
+	}
+	if _, ok := cc.mutation.Health(); !ok {
+		v := character.DefaultHealth
+		cc.mutation.SetHealth(v)
+	}
+	if _, ok := cc.mutation.Mana(); !ok {
+		v := character.DefaultMana
+		cc.mutation.SetMana(v)
 	}
 	if _, ok := cc.mutation.Equipped(); !ok {
 		v := character.DefaultEquipped

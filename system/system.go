@@ -1,9 +1,8 @@
-package session
+package system
 
 import(
   "time"
   "sync"
-  //"encoding/json"
   "io/ioutil"
 
   "github.com/msrevive/nexus2/ent"

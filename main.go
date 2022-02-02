@@ -10,7 +10,7 @@ import(
   "net/http"
   "crypto/tls"
 
-  "github.com/msrevive/nexus2/session"
+  "github.com/msrevive/nexus2/system"
   "github.com/msrevive/nexus2/middleware"
   "github.com/msrevive/nexus2/controller"
   "github.com/msrevive/nexus2/log"
@@ -35,16 +35,16 @@ Copyright © %d, Team MSRebirth
 
 Version: %s
 Website: https://msrebirth.net/
-License: https://github.com/MSRevive/nexus2/blob/main/LICENSE %s`, time.Now().Year(), session.Version, "\n\n")
+License: https://github.com/MSRevive/nexus2/blob/main/LICENSE %s`, time.Now().Year(), system.Version, "\n\n")
 }
 
 func main() {
   var cfile string
   flag.StringVar(&cfile, "cfile", "./runtime/config.toml", "Where to load the config file.")
-  flag.BoolVar(&session.Dbg, "dbg", false, "Run with debug mode.")
+  flag.BoolVar(&system.Dbg, "dbg", false, "Run with debug mode.")
   flag.Parse()
   
-  if err := session.LoadConfig(cfile); err != nil {
+  if err := system.LoadConfig(cfile); err != nil {
     panic(err)
   }
   
@@ -52,57 +52,57 @@ func main() {
   initPrint()
   
   //Initiate logging
-  log.InitLogging("server.log", session.Config.Log.Dir, session.Config.Log.Level, session.Config.Log.ExpireTime)
+  log.InitLogging("server.log", system.Config.Log.Dir, system.Config.Log.Level, system.Config.Log.ExpireTime)
   
-  if session.Dbg {
+  if system.Dbg {
     log.Log.Warnln("Running in Debug mode, do not use in production!")
   }
   
   //Max threads allowed.
-  if session.Config.Core.MaxThreads != 0 {
-    runtime.GOMAXPROCS(session.Config.Core.MaxThreads)
+  if system.Config.Core.MaxThreads != 0 {
+    runtime.GOMAXPROCS(system.Config.Core.MaxThreads)
   }
   
   //Load json files.
-  if session.Config.ApiAuth.EnforceIP {
-    log.Log.Printf("Loading IP list from %s", session.Config.ApiAuth.IPListFile)
-    if err := session.LoadIPList(session.Config.ApiAuth.IPListFile); err != nil {
+  if system.Config.ApiAuth.EnforceIP {
+    log.Log.Printf("Loading IP list from %s", system.Config.ApiAuth.IPListFile)
+    if err := system.LoadIPList(system.Config.ApiAuth.IPListFile); err != nil {
       log.Log.Warnln("Failed to load IP list.")
     }
   }
   
-  if session.Config.Verify.EnforceMap {
-    log.Log.Printf("Loading Map list from %s", session.Config.Verify.MapListFile)
-    if err := session.LoadMapList(session.Config.Verify.MapListFile); err != nil {
+  if system.Config.Verify.EnforceMap {
+    log.Log.Printf("Loading Map list from %s", system.Config.Verify.MapListFile)
+    if err := system.LoadMapList(system.Config.Verify.MapListFile); err != nil {
       log.Log.Warnln("Failed to load Map list.")
     }
   }
   
-  if session.Config.Verify.EnforceBan {
-    log.Log.Printf("Loading Ban list from %s", session.Config.Verify.BanListFile)
-    if err := session.LoadBanList(session.Config.Verify.BanListFile); err != nil {
+  if system.Config.Verify.EnforceBan {
+    log.Log.Printf("Loading Ban list from %s", system.Config.Verify.BanListFile)
+    if err := system.LoadBanList(system.Config.Verify.BanListFile); err != nil {
       log.Log.Warnln("Failed to load Ban list.")
     }
   }
   
   //Connect database.
   log.Log.Println("Connecting to database")
-  client, err := ent.Open("sqlite3", session.Config.Core.DBString)
+  client, err := ent.Open("sqlite3", system.Config.Core.DBString)
   if err != nil {
     log.Log.Fatalf("failed to open connection to sqlite3: %v", err)
   }
   if err := client.Schema.Create(context.Background(), schema.WithAtlas(true)); err != nil {
 		log.Log.Fatalf("failed to create schema resources: %v", err)
 	}
-  session.Client = client
-  defer session.Client.Close()
+  system.Client = client
+  defer system.Client.Close()
   
   //variables for web server
   var srv *http.Server
   router := mux.NewRouter()
   srv = &http.Server{
     Handler: router,
-    Addr: session.Config.Core.Address+":"+strconv.Itoa(session.Config.Core.Port),
+    Addr: system.Config.Core.Address+":"+strconv.Itoa(system.Config.Core.Port),
     WriteTimeout: 15 * time.Second,
     ReadTimeout: 15 * time.Second,
     // DefaultTLSConfig sets sane defaults to use when configuring the internal
@@ -130,19 +130,19 @@ func main() {
   //middleware
   router.Use(middleware.PanicRecovery)
   router.Use(middleware.Log)
-  if session.Config.RateLimit.Enable {
+  if system.Config.RateLimit.Enable {
     router.Use(middleware.RateLimit)
   }
   
   //api routes
-  apic := controller.New(router.PathPrefix(session.Config.Core.RootPath).Subrouter())
+  apic := controller.New(router.PathPrefix(system.Config.Core.RootPath).Subrouter())
   apic.R.HandleFunc("/", middleware.Auth(apic.TestRoot)).Methods(http.MethodGet)
   apic.R.HandleFunc("/map/{name}/{hash}", middleware.Auth(apic.GetMapVerify)).Methods(http.MethodGet)
   apic.R.HandleFunc("/ban/{steamid:[0-9]+}", middleware.Auth(apic.GetBanVerify)).Methods(http.MethodGet)
   apic.R.HandleFunc("/sc/{hash}", middleware.Auth(apic.GetSCVerify)).Methods(http.MethodGet)
   
   //character routes
-  charc := controller.New(router.PathPrefix(session.Config.Core.RootPath+"/character").Subrouter())
+  charc := controller.New(router.PathPrefix(system.Config.Core.RootPath+"/character").Subrouter())
   charc.R.HandleFunc("/", middleware.Auth(charc.GetAllCharacters)).Methods(http.MethodGet)
   charc.R.HandleFunc("/id/{uid}", middleware.Auth(charc.GetCharacterByID)).Methods(http.MethodGet)
   charc.R.HandleFunc("/{steamid:[0-9]+}", middleware.Auth(charc.GetCharacters)).Methods(http.MethodGet)
@@ -151,10 +151,10 @@ func main() {
   charc.R.HandleFunc("/{uid}", middleware.Auth(charc.PutCharacter)).Methods(http.MethodPut)
   charc.R.HandleFunc("/{uid}", middleware.Auth(charc.DeleteCharacter)).Methods(http.MethodDelete)
   
-  if session.Config.Cert.Enable {
+  if system.Config.Cert.Enable {
     cm := autocert.Manager{
       Prompt: autocert.AcceptTOS,
-      HostPolicy: autocert.HostWhitelist(session.Config.Cert.Domain),
+      HostPolicy: autocert.HostWhitelist(system.Config.Cert.Domain),
       Cache: autocert.DirCache("./runtime/certs"),
     }
   

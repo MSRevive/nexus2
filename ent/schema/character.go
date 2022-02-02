@@ -30,12 +30,21 @@ func (Character) Fields() []ent.Field {
 		field.String("race").
 			NotEmpty(),
 		field.String("flags").
+			SchemaType(map[string]string{
+				dialect.SQLite: "text",
+			}).
 			NotEmpty().
 			Default("{}"),
 		field.String("quickslots").
+			SchemaType(map[string]string{
+				dialect.SQLite: "text",
+			}).
 			NotEmpty().
 			Default("{}"),
 		field.String("quests").
+			SchemaType(map[string]string{
+				dialect.SQLite: "text",
+			}).
 			NotEmpty().
 			Default("{}"),
 		field.String("guild"),
@@ -44,15 +53,23 @@ func (Character) Fields() []ent.Field {
 		field.Int("gold").
 			Min(0),
 		field.String("skills").
+			SchemaType(map[string]string{
+				dialect.SQLite: "text",
+			}).
 			NotEmpty().
 			Default("{}"),
 		field.String("pets").
+			SchemaType(map[string]string{
+				dialect.SQLite: "text",
+			}).
 			NotEmpty().
 			Default("{}"),
 		field.Int("health").
-			Min(0),
+			Min(0).
+			Default(15),
 		field.Int("mana").
-			Min(0),
+			Min(0).
+			Default(5),
 		field.String("equipped").
 			SchemaType(map[string]string{
 				dialect.SQLite: "text",

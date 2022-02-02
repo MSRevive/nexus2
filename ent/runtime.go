@@ -70,10 +70,14 @@ func init() {
 	character.PetsValidator = characterDescPets.Validators[0].(func(string) error)
 	// characterDescHealth is the schema descriptor for health field.
 	characterDescHealth := characterFields[14].Descriptor()
+	// character.DefaultHealth holds the default value on creation for the health field.
+	character.DefaultHealth = characterDescHealth.Default.(int)
 	// character.HealthValidator is a validator for the "health" field. It is called by the builders before save.
 	character.HealthValidator = characterDescHealth.Validators[0].(func(int) error)
 	// characterDescMana is the schema descriptor for mana field.
 	characterDescMana := characterFields[15].Descriptor()
+	// character.DefaultMana holds the default value on creation for the mana field.
+	character.DefaultMana = characterDescMana.Default.(int)
 	// character.ManaValidator is a validator for the "mana" field. It is called by the builders before save.
 	character.ManaValidator = characterDescMana.Validators[0].(func(int) error)
 	// characterDescEquipped is the schema descriptor for equipped field.

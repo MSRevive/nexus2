@@ -5,7 +5,7 @@ import (
   
   "github.com/msrevive/nexus2/response"
   "github.com/msrevive/nexus2/service"
-  "github.com/msrevive/nexus2/session"
+  "github.com/msrevive/nexus2/system"
   
   "github.com/gorilla/mux"
 )
@@ -21,7 +21,7 @@ func New(router *mux.Router) *controller {
 }
 
 func (c *controller) TestRoot(w http.ResponseWriter, r *http.Request) {
-  if session.Dbg {
+  if system.Dbg {
     if err := service.New(r.Context()).Debug(); err != nil {
       response.BadRequest(w, err)
       return

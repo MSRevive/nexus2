@@ -180,6 +180,14 @@ func (cu *CharacterUpdate) SetHealth(i int) *CharacterUpdate {
 	return cu
 }
 
+// SetNillableHealth sets the "health" field if the given value is not nil.
+func (cu *CharacterUpdate) SetNillableHealth(i *int) *CharacterUpdate {
+	if i != nil {
+		cu.SetHealth(*i)
+	}
+	return cu
+}
+
 // AddHealth adds i to the "health" field.
 func (cu *CharacterUpdate) AddHealth(i int) *CharacterUpdate {
 	cu.mutation.AddHealth(i)
@@ -190,6 +198,14 @@ func (cu *CharacterUpdate) AddHealth(i int) *CharacterUpdate {
 func (cu *CharacterUpdate) SetMana(i int) *CharacterUpdate {
 	cu.mutation.ResetMana()
 	cu.mutation.SetMana(i)
+	return cu
+}
+
+// SetNillableMana sets the "mana" field if the given value is not nil.
+func (cu *CharacterUpdate) SetNillableMana(i *int) *CharacterUpdate {
+	if i != nil {
+		cu.SetMana(*i)
+	}
 	return cu
 }
 
@@ -801,6 +817,14 @@ func (cuo *CharacterUpdateOne) SetHealth(i int) *CharacterUpdateOne {
 	return cuo
 }
 
+// SetNillableHealth sets the "health" field if the given value is not nil.
+func (cuo *CharacterUpdateOne) SetNillableHealth(i *int) *CharacterUpdateOne {
+	if i != nil {
+		cuo.SetHealth(*i)
+	}
+	return cuo
+}
+
 // AddHealth adds i to the "health" field.
 func (cuo *CharacterUpdateOne) AddHealth(i int) *CharacterUpdateOne {
 	cuo.mutation.AddHealth(i)
@@ -811,6 +835,14 @@ func (cuo *CharacterUpdateOne) AddHealth(i int) *CharacterUpdateOne {
 func (cuo *CharacterUpdateOne) SetMana(i int) *CharacterUpdateOne {
 	cuo.mutation.ResetMana()
 	cuo.mutation.SetMana(i)
+	return cuo
+}
+
+// SetNillableMana sets the "mana" field if the given value is not nil.
+func (cuo *CharacterUpdateOne) SetNillableMana(i *int) *CharacterUpdateOne {
+	if i != nil {
+		cuo.SetMana(*i)
+	}
 	return cuo
 }
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.0-rc11
+### Changes
+* Changed all JSON fields to be text instead of varchar(255)
+
 ## v1.0.0-rc10
 ### Removed
 * Got rid of sheaths field.

@@ -7,7 +7,7 @@ import(
   "net/http"
   "runtime/debug"
   
-  "github.com/msrevive/nexus2/session"
+  "github.com/msrevive/nexus2/system"
   "github.com/msrevive/nexus2/log"
   "github.com/msrevive/nexus2/rate"
 )
@@ -67,7 +67,7 @@ func PanicRecovery(next http.Handler) http.Handler {
 func RateLimit(next http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     if globalLimiter == nil {
-      globalLimiter = rate.NewLimiter(1, session.Config.RateLimit.MaxRequests, session.Config.RateLimit.MaxAge, 0)
+      globalLimiter = rate.NewLimiter(1, system.Config.RateLimit.MaxRequests, system.Config.RateLimit.MaxAge, 0)
     }
 
     globalLimiter.CheckTime()
@@ -86,8 +86,8 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
     ip := getIP(r)
     
     //IP Auth
-    if session.Config.ApiAuth.EnforceIP {      
-      if _,ok := session.IPList[ip]; !ok {
+    if system.Config.ApiAuth.EnforceIP {      
+      if _,ok := system.IPList[ip]; !ok {
         log.Log.Printf("%s Is not authorized.", ip)
         http.Error(w, http.StatusText(401), http.StatusUnauthorized)
         return
@@ -95,8 +95,8 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
     }
     
     //API Key Auth
-    if session.Config.ApiAuth.EnforceKey {
-      if r.Header.Get("Authorization") != session.Config.ApiAuth.Key {
+    if system.Config.ApiAuth.EnforceKey {
+      if r.Header.Get("Authorization") != system.Config.ApiAuth.Key {
         log.Log.Printf("%s failed API key check.", ip)
         http.Error(w, http.StatusText(401), http.StatusUnauthorized)
         return

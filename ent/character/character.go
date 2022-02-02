@@ -126,8 +126,12 @@ var (
 	DefaultPets string
 	// PetsValidator is a validator for the "pets" field. It is called by the builders before save.
 	PetsValidator func(string) error
+	// DefaultHealth holds the default value on creation for the "health" field.
+	DefaultHealth int
 	// HealthValidator is a validator for the "health" field. It is called by the builders before save.
 	HealthValidator func(int) error
+	// DefaultMana holds the default value on creation for the "mana" field.
+	DefaultMana int
 	// ManaValidator is a validator for the "mana" field. It is called by the builders before save.
 	ManaValidator func(int) error
 	// DefaultEquipped holds the default value on creation for the "equipped" field.
