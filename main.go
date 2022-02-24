@@ -35,7 +35,7 @@ Copyright © %d, Team MSRebirth
 
 Version: %s
 Website: https://msrebirth.net/
-License: https://github.com/MSRevive/nexus2/blob/main/LICENSE %s`, time.Now().Year(), system.Version, "\n\n")
+License: GPL-3.0 https://github.com/MSRevive/nexus2/blob/main/LICENSE %s`, time.Now().Year(), system.Version, "\n\n")
 }
 
 func main() {
