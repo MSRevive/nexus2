@@ -27,8 +27,6 @@ func (Character) Fields() []ent.Field {
 			NotEmpty(),
 		field.Int("gender").
 			Min(0),
-		field.String("race").
-			NotEmpty(),
 		field.String("flags").
 			SchemaType(map[string]string{
 				dialect.SQLite: "text",

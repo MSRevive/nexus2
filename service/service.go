@@ -25,7 +25,6 @@ func (s *service) Debug() error {
   SetSlot(1).
   SetName("Test Char").
   SetGender(1).
-  SetRace("hooman").
   SetFlags("{}").
   SetQuickslots("{}").
   SetQuests("{}").

@@ -39,7 +39,6 @@ type CharacterMutation struct {
 	name          *string
 	gender        *int
 	addgender     *int
-	race          *string
 	flags         *string
 	quickslots    *string
 	quests        *string
@@ -352,42 +351,6 @@ func (m *CharacterMutation) AddedGender() (r int, exists bool) {
 func (m *CharacterMutation) ResetGender() {
 	m.gender = nil
 	m.addgender = nil
-}
-
-// SetRace sets the "race" field.
-func (m *CharacterMutation) SetRace(s string) {
-	m.race = &s
-}
-
-// Race returns the value of the "race" field in the mutation.
-func (m *CharacterMutation) Race() (r string, exists bool) {
-	v := m.race
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldRace returns the old "race" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldRace(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRace is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRace requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRace: %w", err)
-	}
-	return oldValue.Race, nil
-}
-
-// ResetRace resets all changes to the "race" field.
-func (m *CharacterMutation) ResetRace() {
-	m.race = nil
 }
 
 // SetFlags sets the "flags" field.
@@ -1065,7 +1028,7 @@ func (m *CharacterMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CharacterMutation) Fields() []string {
-	fields := make([]string, 0, 21)
+	fields := make([]string, 0, 20)
 	if m.steamid != nil {
 		fields = append(fields, character.FieldSteamid)
 	}
@@ -1077,9 +1040,6 @@ func (m *CharacterMutation) Fields() []string {
 	}
 	if m.gender != nil {
 		fields = append(fields, character.FieldGender)
-	}
-	if m.race != nil {
-		fields = append(fields, character.FieldRace)
 	}
 	if m.flags != nil {
 		fields = append(fields, character.FieldFlags)
@@ -1145,8 +1105,6 @@ func (m *CharacterMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case character.FieldGender:
 		return m.Gender()
-	case character.FieldRace:
-		return m.Race()
 	case character.FieldFlags:
 		return m.Flags()
 	case character.FieldQuickslots:
@@ -1196,8 +1154,6 @@ func (m *CharacterMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldName(ctx)
 	case character.FieldGender:
 		return m.OldGender(ctx)
-	case character.FieldRace:
-		return m.OldRace(ctx)
 	case character.FieldFlags:
 		return m.OldFlags(ctx)
 	case character.FieldQuickslots:
@@ -1266,13 +1222,6 @@ func (m *CharacterMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetGender(v)
-		return nil
-	case character.FieldRace:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRace(v)
 		return nil
 	case character.FieldFlags:
 		v, ok := value.(string)
@@ -1521,9 +1470,6 @@ func (m *CharacterMutation) ResetField(name string) error {
 		return nil
 	case character.FieldGender:
 		m.ResetGender()
-		return nil
-	case character.FieldRace:
-		m.ResetRace()
 		return nil
 	case character.FieldFlags:
 		m.ResetFlags()

@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.0.0
+Initial Release
+
+### Removed 
+* Removed race field since it's no longer used.
+
+### Changes
+* Say the actual license in startup instead of just linking to license.
+
 ## v1.0.0-rc11
 ### Changes
 * Changed all JSON fields to be text instead of varchar(255)

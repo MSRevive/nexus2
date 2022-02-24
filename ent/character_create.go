@@ -44,12 +44,6 @@ func (cc *CharacterCreate) SetGender(i int) *CharacterCreate {
 	return cc
 }
 
-// SetRace sets the "race" field.
-func (cc *CharacterCreate) SetRace(s string) *CharacterCreate {
-	cc.mutation.SetRace(s)
-	return cc
-}
-
 // SetFlags sets the "flags" field.
 func (cc *CharacterCreate) SetFlags(s string) *CharacterCreate {
 	cc.mutation.SetFlags(s)
@@ -398,14 +392,6 @@ func (cc *CharacterCreate) check() error {
 			return &ValidationError{Name: "gender", err: fmt.Errorf(`ent: validator failed for field "Character.gender": %w`, err)}
 		}
 	}
-	if _, ok := cc.mutation.Race(); !ok {
-		return &ValidationError{Name: "race", err: errors.New(`ent: missing required field "Character.race"`)}
-	}
-	if v, ok := cc.mutation.Race(); ok {
-		if err := character.RaceValidator(v); err != nil {
-			return &ValidationError{Name: "race", err: fmt.Errorf(`ent: validator failed for field "Character.race": %w`, err)}
-		}
-	}
 	if _, ok := cc.mutation.Flags(); !ok {
 		return &ValidationError{Name: "flags", err: errors.New(`ent: missing required field "Character.flags"`)}
 	}
@@ -586,14 +572,6 @@ func (cc *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 			Column: character.FieldGender,
 		})
 		_node.Gender = value
-	}
-	if value, ok := cc.mutation.Race(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: character.FieldRace,
-		})
-		_node.Race = value
 	}
 	if value, ok := cc.mutation.Flags(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{

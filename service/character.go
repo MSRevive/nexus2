@@ -57,7 +57,6 @@ func (s *service) CharacterCreate(newChar ent.Character) (*ent.Character, error)
   SetSlot(newChar.Slot).
   SetName(newChar.Name).
   SetGender(newChar.Gender).
-  SetRace(newChar.Race).
   SetFlags(newChar.Flags).
   SetQuickslots(newChar.Quickslots).
   SetQuests(newChar.Quests).
@@ -112,7 +111,6 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.Character) (*ent
   SetSlot(updateChar.Slot).
   SetName(updateChar.Name).
   SetGender(updateChar.Gender).
-  SetRace(updateChar.Race).
   SetFlags(updateChar.Flags).
   SetQuickslots(updateChar.Quickslots).
   SetQuests(updateChar.Quests).

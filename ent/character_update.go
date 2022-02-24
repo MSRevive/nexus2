@@ -65,12 +65,6 @@ func (cu *CharacterUpdate) AddGender(i int) *CharacterUpdate {
 	return cu
 }
 
-// SetRace sets the "race" field.
-func (cu *CharacterUpdate) SetRace(s string) *CharacterUpdate {
-	cu.mutation.SetRace(s)
-	return cu
-}
-
 // SetFlags sets the "flags" field.
 func (cu *CharacterUpdate) SetFlags(s string) *CharacterUpdate {
 	cu.mutation.SetFlags(s)
@@ -365,11 +359,6 @@ func (cu *CharacterUpdate) check() error {
 			return &ValidationError{Name: "gender", err: fmt.Errorf(`ent: validator failed for field "Character.gender": %w`, err)}
 		}
 	}
-	if v, ok := cu.mutation.Race(); ok {
-		if err := character.RaceValidator(v); err != nil {
-			return &ValidationError{Name: "race", err: fmt.Errorf(`ent: validator failed for field "Character.race": %w`, err)}
-		}
-	}
 	if v, ok := cu.mutation.Flags(); ok {
 		if err := character.FlagsValidator(v); err != nil {
 			return &ValidationError{Name: "flags", err: fmt.Errorf(`ent: validator failed for field "Character.flags": %w`, err)}
@@ -496,13 +485,6 @@ func (cu *CharacterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldGender,
-		})
-	}
-	if value, ok := cu.mutation.Race(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: character.FieldRace,
 		})
 	}
 	if value, ok := cu.mutation.Flags(); ok {
@@ -699,12 +681,6 @@ func (cuo *CharacterUpdateOne) SetGender(i int) *CharacterUpdateOne {
 // AddGender adds i to the "gender" field.
 func (cuo *CharacterUpdateOne) AddGender(i int) *CharacterUpdateOne {
 	cuo.mutation.AddGender(i)
-	return cuo
-}
-
-// SetRace sets the "race" field.
-func (cuo *CharacterUpdateOne) SetRace(s string) *CharacterUpdateOne {
-	cuo.mutation.SetRace(s)
 	return cuo
 }
 
@@ -1009,11 +985,6 @@ func (cuo *CharacterUpdateOne) check() error {
 			return &ValidationError{Name: "gender", err: fmt.Errorf(`ent: validator failed for field "Character.gender": %w`, err)}
 		}
 	}
-	if v, ok := cuo.mutation.Race(); ok {
-		if err := character.RaceValidator(v); err != nil {
-			return &ValidationError{Name: "race", err: fmt.Errorf(`ent: validator failed for field "Character.race": %w`, err)}
-		}
-	}
 	if v, ok := cuo.mutation.Flags(); ok {
 		if err := character.FlagsValidator(v); err != nil {
 			return &ValidationError{Name: "flags", err: fmt.Errorf(`ent: validator failed for field "Character.flags": %w`, err)}
@@ -1157,13 +1128,6 @@ func (cuo *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, e
 			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldGender,
-		})
-	}
-	if value, ok := cuo.mutation.Race(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: character.FieldRace,
 		})
 	}
 	if value, ok := cuo.mutation.Flags(); ok {

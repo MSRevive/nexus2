@@ -19,8 +19,6 @@ const (
 	FieldName = "name"
 	// FieldGender holds the string denoting the gender field in the database.
 	FieldGender = "gender"
-	// FieldRace holds the string denoting the race field in the database.
-	FieldRace = "race"
 	// FieldFlags holds the string denoting the flags field in the database.
 	FieldFlags = "flags"
 	// FieldQuickslots holds the string denoting the quickslots field in the database.
@@ -64,7 +62,6 @@ var Columns = []string{
 	FieldSlot,
 	FieldName,
 	FieldGender,
-	FieldRace,
 	FieldFlags,
 	FieldQuickslots,
 	FieldQuests,
@@ -100,8 +97,6 @@ var (
 	NameValidator func(string) error
 	// GenderValidator is a validator for the "gender" field. It is called by the builders before save.
 	GenderValidator func(int) error
-	// RaceValidator is a validator for the "race" field. It is called by the builders before save.
-	RaceValidator func(string) error
 	// DefaultFlags holds the default value on creation for the "flags" field.
 	DefaultFlags string
 	// FlagsValidator is a validator for the "flags" field. It is called by the builders before save.

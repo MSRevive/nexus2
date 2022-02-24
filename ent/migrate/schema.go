@@ -15,7 +15,6 @@ var (
 		{Name: "slot", Type: field.TypeInt},
 		{Name: "name", Type: field.TypeString},
 		{Name: "gender", Type: field.TypeInt},
-		{Name: "race", Type: field.TypeString},
 		{Name: "flags", Type: field.TypeString, Default: "{}", SchemaType: map[string]string{"sqlite3": "text"}},
 		{Name: "quickslots", Type: field.TypeString, Default: "{}", SchemaType: map[string]string{"sqlite3": "text"}},
 		{Name: "quests", Type: field.TypeString, Default: "{}", SchemaType: map[string]string{"sqlite3": "text"}},
