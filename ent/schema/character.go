@@ -23,77 +23,10 @@ func (Character) Fields() []ent.Field {
 		field.String("steamid"),
 		field.Int("slot").
 			Min(0),
-		field.String("name").
-			NotEmpty(),
-		field.Int("gender").
-			Min(0),
-		field.String("flags").
+		field.String("data").
 			SchemaType(map[string]string{
-				dialect.SQLite: "text",
-			}).
-			NotEmpty().
-			Default("{}"),
-		field.String("quickslots").
-			SchemaType(map[string]string{
-				dialect.SQLite: "text",
-			}).
-			NotEmpty().
-			Default("{}"),
-		field.String("quests").
-			SchemaType(map[string]string{
-				dialect.SQLite: "text",
-			}).
-			NotEmpty().
-			Default("{}"),
-		field.String("guild"),
-		field.Int("kills").
-			Min(0),
-		field.Int("gold").
-			Min(0),
-		field.String("skills").
-			SchemaType(map[string]string{
-				dialect.SQLite: "text",
-			}).
-			NotEmpty().
-			Default("{}"),
-		field.String("pets").
-			SchemaType(map[string]string{
-				dialect.SQLite: "text",
-			}).
-			NotEmpty().
-			Default("{}"),
-		field.Int("health").
-			Min(0).
-			Default(15),
-		field.Int("mana").
-			Min(0).
-			Default(5),
-		field.String("equipped").
-			SchemaType(map[string]string{
-				dialect.SQLite: "text",
-			}).
-			NotEmpty().
-			Default("{}"),
-		field.String("lefthand"),
-		field.String("righthand"),
-		field.String("spells").
-			SchemaType(map[string]string{
-				dialect.SQLite: "text",
-			}).
-			NotEmpty().
-			Default("{}"),
-		field.String("spellbook").
-			SchemaType(map[string]string{
-				dialect.SQLite: "text",
-			}).
-			NotEmpty().
-			Default("{}"),
-		field.Text("bags").
-			SchemaType(map[string]string{
-				dialect.SQLite: "text",
-			}).
-			NotEmpty().
-			Default("{}"),
+				dialect.SQLite: "blob",
+			}),
 	}
 }
 

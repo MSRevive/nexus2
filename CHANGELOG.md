@@ -5,6 +5,7 @@ Initial Release
 
 ### Removed 
 * Removed race field since it's no longer used.
+* Removed all unnecessary fields and replaced them with a single blob field.
 
 ### Changes
 * Say the actual license in startup instead of just linking to license.

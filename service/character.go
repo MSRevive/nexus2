@@ -55,24 +55,7 @@ func (s *service) CharacterCreate(newChar ent.Character) (*ent.Character, error)
   char, err := s.client.Character.Create().
   SetSteamid(newChar.Steamid).
   SetSlot(newChar.Slot).
-  SetName(newChar.Name).
-  SetGender(newChar.Gender).
-  SetFlags(newChar.Flags).
-  SetQuickslots(newChar.Quickslots).
-  SetQuests(newChar.Quests).
-  SetGuild(newChar.Guild).
-  SetKills(newChar.Kills).
-  SetGold(newChar.Gold).
-  SetSkills(newChar.Skills).
-  SetPets(newChar.Pets).
-  SetHealth(newChar.Health).
-  SetMana(newChar.Mana).
-  SetEquipped(newChar.Equipped).
-  SetLefthand(newChar.Lefthand).
-  SetRighthand(newChar.Righthand).
-  SetSpells(newChar.Spells).
-  SetSpellbook(newChar.Spellbook).
-  SetBags(newChar.Bags).
+  SetData(newChar.Data).
   Save(s.ctx)
   if err != nil {
     return nil, err
@@ -107,26 +90,7 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.Character) (*ent
   // SetNillableSheaths(updateChar.Sheaths).
   // UpdateNewValues().Save(s.ctx)
   char, err := s.client.Character.UpdateOneID(uid).
-  SetSteamid(updateChar.Steamid).
-  SetSlot(updateChar.Slot).
-  SetName(updateChar.Name).
-  SetGender(updateChar.Gender).
-  SetFlags(updateChar.Flags).
-  SetQuickslots(updateChar.Quickslots).
-  SetQuests(updateChar.Quests).
-  SetGuild(updateChar.Guild).
-  SetKills(updateChar.Kills).
-  SetGold(updateChar.Gold).
-  SetSkills(updateChar.Skills).
-  SetPets(updateChar.Pets).
-  SetHealth(updateChar.Health).
-  SetMana(updateChar.Mana).
-  SetEquipped(updateChar.Equipped).
-  SetLefthand(updateChar.Lefthand).
-  SetRighthand(updateChar.Righthand).
-  SetSpells(updateChar.Spells).
-  SetSpellbook(updateChar.Spellbook).
-  SetBags(updateChar.Bags).
+  SetData(updateChar.Data).
   Save(s.ctx)
   if err != nil {
     return nil, err

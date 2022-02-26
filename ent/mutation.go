@@ -36,29 +36,7 @@ type CharacterMutation struct {
 	steamid       *string
 	slot          *int
 	addslot       *int
-	name          *string
-	gender        *int
-	addgender     *int
-	flags         *string
-	quickslots    *string
-	quests        *string
-	guild         *string
-	kills         *int
-	addkills      *int
-	gold          *int
-	addgold       *int
-	skills        *string
-	pets          *string
-	health        *int
-	addhealth     *int
-	mana          *int
-	addmana       *int
-	equipped      *string
-	lefthand      *string
-	righthand     *string
-	spells        *string
-	spellbook     *string
-	bags          *string
+	data          *string
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*Character, error)
@@ -261,752 +239,40 @@ func (m *CharacterMutation) ResetSlot() {
 	m.addslot = nil
 }
 
-// SetName sets the "name" field.
-func (m *CharacterMutation) SetName(s string) {
-	m.name = &s
+// SetData sets the "data" field.
+func (m *CharacterMutation) SetData(s string) {
+	m.data = &s
 }
 
-// Name returns the value of the "name" field in the mutation.
-func (m *CharacterMutation) Name() (r string, exists bool) {
-	v := m.name
+// Data returns the value of the "data" field in the mutation.
+func (m *CharacterMutation) Data() (r string, exists bool) {
+	v := m.data
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldName returns the old "name" field's value of the Character entity.
+// OldData returns the old "data" field's value of the Character entity.
 // If the Character object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldName(ctx context.Context) (v string, err error) {
+func (m *CharacterMutation) OldData(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldName is only allowed on UpdateOne operations")
+		return v, errors.New("OldData is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldName requires an ID field in the mutation")
+		return v, errors.New("OldData requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldName: %w", err)
+		return v, fmt.Errorf("querying old value for OldData: %w", err)
 	}
-	return oldValue.Name, nil
+	return oldValue.Data, nil
 }
 
-// ResetName resets all changes to the "name" field.
-func (m *CharacterMutation) ResetName() {
-	m.name = nil
-}
-
-// SetGender sets the "gender" field.
-func (m *CharacterMutation) SetGender(i int) {
-	m.gender = &i
-	m.addgender = nil
-}
-
-// Gender returns the value of the "gender" field in the mutation.
-func (m *CharacterMutation) Gender() (r int, exists bool) {
-	v := m.gender
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldGender returns the old "gender" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldGender(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGender is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGender requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGender: %w", err)
-	}
-	return oldValue.Gender, nil
-}
-
-// AddGender adds i to the "gender" field.
-func (m *CharacterMutation) AddGender(i int) {
-	if m.addgender != nil {
-		*m.addgender += i
-	} else {
-		m.addgender = &i
-	}
-}
-
-// AddedGender returns the value that was added to the "gender" field in this mutation.
-func (m *CharacterMutation) AddedGender() (r int, exists bool) {
-	v := m.addgender
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetGender resets all changes to the "gender" field.
-func (m *CharacterMutation) ResetGender() {
-	m.gender = nil
-	m.addgender = nil
-}
-
-// SetFlags sets the "flags" field.
-func (m *CharacterMutation) SetFlags(s string) {
-	m.flags = &s
-}
-
-// Flags returns the value of the "flags" field in the mutation.
-func (m *CharacterMutation) Flags() (r string, exists bool) {
-	v := m.flags
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldFlags returns the old "flags" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldFlags(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldFlags is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldFlags requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldFlags: %w", err)
-	}
-	return oldValue.Flags, nil
-}
-
-// ResetFlags resets all changes to the "flags" field.
-func (m *CharacterMutation) ResetFlags() {
-	m.flags = nil
-}
-
-// SetQuickslots sets the "quickslots" field.
-func (m *CharacterMutation) SetQuickslots(s string) {
-	m.quickslots = &s
-}
-
-// Quickslots returns the value of the "quickslots" field in the mutation.
-func (m *CharacterMutation) Quickslots() (r string, exists bool) {
-	v := m.quickslots
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldQuickslots returns the old "quickslots" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldQuickslots(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldQuickslots is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldQuickslots requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldQuickslots: %w", err)
-	}
-	return oldValue.Quickslots, nil
-}
-
-// ResetQuickslots resets all changes to the "quickslots" field.
-func (m *CharacterMutation) ResetQuickslots() {
-	m.quickslots = nil
-}
-
-// SetQuests sets the "quests" field.
-func (m *CharacterMutation) SetQuests(s string) {
-	m.quests = &s
-}
-
-// Quests returns the value of the "quests" field in the mutation.
-func (m *CharacterMutation) Quests() (r string, exists bool) {
-	v := m.quests
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldQuests returns the old "quests" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldQuests(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldQuests is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldQuests requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldQuests: %w", err)
-	}
-	return oldValue.Quests, nil
-}
-
-// ResetQuests resets all changes to the "quests" field.
-func (m *CharacterMutation) ResetQuests() {
-	m.quests = nil
-}
-
-// SetGuild sets the "guild" field.
-func (m *CharacterMutation) SetGuild(s string) {
-	m.guild = &s
-}
-
-// Guild returns the value of the "guild" field in the mutation.
-func (m *CharacterMutation) Guild() (r string, exists bool) {
-	v := m.guild
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldGuild returns the old "guild" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldGuild(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGuild is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGuild requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGuild: %w", err)
-	}
-	return oldValue.Guild, nil
-}
-
-// ResetGuild resets all changes to the "guild" field.
-func (m *CharacterMutation) ResetGuild() {
-	m.guild = nil
-}
-
-// SetKills sets the "kills" field.
-func (m *CharacterMutation) SetKills(i int) {
-	m.kills = &i
-	m.addkills = nil
-}
-
-// Kills returns the value of the "kills" field in the mutation.
-func (m *CharacterMutation) Kills() (r int, exists bool) {
-	v := m.kills
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldKills returns the old "kills" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldKills(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldKills is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldKills requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldKills: %w", err)
-	}
-	return oldValue.Kills, nil
-}
-
-// AddKills adds i to the "kills" field.
-func (m *CharacterMutation) AddKills(i int) {
-	if m.addkills != nil {
-		*m.addkills += i
-	} else {
-		m.addkills = &i
-	}
-}
-
-// AddedKills returns the value that was added to the "kills" field in this mutation.
-func (m *CharacterMutation) AddedKills() (r int, exists bool) {
-	v := m.addkills
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetKills resets all changes to the "kills" field.
-func (m *CharacterMutation) ResetKills() {
-	m.kills = nil
-	m.addkills = nil
-}
-
-// SetGold sets the "gold" field.
-func (m *CharacterMutation) SetGold(i int) {
-	m.gold = &i
-	m.addgold = nil
-}
-
-// Gold returns the value of the "gold" field in the mutation.
-func (m *CharacterMutation) Gold() (r int, exists bool) {
-	v := m.gold
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldGold returns the old "gold" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldGold(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGold is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGold requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGold: %w", err)
-	}
-	return oldValue.Gold, nil
-}
-
-// AddGold adds i to the "gold" field.
-func (m *CharacterMutation) AddGold(i int) {
-	if m.addgold != nil {
-		*m.addgold += i
-	} else {
-		m.addgold = &i
-	}
-}
-
-// AddedGold returns the value that was added to the "gold" field in this mutation.
-func (m *CharacterMutation) AddedGold() (r int, exists bool) {
-	v := m.addgold
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetGold resets all changes to the "gold" field.
-func (m *CharacterMutation) ResetGold() {
-	m.gold = nil
-	m.addgold = nil
-}
-
-// SetSkills sets the "skills" field.
-func (m *CharacterMutation) SetSkills(s string) {
-	m.skills = &s
-}
-
-// Skills returns the value of the "skills" field in the mutation.
-func (m *CharacterMutation) Skills() (r string, exists bool) {
-	v := m.skills
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSkills returns the old "skills" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldSkills(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSkills is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSkills requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSkills: %w", err)
-	}
-	return oldValue.Skills, nil
-}
-
-// ResetSkills resets all changes to the "skills" field.
-func (m *CharacterMutation) ResetSkills() {
-	m.skills = nil
-}
-
-// SetPets sets the "pets" field.
-func (m *CharacterMutation) SetPets(s string) {
-	m.pets = &s
-}
-
-// Pets returns the value of the "pets" field in the mutation.
-func (m *CharacterMutation) Pets() (r string, exists bool) {
-	v := m.pets
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldPets returns the old "pets" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldPets(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldPets is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldPets requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldPets: %w", err)
-	}
-	return oldValue.Pets, nil
-}
-
-// ResetPets resets all changes to the "pets" field.
-func (m *CharacterMutation) ResetPets() {
-	m.pets = nil
-}
-
-// SetHealth sets the "health" field.
-func (m *CharacterMutation) SetHealth(i int) {
-	m.health = &i
-	m.addhealth = nil
-}
-
-// Health returns the value of the "health" field in the mutation.
-func (m *CharacterMutation) Health() (r int, exists bool) {
-	v := m.health
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldHealth returns the old "health" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldHealth(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldHealth is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldHealth requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldHealth: %w", err)
-	}
-	return oldValue.Health, nil
-}
-
-// AddHealth adds i to the "health" field.
-func (m *CharacterMutation) AddHealth(i int) {
-	if m.addhealth != nil {
-		*m.addhealth += i
-	} else {
-		m.addhealth = &i
-	}
-}
-
-// AddedHealth returns the value that was added to the "health" field in this mutation.
-func (m *CharacterMutation) AddedHealth() (r int, exists bool) {
-	v := m.addhealth
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetHealth resets all changes to the "health" field.
-func (m *CharacterMutation) ResetHealth() {
-	m.health = nil
-	m.addhealth = nil
-}
-
-// SetMana sets the "mana" field.
-func (m *CharacterMutation) SetMana(i int) {
-	m.mana = &i
-	m.addmana = nil
-}
-
-// Mana returns the value of the "mana" field in the mutation.
-func (m *CharacterMutation) Mana() (r int, exists bool) {
-	v := m.mana
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldMana returns the old "mana" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldMana(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldMana is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldMana requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldMana: %w", err)
-	}
-	return oldValue.Mana, nil
-}
-
-// AddMana adds i to the "mana" field.
-func (m *CharacterMutation) AddMana(i int) {
-	if m.addmana != nil {
-		*m.addmana += i
-	} else {
-		m.addmana = &i
-	}
-}
-
-// AddedMana returns the value that was added to the "mana" field in this mutation.
-func (m *CharacterMutation) AddedMana() (r int, exists bool) {
-	v := m.addmana
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetMana resets all changes to the "mana" field.
-func (m *CharacterMutation) ResetMana() {
-	m.mana = nil
-	m.addmana = nil
-}
-
-// SetEquipped sets the "equipped" field.
-func (m *CharacterMutation) SetEquipped(s string) {
-	m.equipped = &s
-}
-
-// Equipped returns the value of the "equipped" field in the mutation.
-func (m *CharacterMutation) Equipped() (r string, exists bool) {
-	v := m.equipped
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldEquipped returns the old "equipped" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldEquipped(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEquipped is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEquipped requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEquipped: %w", err)
-	}
-	return oldValue.Equipped, nil
-}
-
-// ResetEquipped resets all changes to the "equipped" field.
-func (m *CharacterMutation) ResetEquipped() {
-	m.equipped = nil
-}
-
-// SetLefthand sets the "lefthand" field.
-func (m *CharacterMutation) SetLefthand(s string) {
-	m.lefthand = &s
-}
-
-// Lefthand returns the value of the "lefthand" field in the mutation.
-func (m *CharacterMutation) Lefthand() (r string, exists bool) {
-	v := m.lefthand
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldLefthand returns the old "lefthand" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldLefthand(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldLefthand is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldLefthand requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLefthand: %w", err)
-	}
-	return oldValue.Lefthand, nil
-}
-
-// ResetLefthand resets all changes to the "lefthand" field.
-func (m *CharacterMutation) ResetLefthand() {
-	m.lefthand = nil
-}
-
-// SetRighthand sets the "righthand" field.
-func (m *CharacterMutation) SetRighthand(s string) {
-	m.righthand = &s
-}
-
-// Righthand returns the value of the "righthand" field in the mutation.
-func (m *CharacterMutation) Righthand() (r string, exists bool) {
-	v := m.righthand
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldRighthand returns the old "righthand" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldRighthand(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRighthand is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRighthand requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRighthand: %w", err)
-	}
-	return oldValue.Righthand, nil
-}
-
-// ResetRighthand resets all changes to the "righthand" field.
-func (m *CharacterMutation) ResetRighthand() {
-	m.righthand = nil
-}
-
-// SetSpells sets the "spells" field.
-func (m *CharacterMutation) SetSpells(s string) {
-	m.spells = &s
-}
-
-// Spells returns the value of the "spells" field in the mutation.
-func (m *CharacterMutation) Spells() (r string, exists bool) {
-	v := m.spells
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSpells returns the old "spells" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldSpells(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSpells is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSpells requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSpells: %w", err)
-	}
-	return oldValue.Spells, nil
-}
-
-// ResetSpells resets all changes to the "spells" field.
-func (m *CharacterMutation) ResetSpells() {
-	m.spells = nil
-}
-
-// SetSpellbook sets the "spellbook" field.
-func (m *CharacterMutation) SetSpellbook(s string) {
-	m.spellbook = &s
-}
-
-// Spellbook returns the value of the "spellbook" field in the mutation.
-func (m *CharacterMutation) Spellbook() (r string, exists bool) {
-	v := m.spellbook
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSpellbook returns the old "spellbook" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldSpellbook(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSpellbook is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSpellbook requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSpellbook: %w", err)
-	}
-	return oldValue.Spellbook, nil
-}
-
-// ResetSpellbook resets all changes to the "spellbook" field.
-func (m *CharacterMutation) ResetSpellbook() {
-	m.spellbook = nil
-}
-
-// SetBags sets the "bags" field.
-func (m *CharacterMutation) SetBags(s string) {
-	m.bags = &s
-}
-
-// Bags returns the value of the "bags" field in the mutation.
-func (m *CharacterMutation) Bags() (r string, exists bool) {
-	v := m.bags
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBags returns the old "bags" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldBags(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBags is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBags requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBags: %w", err)
-	}
-	return oldValue.Bags, nil
-}
-
-// ResetBags resets all changes to the "bags" field.
-func (m *CharacterMutation) ResetBags() {
-	m.bags = nil
+// ResetData resets all changes to the "data" field.
+func (m *CharacterMutation) ResetData() {
+	m.data = nil
 }
 
 // Where appends a list predicates to the CharacterMutation builder.
@@ -1028,66 +294,15 @@ func (m *CharacterMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CharacterMutation) Fields() []string {
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 3)
 	if m.steamid != nil {
 		fields = append(fields, character.FieldSteamid)
 	}
 	if m.slot != nil {
 		fields = append(fields, character.FieldSlot)
 	}
-	if m.name != nil {
-		fields = append(fields, character.FieldName)
-	}
-	if m.gender != nil {
-		fields = append(fields, character.FieldGender)
-	}
-	if m.flags != nil {
-		fields = append(fields, character.FieldFlags)
-	}
-	if m.quickslots != nil {
-		fields = append(fields, character.FieldQuickslots)
-	}
-	if m.quests != nil {
-		fields = append(fields, character.FieldQuests)
-	}
-	if m.guild != nil {
-		fields = append(fields, character.FieldGuild)
-	}
-	if m.kills != nil {
-		fields = append(fields, character.FieldKills)
-	}
-	if m.gold != nil {
-		fields = append(fields, character.FieldGold)
-	}
-	if m.skills != nil {
-		fields = append(fields, character.FieldSkills)
-	}
-	if m.pets != nil {
-		fields = append(fields, character.FieldPets)
-	}
-	if m.health != nil {
-		fields = append(fields, character.FieldHealth)
-	}
-	if m.mana != nil {
-		fields = append(fields, character.FieldMana)
-	}
-	if m.equipped != nil {
-		fields = append(fields, character.FieldEquipped)
-	}
-	if m.lefthand != nil {
-		fields = append(fields, character.FieldLefthand)
-	}
-	if m.righthand != nil {
-		fields = append(fields, character.FieldRighthand)
-	}
-	if m.spells != nil {
-		fields = append(fields, character.FieldSpells)
-	}
-	if m.spellbook != nil {
-		fields = append(fields, character.FieldSpellbook)
-	}
-	if m.bags != nil {
-		fields = append(fields, character.FieldBags)
+	if m.data != nil {
+		fields = append(fields, character.FieldData)
 	}
 	return fields
 }
@@ -1101,42 +316,8 @@ func (m *CharacterMutation) Field(name string) (ent.Value, bool) {
 		return m.Steamid()
 	case character.FieldSlot:
 		return m.Slot()
-	case character.FieldName:
-		return m.Name()
-	case character.FieldGender:
-		return m.Gender()
-	case character.FieldFlags:
-		return m.Flags()
-	case character.FieldQuickslots:
-		return m.Quickslots()
-	case character.FieldQuests:
-		return m.Quests()
-	case character.FieldGuild:
-		return m.Guild()
-	case character.FieldKills:
-		return m.Kills()
-	case character.FieldGold:
-		return m.Gold()
-	case character.FieldSkills:
-		return m.Skills()
-	case character.FieldPets:
-		return m.Pets()
-	case character.FieldHealth:
-		return m.Health()
-	case character.FieldMana:
-		return m.Mana()
-	case character.FieldEquipped:
-		return m.Equipped()
-	case character.FieldLefthand:
-		return m.Lefthand()
-	case character.FieldRighthand:
-		return m.Righthand()
-	case character.FieldSpells:
-		return m.Spells()
-	case character.FieldSpellbook:
-		return m.Spellbook()
-	case character.FieldBags:
-		return m.Bags()
+	case character.FieldData:
+		return m.Data()
 	}
 	return nil, false
 }
@@ -1150,42 +331,8 @@ func (m *CharacterMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldSteamid(ctx)
 	case character.FieldSlot:
 		return m.OldSlot(ctx)
-	case character.FieldName:
-		return m.OldName(ctx)
-	case character.FieldGender:
-		return m.OldGender(ctx)
-	case character.FieldFlags:
-		return m.OldFlags(ctx)
-	case character.FieldQuickslots:
-		return m.OldQuickslots(ctx)
-	case character.FieldQuests:
-		return m.OldQuests(ctx)
-	case character.FieldGuild:
-		return m.OldGuild(ctx)
-	case character.FieldKills:
-		return m.OldKills(ctx)
-	case character.FieldGold:
-		return m.OldGold(ctx)
-	case character.FieldSkills:
-		return m.OldSkills(ctx)
-	case character.FieldPets:
-		return m.OldPets(ctx)
-	case character.FieldHealth:
-		return m.OldHealth(ctx)
-	case character.FieldMana:
-		return m.OldMana(ctx)
-	case character.FieldEquipped:
-		return m.OldEquipped(ctx)
-	case character.FieldLefthand:
-		return m.OldLefthand(ctx)
-	case character.FieldRighthand:
-		return m.OldRighthand(ctx)
-	case character.FieldSpells:
-		return m.OldSpells(ctx)
-	case character.FieldSpellbook:
-		return m.OldSpellbook(ctx)
-	case character.FieldBags:
-		return m.OldBags(ctx)
+	case character.FieldData:
+		return m.OldData(ctx)
 	}
 	return nil, fmt.Errorf("unknown Character field %s", name)
 }
@@ -1209,131 +356,12 @@ func (m *CharacterMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSlot(v)
 		return nil
-	case character.FieldName:
+	case character.FieldData:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetName(v)
-		return nil
-	case character.FieldGender:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetGender(v)
-		return nil
-	case character.FieldFlags:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetFlags(v)
-		return nil
-	case character.FieldQuickslots:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetQuickslots(v)
-		return nil
-	case character.FieldQuests:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetQuests(v)
-		return nil
-	case character.FieldGuild:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetGuild(v)
-		return nil
-	case character.FieldKills:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetKills(v)
-		return nil
-	case character.FieldGold:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetGold(v)
-		return nil
-	case character.FieldSkills:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSkills(v)
-		return nil
-	case character.FieldPets:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetPets(v)
-		return nil
-	case character.FieldHealth:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetHealth(v)
-		return nil
-	case character.FieldMana:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetMana(v)
-		return nil
-	case character.FieldEquipped:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetEquipped(v)
-		return nil
-	case character.FieldLefthand:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetLefthand(v)
-		return nil
-	case character.FieldRighthand:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRighthand(v)
-		return nil
-	case character.FieldSpells:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSpells(v)
-		return nil
-	case character.FieldSpellbook:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSpellbook(v)
-		return nil
-	case character.FieldBags:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBags(v)
+		m.SetData(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Character field %s", name)
@@ -1346,21 +374,6 @@ func (m *CharacterMutation) AddedFields() []string {
 	if m.addslot != nil {
 		fields = append(fields, character.FieldSlot)
 	}
-	if m.addgender != nil {
-		fields = append(fields, character.FieldGender)
-	}
-	if m.addkills != nil {
-		fields = append(fields, character.FieldKills)
-	}
-	if m.addgold != nil {
-		fields = append(fields, character.FieldGold)
-	}
-	if m.addhealth != nil {
-		fields = append(fields, character.FieldHealth)
-	}
-	if m.addmana != nil {
-		fields = append(fields, character.FieldMana)
-	}
 	return fields
 }
 
@@ -1371,16 +384,6 @@ func (m *CharacterMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case character.FieldSlot:
 		return m.AddedSlot()
-	case character.FieldGender:
-		return m.AddedGender()
-	case character.FieldKills:
-		return m.AddedKills()
-	case character.FieldGold:
-		return m.AddedGold()
-	case character.FieldHealth:
-		return m.AddedHealth()
-	case character.FieldMana:
-		return m.AddedMana()
 	}
 	return nil, false
 }
@@ -1396,41 +399,6 @@ func (m *CharacterMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddSlot(v)
-		return nil
-	case character.FieldGender:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddGender(v)
-		return nil
-	case character.FieldKills:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddKills(v)
-		return nil
-	case character.FieldGold:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddGold(v)
-		return nil
-	case character.FieldHealth:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddHealth(v)
-		return nil
-	case character.FieldMana:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddMana(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Character numeric field %s", name)
@@ -1465,59 +433,8 @@ func (m *CharacterMutation) ResetField(name string) error {
 	case character.FieldSlot:
 		m.ResetSlot()
 		return nil
-	case character.FieldName:
-		m.ResetName()
-		return nil
-	case character.FieldGender:
-		m.ResetGender()
-		return nil
-	case character.FieldFlags:
-		m.ResetFlags()
-		return nil
-	case character.FieldQuickslots:
-		m.ResetQuickslots()
-		return nil
-	case character.FieldQuests:
-		m.ResetQuests()
-		return nil
-	case character.FieldGuild:
-		m.ResetGuild()
-		return nil
-	case character.FieldKills:
-		m.ResetKills()
-		return nil
-	case character.FieldGold:
-		m.ResetGold()
-		return nil
-	case character.FieldSkills:
-		m.ResetSkills()
-		return nil
-	case character.FieldPets:
-		m.ResetPets()
-		return nil
-	case character.FieldHealth:
-		m.ResetHealth()
-		return nil
-	case character.FieldMana:
-		m.ResetMana()
-		return nil
-	case character.FieldEquipped:
-		m.ResetEquipped()
-		return nil
-	case character.FieldLefthand:
-		m.ResetLefthand()
-		return nil
-	case character.FieldRighthand:
-		m.ResetRighthand()
-		return nil
-	case character.FieldSpells:
-		m.ResetSpells()
-		return nil
-	case character.FieldSpellbook:
-		m.ResetSpellbook()
-		return nil
-	case character.FieldBags:
-		m.ResetBags()
+	case character.FieldData:
+		m.ResetData()
 		return nil
 	}
 	return fmt.Errorf("unknown Character field %s", name)
