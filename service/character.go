@@ -65,30 +65,6 @@ func (s *service) CharacterCreate(newChar ent.Character) (*ent.Character, error)
 }
 
 func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.Character) (*ent.Character, error) {
-  // char, err := s.client.Character.UpdateOneID(uid).
-  // SetSteamid(updateChar.Steamid).
-  // SetSlot(updateChar.Slot).
-  // SetName(updateChar.Name).
-  // SetGender(updateChar.Gender).
-  // SetRace(updateChar.Race).
-  // SetNillableFlags(updateChar.Flags).
-  // SetNillableQuickslots(updateChar.Quickslots).
-  // SetNillableQuests(updateChar.Quests).
-  // SetGuild(updateChar.Guild).
-  // SetKills(updateChar.Kills).
-  // SetGold(updateChar.Gold).
-  // SetNillableSkills(updateChar.Skills).
-  // SetNillablePets(updateChar.Pets).
-  // SetHealth(updateChar.Health).
-  // SetMana(updateChar.Mana).
-  // SetNillableEquipped(updateChar.Equipped).
-  // SetLefthand(updateChar.Lefthand).
-  // SetRighthand(updateChar.Righthand).
-  // SetNillableSpells(updateChar.Spells).
-  // SetNillableSpellbook(updateChar.Spellbook).
-  // SetNillableBags(updateChar.Bags).
-  // SetNillableSheaths(updateChar.Sheaths).
-  // UpdateNewValues().Save(s.ctx)
   char, err := s.client.Character.UpdateOneID(uid).
   SetData(updateChar.Data).
   Save(s.ctx)
