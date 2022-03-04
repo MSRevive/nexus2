@@ -13,7 +13,8 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "steamid", Type: field.TypeString},
 		{Name: "slot", Type: field.TypeInt},
-		{Name: "data", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "blob"}},
+		{Name: "size", Type: field.TypeInt, Default: 0},
+		{Name: "data", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
 	}
 	// CharactersTable holds the schema information for the "characters" table.
 	CharactersTable = &schema.Table{

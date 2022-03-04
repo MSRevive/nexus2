@@ -18,6 +18,10 @@ func init() {
 	characterDescSlot := characterFields[2].Descriptor()
 	// character.SlotValidator is a validator for the "slot" field. It is called by the builders before save.
 	character.SlotValidator = characterDescSlot.Validators[0].(func(int) error)
+	// characterDescSize is the schema descriptor for size field.
+	characterDescSize := characterFields[3].Descriptor()
+	// character.DefaultSize holds the default value on creation for the size field.
+	character.DefaultSize = characterDescSize.Default.(int)
 	// characterDescID is the schema descriptor for id field.
 	characterDescID := characterFields[0].Descriptor()
 	// character.DefaultID holds the default value on creation for the id field.

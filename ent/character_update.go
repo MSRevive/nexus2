@@ -46,6 +46,27 @@ func (cu *CharacterUpdate) AddSlot(i int) *CharacterUpdate {
 	return cu
 }
 
+// SetSize sets the "size" field.
+func (cu *CharacterUpdate) SetSize(i int) *CharacterUpdate {
+	cu.mutation.ResetSize()
+	cu.mutation.SetSize(i)
+	return cu
+}
+
+// SetNillableSize sets the "size" field if the given value is not nil.
+func (cu *CharacterUpdate) SetNillableSize(i *int) *CharacterUpdate {
+	if i != nil {
+		cu.SetSize(*i)
+	}
+	return cu
+}
+
+// AddSize adds i to the "size" field.
+func (cu *CharacterUpdate) AddSize(i int) *CharacterUpdate {
+	cu.mutation.AddSize(i)
+	return cu
+}
+
 // SetData sets the "data" field.
 func (cu *CharacterUpdate) SetData(s string) *CharacterUpdate {
 	cu.mutation.SetData(s)
@@ -166,6 +187,20 @@ func (cu *CharacterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: character.FieldSlot,
 		})
 	}
+	if value, ok := cu.mutation.Size(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: character.FieldSize,
+		})
+	}
+	if value, ok := cu.mutation.AddedSize(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: character.FieldSize,
+		})
+	}
 	if value, ok := cu.mutation.Data(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
@@ -208,6 +243,27 @@ func (cuo *CharacterUpdateOne) SetSlot(i int) *CharacterUpdateOne {
 // AddSlot adds i to the "slot" field.
 func (cuo *CharacterUpdateOne) AddSlot(i int) *CharacterUpdateOne {
 	cuo.mutation.AddSlot(i)
+	return cuo
+}
+
+// SetSize sets the "size" field.
+func (cuo *CharacterUpdateOne) SetSize(i int) *CharacterUpdateOne {
+	cuo.mutation.ResetSize()
+	cuo.mutation.SetSize(i)
+	return cuo
+}
+
+// SetNillableSize sets the "size" field if the given value is not nil.
+func (cuo *CharacterUpdateOne) SetNillableSize(i *int) *CharacterUpdateOne {
+	if i != nil {
+		cuo.SetSize(*i)
+	}
+	return cuo
+}
+
+// AddSize adds i to the "size" field.
+func (cuo *CharacterUpdateOne) AddSize(i int) *CharacterUpdateOne {
+	cuo.mutation.AddSize(i)
 	return cuo
 }
 
@@ -353,6 +409,20 @@ func (cuo *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, e
 			Type:   field.TypeInt,
 			Value:  value,
 			Column: character.FieldSlot,
+		})
+	}
+	if value, ok := cuo.mutation.Size(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: character.FieldSize,
+		})
+	}
+	if value, ok := cuo.mutation.AddedSize(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: character.FieldSize,
 		})
 	}
 	if value, ok := cuo.mutation.Data(); ok {

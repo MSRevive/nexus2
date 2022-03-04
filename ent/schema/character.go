@@ -23,9 +23,11 @@ func (Character) Fields() []ent.Field {
 		field.String("steamid"),
 		field.Int("slot").
 			Min(0),
+		field.Int("size").
+			Default(0),
 		field.String("data").
 			SchemaType(map[string]string{
-				dialect.SQLite: "blob",
+				dialect.SQLite: "text",
 			}),
 	}
 }

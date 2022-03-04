@@ -20,6 +20,8 @@ type Character struct {
 	Steamid string `json:"steamid,omitempty"`
 	// Slot holds the value of the "slot" field.
 	Slot int `json:"slot,omitempty"`
+	// Size holds the value of the "size" field.
+	Size int `json:"size,omitempty"`
 	// Data holds the value of the "data" field.
 	Data string `json:"data,omitempty"`
 }
@@ -29,7 +31,7 @@ func (*Character) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case character.FieldSlot:
+		case character.FieldSlot, character.FieldSize:
 			values[i] = new(sql.NullInt64)
 		case character.FieldSteamid, character.FieldData:
 			values[i] = new(sql.NullString)
@@ -67,6 +69,12 @@ func (c *Character) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field slot", values[i])
 			} else if value.Valid {
 				c.Slot = int(value.Int64)
+			}
+		case character.FieldSize:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field size", values[i])
+			} else if value.Valid {
+				c.Size = int(value.Int64)
 			}
 		case character.FieldData:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -106,6 +114,8 @@ func (c *Character) String() string {
 	builder.WriteString(c.Steamid)
 	builder.WriteString(", slot=")
 	builder.WriteString(fmt.Sprintf("%v", c.Slot))
+	builder.WriteString(", size=")
+	builder.WriteString(fmt.Sprintf("%v", c.Size))
 	builder.WriteString(", data=")
 	builder.WriteString(c.Data)
 	builder.WriteByte(')')

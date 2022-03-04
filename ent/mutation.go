@@ -36,6 +36,8 @@ type CharacterMutation struct {
 	steamid       *string
 	slot          *int
 	addslot       *int
+	size          *int
+	addsize       *int
 	data          *string
 	clearedFields map[string]struct{}
 	done          bool
@@ -239,6 +241,62 @@ func (m *CharacterMutation) ResetSlot() {
 	m.addslot = nil
 }
 
+// SetSize sets the "size" field.
+func (m *CharacterMutation) SetSize(i int) {
+	m.size = &i
+	m.addsize = nil
+}
+
+// Size returns the value of the "size" field in the mutation.
+func (m *CharacterMutation) Size() (r int, exists bool) {
+	v := m.size
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSize returns the old "size" field's value of the Character entity.
+// If the Character object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CharacterMutation) OldSize(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSize is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSize requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSize: %w", err)
+	}
+	return oldValue.Size, nil
+}
+
+// AddSize adds i to the "size" field.
+func (m *CharacterMutation) AddSize(i int) {
+	if m.addsize != nil {
+		*m.addsize += i
+	} else {
+		m.addsize = &i
+	}
+}
+
+// AddedSize returns the value that was added to the "size" field in this mutation.
+func (m *CharacterMutation) AddedSize() (r int, exists bool) {
+	v := m.addsize
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSize resets all changes to the "size" field.
+func (m *CharacterMutation) ResetSize() {
+	m.size = nil
+	m.addsize = nil
+}
+
 // SetData sets the "data" field.
 func (m *CharacterMutation) SetData(s string) {
 	m.data = &s
@@ -294,12 +352,15 @@ func (m *CharacterMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CharacterMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.steamid != nil {
 		fields = append(fields, character.FieldSteamid)
 	}
 	if m.slot != nil {
 		fields = append(fields, character.FieldSlot)
+	}
+	if m.size != nil {
+		fields = append(fields, character.FieldSize)
 	}
 	if m.data != nil {
 		fields = append(fields, character.FieldData)
@@ -316,6 +377,8 @@ func (m *CharacterMutation) Field(name string) (ent.Value, bool) {
 		return m.Steamid()
 	case character.FieldSlot:
 		return m.Slot()
+	case character.FieldSize:
+		return m.Size()
 	case character.FieldData:
 		return m.Data()
 	}
@@ -331,6 +394,8 @@ func (m *CharacterMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldSteamid(ctx)
 	case character.FieldSlot:
 		return m.OldSlot(ctx)
+	case character.FieldSize:
+		return m.OldSize(ctx)
 	case character.FieldData:
 		return m.OldData(ctx)
 	}
@@ -356,6 +421,13 @@ func (m *CharacterMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSlot(v)
 		return nil
+	case character.FieldSize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSize(v)
+		return nil
 	case character.FieldData:
 		v, ok := value.(string)
 		if !ok {
@@ -374,6 +446,9 @@ func (m *CharacterMutation) AddedFields() []string {
 	if m.addslot != nil {
 		fields = append(fields, character.FieldSlot)
 	}
+	if m.addsize != nil {
+		fields = append(fields, character.FieldSize)
+	}
 	return fields
 }
 
@@ -384,6 +459,8 @@ func (m *CharacterMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case character.FieldSlot:
 		return m.AddedSlot()
+	case character.FieldSize:
+		return m.AddedSize()
 	}
 	return nil, false
 }
@@ -399,6 +476,13 @@ func (m *CharacterMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddSlot(v)
+		return nil
+	case character.FieldSize:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSize(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Character numeric field %s", name)
@@ -432,6 +516,9 @@ func (m *CharacterMutation) ResetField(name string) error {
 		return nil
 	case character.FieldSlot:
 		m.ResetSlot()
+		return nil
+	case character.FieldSize:
+		m.ResetSize()
 		return nil
 	case character.FieldData:
 		m.ResetData()

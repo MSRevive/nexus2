@@ -105,6 +105,13 @@ func Slot(v int) predicate.Character {
 	})
 }
 
+// Size applies equality check predicate on the "size" field. It's identical to SizeEQ.
+func Size(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldSize), v))
+	})
+}
+
 // Data applies equality check predicate on the "data" field. It's identical to DataEQ.
 func Data(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
@@ -296,6 +303,82 @@ func SlotLT(v int) predicate.Character {
 func SlotLTE(v int) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldSlot), v))
+	})
+}
+
+// SizeEQ applies the EQ predicate on the "size" field.
+func SizeEQ(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldSize), v))
+	})
+}
+
+// SizeNEQ applies the NEQ predicate on the "size" field.
+func SizeNEQ(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldSize), v))
+	})
+}
+
+// SizeIn applies the In predicate on the "size" field.
+func SizeIn(vs ...int) predicate.Character {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Character(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldSize), v...))
+	})
+}
+
+// SizeNotIn applies the NotIn predicate on the "size" field.
+func SizeNotIn(vs ...int) predicate.Character {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Character(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldSize), v...))
+	})
+}
+
+// SizeGT applies the GT predicate on the "size" field.
+func SizeGT(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldSize), v))
+	})
+}
+
+// SizeGTE applies the GTE predicate on the "size" field.
+func SizeGTE(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldSize), v))
+	})
+}
+
+// SizeLT applies the LT predicate on the "size" field.
+func SizeLT(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldSize), v))
+	})
+}
+
+// SizeLTE applies the LTE predicate on the "size" field.
+func SizeLTE(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldSize), v))
 	})
 }
 

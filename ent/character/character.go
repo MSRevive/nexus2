@@ -15,6 +15,8 @@ const (
 	FieldSteamid = "steamid"
 	// FieldSlot holds the string denoting the slot field in the database.
 	FieldSlot = "slot"
+	// FieldSize holds the string denoting the size field in the database.
+	FieldSize = "size"
 	// FieldData holds the string denoting the data field in the database.
 	FieldData = "data"
 	// Table holds the table name of the character in the database.
@@ -26,6 +28,7 @@ var Columns = []string{
 	FieldID,
 	FieldSteamid,
 	FieldSlot,
+	FieldSize,
 	FieldData,
 }
 
@@ -42,6 +45,8 @@ func ValidColumn(column string) bool {
 var (
 	// SlotValidator is a validator for the "slot" field. It is called by the builders before save.
 	SlotValidator func(int) error
+	// DefaultSize holds the default value on creation for the "size" field.
+	DefaultSize int
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )

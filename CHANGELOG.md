@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.1
+### Added
+* Add size field
+
+### Changes
+* Data is now text instead of blob type.
+
 ## v1.0.0
 Initial Release
 

@@ -32,6 +32,20 @@ func (cc *CharacterCreate) SetSlot(i int) *CharacterCreate {
 	return cc
 }
 
+// SetSize sets the "size" field.
+func (cc *CharacterCreate) SetSize(i int) *CharacterCreate {
+	cc.mutation.SetSize(i)
+	return cc
+}
+
+// SetNillableSize sets the "size" field if the given value is not nil.
+func (cc *CharacterCreate) SetNillableSize(i *int) *CharacterCreate {
+	if i != nil {
+		cc.SetSize(*i)
+	}
+	return cc
+}
+
 // SetData sets the "data" field.
 func (cc *CharacterCreate) SetData(s string) *CharacterCreate {
 	cc.mutation.SetData(s)
@@ -123,6 +137,10 @@ func (cc *CharacterCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (cc *CharacterCreate) defaults() {
+	if _, ok := cc.mutation.Size(); !ok {
+		v := character.DefaultSize
+		cc.mutation.SetSize(v)
+	}
 	if _, ok := cc.mutation.ID(); !ok {
 		v := character.DefaultID()
 		cc.mutation.SetID(v)
@@ -141,6 +159,9 @@ func (cc *CharacterCreate) check() error {
 		if err := character.SlotValidator(v); err != nil {
 			return &ValidationError{Name: "slot", err: fmt.Errorf(`ent: validator failed for field "Character.slot": %w`, err)}
 		}
+	}
+	if _, ok := cc.mutation.Size(); !ok {
+		return &ValidationError{Name: "size", err: errors.New(`ent: missing required field "Character.size"`)}
 	}
 	if _, ok := cc.mutation.Data(); !ok {
 		return &ValidationError{Name: "data", err: errors.New(`ent: missing required field "Character.data"`)}
@@ -196,6 +217,14 @@ func (cc *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 			Column: character.FieldSlot,
 		})
 		_node.Slot = value
+	}
+	if value, ok := cc.mutation.Size(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: character.FieldSize,
+		})
+		_node.Size = value
 	}
 	if value, ok := cc.mutation.Data(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{

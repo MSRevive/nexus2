@@ -55,6 +55,7 @@ func (s *service) CharacterCreate(newChar ent.Character) (*ent.Character, error)
   char, err := s.client.Character.Create().
   SetSteamid(newChar.Steamid).
   SetSlot(newChar.Slot).
+  SetSize(newChar.Size).
   SetData(newChar.Data).
   Save(s.ctx)
   if err != nil {
@@ -66,6 +67,7 @@ func (s *service) CharacterCreate(newChar ent.Character) (*ent.Character, error)
 
 func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.Character) (*ent.Character, error) {
   char, err := s.client.Character.UpdateOneID(uid).
+  SetSize(updateChar.Size).
   SetData(updateChar.Data).
   Save(s.ctx)
   if err != nil {
