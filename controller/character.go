@@ -7,6 +7,7 @@ import (
   
   "github.com/msrevive/nexus2/response"
   "github.com/msrevive/nexus2/service"
+  "github.com/msrevive/nexus2/system"
   "github.com/msrevive/nexus2/ent"
   "github.com/msrevive/nexus2/log"
   
@@ -31,6 +32,7 @@ func (c *controller) GetAllCharacters(w http.ResponseWriter, r *http.Request) {
 func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   steamid := vars["steamid"]
+  var isBanned bool = false
   
   chars, err := service.New(r.Context()).CharactersGetBySteamid(steamid)
   if err != nil {
@@ -39,7 +41,11 @@ func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  response.OK(w, chars)
+  if _,ok := system.BanList[steamid]; ok && system.Config.Verify.EnforceBan {
+    isBanned = true
+  }
+  
+  response.OKChar(w, isBanned, chars)
 }
 
 //GET /character/{steamid}/{slot}
@@ -52,6 +58,7 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
     response.BadRequest(w, err)
     return
   }
+  var isBanned bool = false
   
   char, err := service.New(r.Context()).CharacterGetBySteamidSlot(steamid, slot)
   if err != nil {
@@ -60,7 +67,11 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  response.OK(w, char)
+  if _,ok := system.BanList[steamid]; ok && system.Config.Verify.EnforceBan {
+    isBanned = true
+  }
+  
+  response.OKChar(w, isBanned, char)
 }
 
 //GET /character/id/{uid}
@@ -72,6 +83,7 @@ func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
     response.BadRequest(w, err)
     return
   }
+  var isBanned bool = false
   
   char, err := service.New(r.Context()).CharacterGetByID(uid)
   if err != nil {
@@ -80,7 +92,11 @@ func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  response.OK(w, char)
+  if _,ok := system.BanList[char.Steamid]; ok && system.Config.Verify.EnforceBan {
+    isBanned = true
+  }
+  
+  response.OKChar(w, isBanned, char)
 }
 
 //POST /character/
