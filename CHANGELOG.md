@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.3-rc1
+### Added
+* Add debug message to see if request is received by server.
+
 ## v1.0.2
 ### Added
 * Add (bool)isBanned field to JSON response for ``api/v1/character/{steamid64}``, ``api/v1/character/{steamid64}/{slot}``, ``api/v1/character/id/{id}``
