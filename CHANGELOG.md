@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.3
+### Changes
+* Make sure slot is always emitted, and defaults to 0 if there's no slot.
+
 ## v1.0.3-rc1
 ### Added
 * Add debug message to see if request is received by server.
