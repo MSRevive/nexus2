@@ -18,5 +18,5 @@ jobs:
       - name: upload binaries
         uses: actions/upload-artifact@v2
         with:
-          name: linux build
+          name: linux_amd64
           path: build/msnexus2_linux_amd64
