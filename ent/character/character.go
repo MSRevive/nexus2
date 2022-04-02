@@ -43,6 +43,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultSlot holds the default value on creation for the "slot" field.
+	DefaultSlot int
 	// SlotValidator is a validator for the "slot" field. It is called by the builders before save.
 	SlotValidator func(int) error
 	// DefaultSize holds the default value on creation for the "size" field.

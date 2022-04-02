@@ -40,6 +40,14 @@ func (cu *CharacterUpdate) SetSlot(i int) *CharacterUpdate {
 	return cu
 }
 
+// SetNillableSlot sets the "slot" field if the given value is not nil.
+func (cu *CharacterUpdate) SetNillableSlot(i *int) *CharacterUpdate {
+	if i != nil {
+		cu.SetSlot(*i)
+	}
+	return cu
+}
+
 // AddSlot adds i to the "slot" field.
 func (cu *CharacterUpdate) AddSlot(i int) *CharacterUpdate {
 	cu.mutation.AddSlot(i)
@@ -237,6 +245,14 @@ func (cuo *CharacterUpdateOne) SetSteamid(s string) *CharacterUpdateOne {
 func (cuo *CharacterUpdateOne) SetSlot(i int) *CharacterUpdateOne {
 	cuo.mutation.ResetSlot()
 	cuo.mutation.SetSlot(i)
+	return cuo
+}
+
+// SetNillableSlot sets the "slot" field if the given value is not nil.
+func (cuo *CharacterUpdateOne) SetNillableSlot(i *int) *CharacterUpdateOne {
+	if i != nil {
+		cuo.SetSlot(*i)
+	}
 	return cuo
 }
 

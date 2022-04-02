@@ -12,7 +12,7 @@ var (
 	CharactersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "steamid", Type: field.TypeString},
-		{Name: "slot", Type: field.TypeInt},
+		{Name: "slot", Type: field.TypeInt, Default: 0},
 		{Name: "size", Type: field.TypeInt, Default: 0},
 		{Name: "data", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
 	}

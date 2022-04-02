@@ -19,7 +19,7 @@ type Character struct {
 	// Steamid holds the value of the "steamid" field.
 	Steamid string `json:"steamid,omitempty"`
 	// Slot holds the value of the "slot" field.
-	Slot int `json:"slot,omitempty"`
+	Slot int `json:"slot"`
 	// Size holds the value of the "size" field.
 	Size int `json:"size,omitempty"`
 	// Data holds the value of the "data" field.

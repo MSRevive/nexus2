@@ -32,6 +32,14 @@ func (cc *CharacterCreate) SetSlot(i int) *CharacterCreate {
 	return cc
 }
 
+// SetNillableSlot sets the "slot" field if the given value is not nil.
+func (cc *CharacterCreate) SetNillableSlot(i *int) *CharacterCreate {
+	if i != nil {
+		cc.SetSlot(*i)
+	}
+	return cc
+}
+
 // SetSize sets the "size" field.
 func (cc *CharacterCreate) SetSize(i int) *CharacterCreate {
 	cc.mutation.SetSize(i)
@@ -137,6 +145,10 @@ func (cc *CharacterCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (cc *CharacterCreate) defaults() {
+	if _, ok := cc.mutation.Slot(); !ok {
+		v := character.DefaultSlot
+		cc.mutation.SetSlot(v)
+	}
 	if _, ok := cc.mutation.Size(); !ok {
 		v := character.DefaultSize
 		cc.mutation.SetSize(v)

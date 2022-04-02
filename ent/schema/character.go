@@ -22,7 +22,9 @@ func (Character) Fields() []ent.Field {
 			Default(uuid.New),
 		field.String("steamid"),
 		field.Int("slot").
-			Min(0),
+			Min(0).
+			Default(0).
+			StructTag(`json:"slot"`),
 		field.Int("size").
 			Default(0),
 		field.String("data").
