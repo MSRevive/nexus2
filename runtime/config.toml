@@ -26,6 +26,7 @@ EnforceBan = false # Enforce player "FN" bans
 EnforceSC = false
 MapListFile = "./runtime/game/maps.json"
 BanListFile = "./runtime/game/bans.json"
+AdminListFile = "./runtime/game/admins.json"
 SCHash = 125454
 
 [Log]

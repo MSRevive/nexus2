@@ -24,6 +24,7 @@ type responseCharGet struct {
   Error string `json:"error"`
   Data interface{} `json:"data"`
   IsBanned bool `json:"isBanned"`
+	IsAdmin bool `json:"isAdmin"`
 }
 
 func Raw(w http.ResponseWriter, status bool, code int, err error, data interface{}) {
@@ -42,13 +43,14 @@ func Raw(w http.ResponseWriter, status bool, code int, err error, data interface
   json.NewEncoder(w).Encode(resp)
 }
 
-func RawCharGet(w http.ResponseWriter, status bool, code int, err error, ban bool, data interface{}) {
+func RawCharGet(w http.ResponseWriter, status bool, code int, err error, ban bool, admin bool, data interface{}) {
 	resp := responseCharGet{
 		Status: status,
 		Code: code,
 		Error: "",
 		Data: data,
 		IsBanned: ban,
+		IsAdmin: admin,
 	}
 	
 	if err != nil {
@@ -63,8 +65,8 @@ func OK(w http.ResponseWriter, data interface{}) {
   Raw(w, true, http.StatusOK, nil, data)
 }
 
-func OKChar(w http.ResponseWriter, ban bool, data interface{}) {
-	RawCharGet(w, true, http.StatusOK, nil, ban, data)
+func OKChar(w http.ResponseWriter, ban bool, admin bool, data interface{}) {
+	RawCharGet(w, true, http.StatusOK, nil, ban, admin, data)
 }
 
 func Result(w http.ResponseWriter, b bool) {

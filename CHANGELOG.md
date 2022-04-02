@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.4
+### Added
+* Add isAdmin field for FN admins.
+
 ## v1.0.3
 ### Changes
 * Make sure slot is always emitted, and defaults to 0 if there's no slot.

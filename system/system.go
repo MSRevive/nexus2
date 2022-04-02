@@ -22,6 +22,8 @@ var (
   banListMutex = new(sync.RWMutex)
   MapList map[string]uint32
   mapListMutex = new(sync.RWMutex)
+  AdminList map[string]bool
+  adminListMutex = new(sync.RWMutex)
 )
 
 type config struct {
@@ -54,6 +56,7 @@ type config struct {
     EnforceSC bool
     MapListFile string
     BanListFile string
+    AdminListFile string
     SCHash uint32
   }
   Log struct {
@@ -106,6 +109,19 @@ func LoadBanList(path string) error {
   banListMutex.Lock()
   _ = json.Unmarshal([]byte(file), &BanList)
   banListMutex.Unlock()
+  
+  return nil
+}
+
+func LoadAdminList(path string) error {
+  file,err := ioutil.ReadFile(path)
+  if err != nil {
+    return err
+  }
+  
+  adminListMutex.Lock()
+  _ = json.Unmarshal([]byte(file), &AdminList)
+  adminListMutex.Unlock()
   
   return nil
 }

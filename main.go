@@ -85,6 +85,11 @@ func main() {
     }
   }
   
+  log.Log.Printf("Loading Admin list from %s", system.Config.Verify.AdminListFile)
+  if err := system.LoadAdminList(system.Config.Verify.AdminListFile); err != nil {
+    log.Log.Warnln("Failed to load Admin list.")
+  }
+  
   //Connect database.
   log.Log.Println("Connecting to database")
   client, err := ent.Open("sqlite3", system.Config.Core.DBString)

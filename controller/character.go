@@ -33,6 +33,7 @@ func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   steamid := vars["steamid"]
   var isBanned bool = false
+  var isAdmin bool = false
   
   chars, err := service.New(r.Context()).CharactersGetBySteamid(steamid)
   if err != nil {
@@ -45,7 +46,11 @@ func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
     isBanned = true
   }
   
-  response.OKChar(w, isBanned, chars)
+  if _,ok := system.AdminList[steamid]; ok {
+    isAdmin = true
+  }
+  
+  response.OKChar(w, isBanned, isAdmin, chars)
 }
 
 //GET /character/{steamid}/{slot}
@@ -59,6 +64,7 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
     return
   }
   var isBanned bool = false
+  var isAdmin bool = false
   
   char, err := service.New(r.Context()).CharacterGetBySteamidSlot(steamid, slot)
   if err != nil {
@@ -71,7 +77,11 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
     isBanned = true
   }
   
-  response.OKChar(w, isBanned, char)
+  if _,ok := system.AdminList[steamid]; ok {
+    isAdmin = true
+  }
+  
+  response.OKChar(w, isBanned, isAdmin, char)
 }
 
 //GET /character/id/{uid}
@@ -84,6 +94,7 @@ func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
     return
   }
   var isBanned bool = false
+  var isAdmin bool = false
   
   char, err := service.New(r.Context()).CharacterGetByID(uid)
   if err != nil {
@@ -96,7 +107,11 @@ func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
     isBanned = true
   }
   
-  response.OKChar(w, isBanned, char)
+  if _,ok := system.AdminList[char.Steamid]; ok {
+    isAdmin = true
+  }
+  
+  response.OKChar(w, isBanned, isAdmin, char)
 }
 
 //POST /character/
