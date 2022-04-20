@@ -16,12 +16,22 @@ func Steam64ToString(steamid int64) string {
   return steamStr
 }
 
-func GenerateCharFile(steamid int64, slot int, data []byte) (string, error) {
-  filename := fmt.Sprintf("./runtime/temp/%s_%d.char", Steam64ToString(steamid), slot)
-  err := os.WriteFile(filename, data, 0666)
+func GenerateCharFile(steam64 string, slot int, data []byte) (*os.File, string, error) {
+  steamid, err := strconv.ParseInt(steam64, 10, 64)
   if err != nil {
-    return "", err
+    return nil, "", err
   }
   
-  return filename, nil
+  filename := fmt.Sprintf("./runtime/temp/%s_%d.char", Steam64ToString(steamid), slot)
+  err = os.WriteFile(filename, data, 0666)
+  if err != nil {
+    return nil, "", err
+  }
+  
+  file, err := os.Open(filename)
+  if err != nil {
+    return nil, "", err
+  }
+  
+  return file, filename, nil
 }

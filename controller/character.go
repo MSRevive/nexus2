@@ -107,32 +107,25 @@ func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  charFile, err := base64.StdEncoding.DecodeString(char.Data)
+  charData, err := base64.StdEncoding.DecodeString(char.Data)
   if err != nil {
     log.Log.Errorln(err)
     response.BadRequest(w, err)
     return
   }
   
-  steamid64, err := strconv.ParseInt(steamid, 10, 64);
+  file,path,err := helper.GenerateCharFile(steamid, slot, charData)
   if err != nil {
     log.Log.Errorln(err)
     response.BadRequest(w, err)
     return
   }
   
-  path,_ := helper.GenerateCharFile(steamid64, slot, charFile)
   fn := filepath.Base(path)
-  file, err := os.Open(path)
-  if err != nil {
-    log.Log.Errorln(err)
-    response.BadRequest(w, err)
-    return
-  }
-  
   w.Header().Set("Content-Type", "application/octet-stream")
   w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", fn))
   io.Copy(w, file)
+  
   defer os.Remove(path)
   file.Close()
 }
