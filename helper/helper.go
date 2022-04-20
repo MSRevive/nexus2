@@ -23,7 +23,7 @@ func GenerateCharFile(steam64 string, slot int, data []byte) (*bytes.Reader, str
   }
   
   filename := fmt.Sprintf("%s_%d.char", Steam64ToString(steamid), slot)
-  reader := bytes.NewReader(data)
+  reader := bytes.NewReader(data) //we want to create the file in memory only to avoid unneeded io operations
   
   return reader, filename, nil
 }
