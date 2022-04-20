@@ -28,13 +28,13 @@ func (s *service) CharactersGetBySteamid(sid string) ([]*ent.Character, error) {
   return chars, nil
 }
 
-func (s *service) CharacterGetBySteamidSlot(sid string, slt int) ([]*ent.Character, error) {
+func (s *service) CharacterGetBySteamidSlot(sid string, slt int) (*ent.Character, error) {
   char, err := s.client.Character.Query().Where(
     character.And(
       character.Steamid(sid),
       character.Slot(slt),
     ),
-  ).All(s.ctx)
+  ).Only(s.ctx)
   if err != nil {
     return nil, err
   }

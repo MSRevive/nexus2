@@ -1,13 +1,18 @@
 package controller
 
 import (
+  "io"
+  "os"
+  "fmt"
   "strconv"
   "net/http"
-  //"encoding/json"
+  "encoding/base64"
+  "path/filepath"
   
   "github.com/msrevive/nexus2/response"
   "github.com/msrevive/nexus2/service"
   "github.com/msrevive/nexus2/system"
+  "github.com/msrevive/nexus2/helper"
   "github.com/msrevive/nexus2/ent"
   "github.com/msrevive/nexus2/log"
   
@@ -82,6 +87,54 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
   }
   
   response.OKChar(w, isBanned, isAdmin, char)
+}
+
+//GET /character/export/{steamid}/{slot}
+func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  steamid := vars["steamid"]
+  slot, err := strconv.Atoi(vars["slot"])
+  if err != nil {
+    log.Log.Errorln(err)
+    response.BadRequest(w, err)
+    return
+  }
+  
+  char, err := service.New(r.Context()).CharacterGetBySteamidSlot(steamid, slot)
+  if err != nil {
+    log.Log.Errorln(err)
+    response.BadRequest(w, err)
+    return
+  }
+  
+  charFile, err := base64.StdEncoding.DecodeString(char.Data)
+  if err != nil {
+    log.Log.Errorln(err)
+    response.BadRequest(w, err)
+    return
+  }
+  
+  steamid64, err := strconv.ParseInt(steamid, 10, 64);
+  if err != nil {
+    log.Log.Errorln(err)
+    response.BadRequest(w, err)
+    return
+  }
+  
+  path,_ := helper.GenerateCharFile(steamid64, slot, charFile)
+  fn := filepath.Base(path)
+  file, err := os.Open(path)
+  if err != nil {
+    log.Log.Errorln(err)
+    response.BadRequest(w, err)
+    return
+  }
+  
+  w.Header().Set("Content-Type", "application/octet-stream")
+  w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", fn))
+  io.Copy(w, file)
+  defer os.Remove(path)
+  file.Close()
 }
 
 //GET /character/id/{uid}

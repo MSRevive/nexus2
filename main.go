@@ -152,6 +152,7 @@ func main() {
   charc.R.HandleFunc("/id/{uid}", middleware.Auth(charc.GetCharacterByID)).Methods(http.MethodGet)
   charc.R.HandleFunc("/{steamid:[0-9]+}", middleware.Auth(charc.GetCharacters)).Methods(http.MethodGet)
   charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}", middleware.Auth(charc.GetCharacter)).Methods(http.MethodGet)
+  charc.R.HandleFunc("/export/{steamid:[0-9]+}/{slot:[0-9]}", middleware.Auth(charc.ExportCharacter)).Methods(http.MethodGet)
   charc.R.HandleFunc("/", middleware.Auth(charc.PostCharacter)).Methods(http.MethodPost)
   charc.R.HandleFunc("/{uid}", middleware.Auth(charc.PutCharacter)).Methods(http.MethodPut)
   charc.R.HandleFunc("/{uid}", middleware.Auth(charc.DeleteCharacter)).Methods(http.MethodDelete)
