@@ -17,7 +17,7 @@ func Steam64ToString(steamid int64) string {
 }
 
 func GenerateCharFile(steamid int64, slot int, data []byte) (string, error) {
-  filename := fmt.Sprintf("./runtime/temp/%s-%d.char", Steam64ToString(steamid), slot)
+  filename := fmt.Sprintf("./runtime/temp/%s_%d.char", Steam64ToString(steamid), slot)
   err := os.WriteFile(filename, data, 0666)
   if err != nil {
     return "", err
