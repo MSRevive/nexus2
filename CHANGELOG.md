@@ -1,15 +1,12 @@
 # Changelog
 
-## v1.0.5
-### Added
-* Added API end point to generate character file from data on via database for steamid64 and slot.
-### Fixed
-* Fix GET endpoint for steamid and slot to return single character instead of array of characters.
-
-
 ## v1.0.4
 ### Added
 * Add isAdmin field for FN admins.
+* Add API end point to generate character file from data on via database for steamid64 and slot.
+
+### Fixed
+* Fix GET endpoint for steamid and slot to return single character instead of array of characters.
 
 ## v1.0.3
 ### Changes
