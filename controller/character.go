@@ -5,7 +5,6 @@ import (
   "fmt"
   "strconv"
   "net/http"
-  "encoding/base64"
   
   "github.com/msrevive/nexus2/response"
   "github.com/msrevive/nexus2/service"
@@ -105,14 +104,7 @@ func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  charData, err := base64.StdEncoding.DecodeString(char.Data)
-  if err != nil {
-    log.Log.Errorln(err)
-    response.BadRequest(w, err)
-    return
-  }
-  
-  file,path,err := helper.GenerateCharFile(steamid, slot, charData)
+  file,path,err := helper.GenerateCharFile(steamid, slot, char.Data)
   if err != nil {
     log.Log.Errorln(err)
     response.BadRequest(w, err)

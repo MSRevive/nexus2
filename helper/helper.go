@@ -4,6 +4,7 @@ import (
   "fmt"
   "strconv"
   "bytes"
+  "encoding/base64"
 )
 
 func Steam64ToString(steamid int64) string {
@@ -16,14 +17,19 @@ func Steam64ToString(steamid int64) string {
   return steamStr
 }
 
-func GenerateCharFile(steam64 string, slot int, data []byte) (*bytes.Reader, string, error) {
+func GenerateCharFile(steam64 string, slot int, data string) (*bytes.Reader, string, error) {
   steamid, err := strconv.ParseInt(steam64, 10, 64)
   if err != nil {
     return nil, "", err
   }
   
+  d, err := base64.StdEncoding.DecodeString(data)
+  if err != nil {
+    return nil, "", err
+  }
+  
   filename := fmt.Sprintf("%s_%d.char", Steam64ToString(steamid), slot)
-  reader := bytes.NewReader(data) //we want to create the file in memory only to avoid unneeded io operations
+  reader := bytes.NewReader(d) //we want to create the file in memory only to avoid unneeded io operations
   
   return reader, filename, nil
 }
