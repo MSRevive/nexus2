@@ -46,7 +46,7 @@ func Log(next http.Handler) http.Handler {
     setControlHeaders(w) //best place to set control headers?
     start := time.Now()
     next.ServeHTTP(w, r)
-    log.Log.Printf("%s %s from %s (%v)", r.Method, r.RequestURI, getIP(r), time.Since(start))
+    //log.Log.Printf("%s %s from %s (%v)", r.Method, r.RequestURI, getIP(r), time.Since(start))
   })
 }
 
