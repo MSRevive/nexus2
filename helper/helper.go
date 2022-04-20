@@ -1,9 +1,9 @@
 package helper
 
 import (
-  "os"
   "fmt"
   "strconv"
+  "bytes"
 )
 
 func Steam64ToString(steamid int64) string {
@@ -16,22 +16,14 @@ func Steam64ToString(steamid int64) string {
   return steamStr
 }
 
-func GenerateCharFile(steam64 string, slot int, data []byte) (*os.File, string, error) {
+func GenerateCharFile(steam64 string, slot int, data []byte) (*bytes.Reader, string, error) {
   steamid, err := strconv.ParseInt(steam64, 10, 64)
   if err != nil {
     return nil, "", err
   }
   
-  filename := fmt.Sprintf("./runtime/temp/%s_%d.char", Steam64ToString(steamid), slot)
-  err = os.WriteFile(filename, data, 0666)
-  if err != nil {
-    return nil, "", err
-  }
+  filename := fmt.Sprintf("%s_%d.char", Steam64ToString(steamid), slot)
+  reader := bytes.NewReader(data)
   
-  file, err := os.Open(filename)
-  if err != nil {
-    return nil, "", err
-  }
-  
-  return file, filename, nil
+  return reader, filename, nil
 }

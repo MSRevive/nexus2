@@ -2,12 +2,10 @@ package controller
 
 import (
   "io"
-  "os"
   "fmt"
   "strconv"
   "net/http"
   "encoding/base64"
-  "path/filepath"
   
   "github.com/msrevive/nexus2/response"
   "github.com/msrevive/nexus2/service"
@@ -121,13 +119,9 @@ func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  fn := filepath.Base(path)
   w.Header().Set("Content-Type", "application/octet-stream")
-  w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", fn))
+  w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", path))
   io.Copy(w, file)
-  
-  defer os.Remove(path)
-  file.Close()
 }
 
 //GET /character/id/{uid}
