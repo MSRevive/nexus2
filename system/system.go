@@ -3,11 +3,14 @@ package system
 import(
   "time"
   "sync"
+  "errors"
   "io/ioutil"
+  "path/filepath"
 
   "github.com/msrevive/nexus2/ent"
 
   "gopkg.in/ini.v1"
+  "gopkg.in/yaml.v2"
   "github.com/goccy/go-json"
 )
 
@@ -67,11 +70,27 @@ type config struct {
 }
 
 func LoadConfig(path string) error {
-  if err := ini.MapTo(&Config, path); err != nil {
-    return err
+  switch filepath.Ext(path) {
+  case ".toml", ".ini":
+    if err := ini.MapTo(&Config, path); err != nil {
+      return err
+    }
+    
+    return nil
+  case ".yaml", ".json":
+    data,err := ioutil.ReadFile(path)
+    if data != nil {
+      err = yaml.Unmarshal(data, &Config)
+    }
+    
+    if err != nil {
+      return err
+    }
+    
+    return nil
+  default:
+    return errors.New("unsupported config type")
   }
-  
-  return nil
 }
 
 func LoadIPList(path string) error {
