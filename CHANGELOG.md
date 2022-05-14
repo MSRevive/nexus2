@@ -3,7 +3,10 @@
 ## v1.0.4
 ### Added
 * Add isAdmin field for FN admins.
-* Add API end point to generate character file from data on via database for steamid64 and slot.
+* Add API endpoint to generate character file from data on via database for steamid64 and slot.
+* Add API endpoint to check if FN connection is valid.
+* Add new middleware method to bypass authorization so we can do manual authorization.
+* Add support for YAML config file.
 
 ### Fixed
 * Fix GET endpoint for steamid and slot to return single character instead of array of characters.
