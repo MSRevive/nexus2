@@ -75,3 +75,8 @@ func (c *controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
   
   response.Result(w, false)
 }
+
+//GET ping
+func (c *controller) GetPing(w http.ResponseWriter, r *http.Request) {
+  response.Result(w, true)
+}

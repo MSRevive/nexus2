@@ -142,6 +142,7 @@ func main() {
   //api routes
   apic := controller.New(router.PathPrefix(system.Config.Core.RootPath).Subrouter())
   apic.R.HandleFunc("/", middleware.Auth(apic.TestRoot)).Methods(http.MethodGet)
+  apic.R.HandleFunc("/ping", middleware.Auth(apic.GetPing)).Methods(http.MethodGet)
   apic.R.HandleFunc("/map/{name}/{hash}", middleware.Auth(apic.GetMapVerify)).Methods(http.MethodGet)
   apic.R.HandleFunc("/ban/{steamid:[0-9]+}", middleware.Auth(apic.GetBanVerify)).Methods(http.MethodGet)
   apic.R.HandleFunc("/sc/{hash}", middleware.Auth(apic.GetSCVerify)).Methods(http.MethodGet)
