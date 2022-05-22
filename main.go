@@ -55,7 +55,7 @@ func main() {
     if err := system.MigrateConfig(); err != nil {
       fmt.Printf("Migration error: %s", err)
     }
-    fmt.Println("Finished migration, starting server normally.")
+    fmt.Println("Finished migration, starting server...")
   }
   
   //initial print
@@ -151,18 +151,17 @@ func main() {
   
   //api routes
   apic := controller.New(router.PathPrefix(system.Config.Core.RootPath).Subrouter())
-  //apic.R.HandleFunc("/", middleware.Lv1Auth(apic.TestRoot)).Methods(http.MethodGet)
-  apic.R.HandleFunc("/ping", middleware.Lv1Auth(apic.GetPing)).Methods(http.MethodGet)
-  apic.R.HandleFunc("/map/{name}/{hash}", middleware.Lv2Auth(apic.GetMapVerify)).Methods(http.MethodGet)
-  apic.R.HandleFunc("/ban/{steamid:[0-9]+}", middleware.Lv2Auth(apic.GetBanVerify)).Methods(http.MethodGet)
-  apic.R.HandleFunc("/sc/{hash}", middleware.Lv2Auth(apic.GetSCVerify)).Methods(http.MethodGet)
+  apic.R.HandleFunc("/ping", middleware.Lv2Auth(apic.GetPing)).Methods(http.MethodGet)
+  apic.R.HandleFunc("/map/{name}/{hash}", middleware.Lv1Auth(apic.GetMapVerify)).Methods(http.MethodGet)
+  apic.R.HandleFunc("/ban/{steamid:[0-9]+}", middleware.Lv1Auth(apic.GetBanVerify)).Methods(http.MethodGet)
+  apic.R.HandleFunc("/sc/{hash}", middleware.Lv1Auth(apic.GetSCVerify)).Methods(http.MethodGet)
   
   //character routes
   charc := controller.New(router.PathPrefix(system.Config.Core.RootPath+"/character").Subrouter())
-  charc.R.HandleFunc("/", middleware.Lv2Auth(charc.GetAllCharacters)).Methods(http.MethodGet)
-  charc.R.HandleFunc("/id/{uid}", middleware.Lv2Auth(charc.GetCharacterByID)).Methods(http.MethodGet)
-  charc.R.HandleFunc("/{steamid:[0-9]+}", middleware.Lv2Auth(charc.GetCharacters)).Methods(http.MethodGet)
-  charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}", middleware.Lv2Auth(charc.GetCharacter)).Methods(http.MethodGet)
+  charc.R.HandleFunc("/", middleware.Lv1Auth(charc.GetAllCharacters)).Methods(http.MethodGet)
+  charc.R.HandleFunc("/id/{uid}", middleware.Lv1Auth(charc.GetCharacterByID)).Methods(http.MethodGet)
+  charc.R.HandleFunc("/{steamid:[0-9]+}", middleware.Lv1Auth(charc.GetCharacters)).Methods(http.MethodGet)
+  charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}", middleware.Lv1Auth(charc.GetCharacter)).Methods(http.MethodGet)
   charc.R.HandleFunc("/export/{steamid:[0-9]+}/{slot:[0-9]}", middleware.Lv1Auth(charc.ExportCharacter)).Methods(http.MethodGet)
   charc.R.HandleFunc("/", middleware.Lv2Auth(charc.PostCharacter)).Methods(http.MethodPost)
   charc.R.HandleFunc("/{uid}", middleware.Lv2Auth(charc.PutCharacter)).Methods(http.MethodPut)

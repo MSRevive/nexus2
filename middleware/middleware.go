@@ -103,19 +103,26 @@ func Lv2Auth(next http.HandlerFunc) http.HandlerFunc {
     
     //IP Auth
     if !checkIP(ip) {
-      log.Log.Printf("%s is not authorized.", ip)
+      log.Log.Printf("%s is not authorized!", ip)
       http.Error(w, http.StatusText(401), http.StatusUnauthorized)
       return
     }
     
     //API Key Auth
     if !checkAPIKey(key) {
-      log.Log.Printf("%s failed API key check.", ip)
+      log.Log.Printf("%s failed API key check!", ip)
       http.Error(w, http.StatusText(401), http.StatusUnauthorized)
       return
     }
     
-    log.Log.Debugf("Useragent: %s", r.UserAgent())
+    //if useragent in config is empty then just skip.
+    if system.Config.Verify.Useragent != "" {
+      if r.UserAgent() != system.Config.Verify.Useragent {
+        log.Log.Printf("%s incorrect user agent!", ip)
+        http.Error(w, http.StatusText(401), http.StatusUnauthorized)
+        return
+      }
+    }
 
     next(w, r)
     return

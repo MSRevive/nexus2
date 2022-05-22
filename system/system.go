@@ -61,6 +61,7 @@ type config struct {
     BanListFile string
     AdminListFile string
     SCHash uint32
+    Useragent string
   }
   Log struct {
     Level string

@@ -25,6 +25,7 @@ verify:
   banlistfile: ./runtime/game/bans.json
   adminlistfile: ./runtime/game/admins.json
   schash: 125454
+  useragent: ""
 log:
   level: debug
   dir: ./runtime/logs/ # Where should we keep the bot log file.
