@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.5
+### Added
+* Add migration system (with -m flag) to migrate toml/ini config file to YAML
+
 ## v1.0.4
 ### Added
 * Add isAdmin field for FN admins.
