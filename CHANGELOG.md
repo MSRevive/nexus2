@@ -2,7 +2,8 @@
 
 ## v1.0.5
 ### Added
-* Add migration system (with -m flag) to migrate toml/ini config file to YAML
+* Add migration system (with -m flag) to migrate TOML/INI config file to YAML
+* Add authentication to check useragent aswell.
 
 ## v1.0.4
 ### Added
