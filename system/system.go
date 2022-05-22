@@ -1,10 +1,10 @@
 package system
 
 import(
+  "os"
   "time"
   "sync"
   "errors"
-  "io/ioutil"
   "path/filepath"
 
   "github.com/msrevive/nexus2/ent"
@@ -77,8 +77,8 @@ func LoadConfig(path string) error {
     }
     
     return nil
-  case ".yaml", ".json":
-    data,err := ioutil.ReadFile(path)
+  case ".yaml", ".json", ".yml":
+    data,err := os.ReadFile(path)
     if data != nil {
       err = yaml.Unmarshal(data, &Config)
     }
@@ -93,8 +93,21 @@ func LoadConfig(path string) error {
   }
 }
 
+func MigrateConfig() error {
+  data,err := yaml.Marshal(Config)
+  if err != nil {
+    return err
+  }
+  
+  if err := os.WriteFile("./runtime/config.yaml", data, 0655); err != nil {
+    return err
+  }
+  
+  return nil
+}
+
 func LoadIPList(path string) error {
-  file,err := ioutil.ReadFile(path)
+  file,err := os.ReadFile(path)
   if err != nil {
     return err
   }
@@ -107,7 +120,7 @@ func LoadIPList(path string) error {
 }
 
 func LoadMapList(path string) error {
-  file,err := ioutil.ReadFile(path)
+  file,err := os.ReadFile(path)
   if err != nil {
     return err
   }
@@ -120,7 +133,7 @@ func LoadMapList(path string) error {
 }
 
 func LoadBanList(path string) error {
-  file,err := ioutil.ReadFile(path)
+  file,err := os.ReadFile(path)
   if err != nil {
     return err
   }
@@ -133,7 +146,7 @@ func LoadBanList(path string) error {
 }
 
 func LoadAdminList(path string) error {
-  file,err := ioutil.ReadFile(path)
+  file,err := os.ReadFile(path)
   if err != nil {
     return err
   }

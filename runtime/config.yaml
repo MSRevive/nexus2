@@ -1,0 +1,31 @@
+core:
+  address: 127.0.0.1
+  port: 1337
+  maxthreads: 0
+  graceful: 15 # Request timeout in minutes
+  rootpath: /api/v1
+  dbstring: file:./runtime/chars.db?cache=shared&mode=rwc&_fk=1 # file:ent?cache=shared&mode=memory&_fk=1
+ratelimit:
+  enable: false
+  maxrequests: 500 # Max amount of requests in time range of MaxAge
+  maxage: 1 # Max age of ratelimiter bucket in minutes
+cert:
+  enable: false
+  domain: ""
+apiauth:
+  enforcekey: false
+  enforceip: false
+  key: "" # API key
+  iplistfile: ./runtime/ipwhitelist.json
+verify:
+  enforceban: false
+  enforcemap: false
+  enforcesc: false
+  maplistfile: ./runtime/game/maps.json
+  banlistfile: ./runtime/game/bans.json
+  adminlistfile: ./runtime/game/admins.json
+  schash: 125454
+log:
+  level: debug
+  dir: ./runtime/logs/ # Where should we keep the bot log file.
+  expiretime: 24h

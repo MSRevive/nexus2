@@ -40,12 +40,22 @@ License: GPL-3.0 https://github.com/MSRevive/nexus2/blob/main/LICENSE %s`, time.
 
 func main() {
   var cfile string
-  flag.StringVar(&cfile, "cfile", "./runtime/config.toml", "Where to load the config file.")
+  var migrateConfig bool //migrates ini/toml config to yaml
+  flag.StringVar(&cfile, "cfile", "./runtime/config.yaml", "Location of via config file")
   flag.BoolVar(&system.Dbg, "dbg", false, "Run with debug mode.")
+  flag.BoolVar(&migrateConfig, "m", false, "Migrate the ini/toml config to YAML")
   flag.Parse()
   
   if err := system.LoadConfig(cfile); err != nil {
     panic(err)
+  }
+  
+  if migrateConfig {
+    fmt.Println("Running migration...")
+    if err := system.MigrateConfig(); err != nil {
+      fmt.Printf("Migration error: %s", err)
+    }
+    fmt.Println("Finished migration, starting server normally.")
   }
   
   //initial print
