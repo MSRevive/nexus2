@@ -53,9 +53,8 @@ func PanicRecovery(next http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     defer func() {
       if panic := recover(); panic != nil {
-        http.Error(w, http.StatusText(501), http.StatusInternalServerError)
-        log.Log.Errorln("501: We have encountered an error with the last request.")
-        log.Log.Errorf("501: Error: %s", panic.(error).Error())
+        http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+        log.Log.Errorf("HTTP Error (500): %s", panic.(error).Error())
         log.Log.Errorf(string(debug.Stack()))
       }
     }()
