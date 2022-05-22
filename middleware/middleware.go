@@ -1,9 +1,7 @@
 package middleware
 
 import(
-  "net"
   "time"
-  "strings"
   "net/http"
   "runtime/debug"
   
@@ -15,30 +13,6 @@ import(
 var (
   globalLimiter *rate.Limiter
 )
-
-func getIP(r *http.Request) string {
-  ip := r.Header.Get("X_Real_IP")
-  if ip == "" {
-    ips := strings.Split(r.Header.Get("X_Forwarded_For"), ", ")
-    if ips[0] != "" {
-       return ips[0]
-    }
-
-    ip,_,_ = net.SplitHostPort(r.RemoteAddr)
-    return ip
-  }
-
-  return ip
-}
-
-func setControlHeaders(w http.ResponseWriter) {
-  w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
-  // Maximum age allowable under Chromium v76 is 2 hours, so just use that since
-  // anything higher will be ignored (even if other browsers do allow higher values).
-  //
-  // @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age#Directives
-  w.Header().Set("Access-Control-Max-Age", "7200")
-}
 
 func Log(next http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -80,26 +54,37 @@ func RateLimit(next http.Handler) http.Handler {
   })
 }
 
-func Auth(next http.HandlerFunc) http.HandlerFunc {
+/* no authentication 
+  Does not do any authentication
+---*/
+func NoAuth(next http.HandlerFunc) http.HandlerFunc {
+  return func(w http.ResponseWriter, r *http.Request) {
+    next(w, r)
+    return
+  }
+}
+
+/* Level 1 authentication 
+  Performs IP whitelist and API key checks against what's allowed (if they're enabled in the config).
+  This should be used as the basic authentication
+---*/
+func Lv1Auth(next http.HandlerFunc) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
     ip := getIP(r)
+    key := r.Header.Get("Authorization")
     
     //IP Auth
-    if system.Config.ApiAuth.EnforceIP {      
-      if _,ok := system.IPList[ip]; !ok {
-        log.Log.Printf("%s Is not authorized.", ip)
-        http.Error(w, http.StatusText(401), http.StatusUnauthorized)
-        return
-      }
+    if !checkIP(ip) {
+      log.Log.Printf("%s is not authorized.", ip)
+      http.Error(w, http.StatusText(401), http.StatusUnauthorized)
+      return
     }
     
     //API Key Auth
-    if system.Config.ApiAuth.EnforceKey {
-      if r.Header.Get("Authorization") != system.Config.ApiAuth.Key {
-        log.Log.Printf("%s failed API key check.", ip)
-        http.Error(w, http.StatusText(401), http.StatusUnauthorized)
-        return
-      }
+    if !checkAPIKey(key) {
+      log.Log.Printf("%s failed API key check.", ip)
+      http.Error(w, http.StatusText(401), http.StatusUnauthorized)
+      return
     }
 
     next(w, r)
@@ -107,8 +92,31 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
   }
 }
 
-func NoAuth(next http.HandlerFunc) http.HandlerFunc {
+/* Level 2 authentication 
+  Performs level 1 authentication and user agent check.
+  This should be used to make sure the request came from msr game server.
+---*/
+func Lv2Auth(next http.HandlerFunc) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
+    ip := getIP(r)
+    key := r.Header.Get("Authorization")
+    
+    //IP Auth
+    if !checkIP(ip) {
+      log.Log.Printf("%s is not authorized.", ip)
+      http.Error(w, http.StatusText(401), http.StatusUnauthorized)
+      return
+    }
+    
+    //API Key Auth
+    if !checkAPIKey(key) {
+      log.Log.Printf("%s failed API key check.", ip)
+      http.Error(w, http.StatusText(401), http.StatusUnauthorized)
+      return
+    }
+    
+    log.Log.Debugf("Useragent: %s", r.UserAgent())
+
     next(w, r)
     return
   }
