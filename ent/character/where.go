@@ -3,7 +3,10 @@
 package character
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
 	"github.com/msrevive/nexus2/ent/predicate"
 )
@@ -91,10 +94,31 @@ func IDLTE(id uuid.UUID) predicate.Character {
 	})
 }
 
-// Steamid applies equality check predicate on the "steamid" field. It's identical to SteamidEQ.
-func Steamid(v string) predicate.Character {
+// CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
+func CreatedAt(v time.Time) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldSteamid), v))
+		s.Where(sql.EQ(s.C(FieldCreatedAt), v))
+	})
+}
+
+// UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
+func UpdatedAt(v time.Time) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// PlayerID applies equality check predicate on the "player_id" field. It's identical to PlayerIDEQ.
+func PlayerID(v uuid.UUID) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldPlayerID), v))
+	})
+}
+
+// Version applies equality check predicate on the "version" field. It's identical to VersionEQ.
+func Version(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldVersion), v))
 	})
 }
 
@@ -119,22 +143,29 @@ func Data(v string) predicate.Character {
 	})
 }
 
-// SteamidEQ applies the EQ predicate on the "steamid" field.
-func SteamidEQ(v string) predicate.Character {
+// DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
+func DeletedAt(v time.Time) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldSteamid), v))
+		s.Where(sql.EQ(s.C(FieldDeletedAt), v))
 	})
 }
 
-// SteamidNEQ applies the NEQ predicate on the "steamid" field.
-func SteamidNEQ(v string) predicate.Character {
+// CreatedAtEQ applies the EQ predicate on the "created_at" field.
+func CreatedAtEQ(v time.Time) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldSteamid), v))
+		s.Where(sql.EQ(s.C(FieldCreatedAt), v))
 	})
 }
 
-// SteamidIn applies the In predicate on the "steamid" field.
-func SteamidIn(vs ...string) predicate.Character {
+// CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
+func CreatedAtNEQ(v time.Time) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldCreatedAt), v))
+	})
+}
+
+// CreatedAtIn applies the In predicate on the "created_at" field.
+func CreatedAtIn(vs ...time.Time) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -146,12 +177,12 @@ func SteamidIn(vs ...string) predicate.Character {
 			s.Where(sql.False())
 			return
 		}
-		s.Where(sql.In(s.C(FieldSteamid), v...))
+		s.Where(sql.In(s.C(FieldCreatedAt), v...))
 	})
 }
 
-// SteamidNotIn applies the NotIn predicate on the "steamid" field.
-func SteamidNotIn(vs ...string) predicate.Character {
+// CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
+func CreatedAtNotIn(vs ...time.Time) predicate.Character {
 	v := make([]interface{}, len(vs))
 	for i := range v {
 		v[i] = vs[i]
@@ -163,70 +194,235 @@ func SteamidNotIn(vs ...string) predicate.Character {
 			s.Where(sql.False())
 			return
 		}
-		s.Where(sql.NotIn(s.C(FieldSteamid), v...))
+		s.Where(sql.NotIn(s.C(FieldCreatedAt), v...))
 	})
 }
 
-// SteamidGT applies the GT predicate on the "steamid" field.
-func SteamidGT(v string) predicate.Character {
+// CreatedAtGT applies the GT predicate on the "created_at" field.
+func CreatedAtGT(v time.Time) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldSteamid), v))
+		s.Where(sql.GT(s.C(FieldCreatedAt), v))
 	})
 }
 
-// SteamidGTE applies the GTE predicate on the "steamid" field.
-func SteamidGTE(v string) predicate.Character {
+// CreatedAtGTE applies the GTE predicate on the "created_at" field.
+func CreatedAtGTE(v time.Time) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldSteamid), v))
+		s.Where(sql.GTE(s.C(FieldCreatedAt), v))
 	})
 }
 
-// SteamidLT applies the LT predicate on the "steamid" field.
-func SteamidLT(v string) predicate.Character {
+// CreatedAtLT applies the LT predicate on the "created_at" field.
+func CreatedAtLT(v time.Time) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldSteamid), v))
+		s.Where(sql.LT(s.C(FieldCreatedAt), v))
 	})
 }
 
-// SteamidLTE applies the LTE predicate on the "steamid" field.
-func SteamidLTE(v string) predicate.Character {
+// CreatedAtLTE applies the LTE predicate on the "created_at" field.
+func CreatedAtLTE(v time.Time) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldSteamid), v))
+		s.Where(sql.LTE(s.C(FieldCreatedAt), v))
 	})
 }
 
-// SteamidContains applies the Contains predicate on the "steamid" field.
-func SteamidContains(v string) predicate.Character {
+// UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
+func UpdatedAtEQ(v time.Time) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldSteamid), v))
+		s.Where(sql.EQ(s.C(FieldUpdatedAt), v))
 	})
 }
 
-// SteamidHasPrefix applies the HasPrefix predicate on the "steamid" field.
-func SteamidHasPrefix(v string) predicate.Character {
+// UpdatedAtNEQ applies the NEQ predicate on the "updated_at" field.
+func UpdatedAtNEQ(v time.Time) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldSteamid), v))
+		s.Where(sql.NEQ(s.C(FieldUpdatedAt), v))
 	})
 }
 
-// SteamidHasSuffix applies the HasSuffix predicate on the "steamid" field.
-func SteamidHasSuffix(v string) predicate.Character {
+// UpdatedAtIn applies the In predicate on the "updated_at" field.
+func UpdatedAtIn(vs ...time.Time) predicate.Character {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
 	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldSteamid), v))
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldUpdatedAt), v...))
 	})
 }
 
-// SteamidEqualFold applies the EqualFold predicate on the "steamid" field.
-func SteamidEqualFold(v string) predicate.Character {
+// UpdatedAtNotIn applies the NotIn predicate on the "updated_at" field.
+func UpdatedAtNotIn(vs ...time.Time) predicate.Character {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
 	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldSteamid), v))
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldUpdatedAt), v...))
 	})
 }
 
-// SteamidContainsFold applies the ContainsFold predicate on the "steamid" field.
-func SteamidContainsFold(v string) predicate.Character {
+// UpdatedAtGT applies the GT predicate on the "updated_at" field.
+func UpdatedAtGT(v time.Time) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldSteamid), v))
+		s.Where(sql.GT(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtGTE applies the GTE predicate on the "updated_at" field.
+func UpdatedAtGTE(v time.Time) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtLT applies the LT predicate on the "updated_at" field.
+func UpdatedAtLT(v time.Time) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
+func UpdatedAtLTE(v time.Time) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// PlayerIDEQ applies the EQ predicate on the "player_id" field.
+func PlayerIDEQ(v uuid.UUID) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldPlayerID), v))
+	})
+}
+
+// PlayerIDNEQ applies the NEQ predicate on the "player_id" field.
+func PlayerIDNEQ(v uuid.UUID) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldPlayerID), v))
+	})
+}
+
+// PlayerIDIn applies the In predicate on the "player_id" field.
+func PlayerIDIn(vs ...uuid.UUID) predicate.Character {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Character(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldPlayerID), v...))
+	})
+}
+
+// PlayerIDNotIn applies the NotIn predicate on the "player_id" field.
+func PlayerIDNotIn(vs ...uuid.UUID) predicate.Character {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Character(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldPlayerID), v...))
+	})
+}
+
+// VersionEQ applies the EQ predicate on the "version" field.
+func VersionEQ(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldVersion), v))
+	})
+}
+
+// VersionNEQ applies the NEQ predicate on the "version" field.
+func VersionNEQ(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldVersion), v))
+	})
+}
+
+// VersionIn applies the In predicate on the "version" field.
+func VersionIn(vs ...int) predicate.Character {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Character(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldVersion), v...))
+	})
+}
+
+// VersionNotIn applies the NotIn predicate on the "version" field.
+func VersionNotIn(vs ...int) predicate.Character {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Character(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldVersion), v...))
+	})
+}
+
+// VersionGT applies the GT predicate on the "version" field.
+func VersionGT(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldVersion), v))
+	})
+}
+
+// VersionGTE applies the GTE predicate on the "version" field.
+func VersionGTE(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldVersion), v))
+	})
+}
+
+// VersionLT applies the LT predicate on the "version" field.
+func VersionLT(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldVersion), v))
+	})
+}
+
+// VersionLTE applies the LTE predicate on the "version" field.
+func VersionLTE(v int) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldVersion), v))
 	})
 }
 
@@ -490,6 +686,124 @@ func DataEqualFold(v string) predicate.Character {
 func DataContainsFold(v string) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldData), v))
+	})
+}
+
+// DeletedAtEQ applies the EQ predicate on the "deleted_at" field.
+func DeletedAtEQ(v time.Time) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldDeletedAt), v))
+	})
+}
+
+// DeletedAtNEQ applies the NEQ predicate on the "deleted_at" field.
+func DeletedAtNEQ(v time.Time) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldDeletedAt), v))
+	})
+}
+
+// DeletedAtIn applies the In predicate on the "deleted_at" field.
+func DeletedAtIn(vs ...time.Time) predicate.Character {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Character(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldDeletedAt), v...))
+	})
+}
+
+// DeletedAtNotIn applies the NotIn predicate on the "deleted_at" field.
+func DeletedAtNotIn(vs ...time.Time) predicate.Character {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Character(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldDeletedAt), v...))
+	})
+}
+
+// DeletedAtGT applies the GT predicate on the "deleted_at" field.
+func DeletedAtGT(v time.Time) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldDeletedAt), v))
+	})
+}
+
+// DeletedAtGTE applies the GTE predicate on the "deleted_at" field.
+func DeletedAtGTE(v time.Time) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldDeletedAt), v))
+	})
+}
+
+// DeletedAtLT applies the LT predicate on the "deleted_at" field.
+func DeletedAtLT(v time.Time) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldDeletedAt), v))
+	})
+}
+
+// DeletedAtLTE applies the LTE predicate on the "deleted_at" field.
+func DeletedAtLTE(v time.Time) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldDeletedAt), v))
+	})
+}
+
+// DeletedAtIsNil applies the IsNil predicate on the "deleted_at" field.
+func DeletedAtIsNil() predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldDeletedAt)))
+	})
+}
+
+// DeletedAtNotNil applies the NotNil predicate on the "deleted_at" field.
+func DeletedAtNotNil() predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldDeletedAt)))
+	})
+}
+
+// HasPlayer applies the HasEdge predicate on the "player" edge.
+func HasPlayer() predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PlayerTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, PlayerTable, PlayerColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPlayerWith applies the HasEdge predicate on the "player" edge with a given conditions (other predicates).
+func HasPlayerWith(preds ...predicate.Player) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(PlayerInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, PlayerTable, PlayerColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

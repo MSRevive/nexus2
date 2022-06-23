@@ -22,6 +22,32 @@ func (f CharacterFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 	return f(ctx, mv)
 }
 
+// The DeprecatedCharacterFunc type is an adapter to allow the use of ordinary
+// function as DeprecatedCharacter mutator.
+type DeprecatedCharacterFunc func(context.Context, *ent.DeprecatedCharacterMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f DeprecatedCharacterFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.DeprecatedCharacterMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DeprecatedCharacterMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The PlayerFunc type is an adapter to allow the use of ordinary
+// function as Player mutator.
+type PlayerFunc func(context.Context, *ent.PlayerMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PlayerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.PlayerMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlayerMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // Condition is a hook condition function.
 type Condition func(context.Context, ent.Mutation) bool
 

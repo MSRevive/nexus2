@@ -6,11 +6,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/msrevive/nexus2/ent/character"
+	"github.com/msrevive/nexus2/ent/player"
 )
 
 // CharacterCreate is the builder for creating a Character entity.
@@ -20,9 +22,43 @@ type CharacterCreate struct {
 	hooks    []Hook
 }
 
-// SetSteamid sets the "steamid" field.
-func (cc *CharacterCreate) SetSteamid(s string) *CharacterCreate {
-	cc.mutation.SetSteamid(s)
+// SetCreatedAt sets the "created_at" field.
+func (cc *CharacterCreate) SetCreatedAt(t time.Time) *CharacterCreate {
+	cc.mutation.SetCreatedAt(t)
+	return cc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (cc *CharacterCreate) SetNillableCreatedAt(t *time.Time) *CharacterCreate {
+	if t != nil {
+		cc.SetCreatedAt(*t)
+	}
+	return cc
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (cc *CharacterCreate) SetUpdatedAt(t time.Time) *CharacterCreate {
+	cc.mutation.SetUpdatedAt(t)
+	return cc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (cc *CharacterCreate) SetNillableUpdatedAt(t *time.Time) *CharacterCreate {
+	if t != nil {
+		cc.SetUpdatedAt(*t)
+	}
+	return cc
+}
+
+// SetPlayerID sets the "player_id" field.
+func (cc *CharacterCreate) SetPlayerID(u uuid.UUID) *CharacterCreate {
+	cc.mutation.SetPlayerID(u)
+	return cc
+}
+
+// SetVersion sets the "version" field.
+func (cc *CharacterCreate) SetVersion(i int) *CharacterCreate {
+	cc.mutation.SetVersion(i)
 	return cc
 }
 
@@ -60,6 +96,20 @@ func (cc *CharacterCreate) SetData(s string) *CharacterCreate {
 	return cc
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (cc *CharacterCreate) SetDeletedAt(t time.Time) *CharacterCreate {
+	cc.mutation.SetDeletedAt(t)
+	return cc
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (cc *CharacterCreate) SetNillableDeletedAt(t *time.Time) *CharacterCreate {
+	if t != nil {
+		cc.SetDeletedAt(*t)
+	}
+	return cc
+}
+
 // SetID sets the "id" field.
 func (cc *CharacterCreate) SetID(u uuid.UUID) *CharacterCreate {
 	cc.mutation.SetID(u)
@@ -72,6 +122,11 @@ func (cc *CharacterCreate) SetNillableID(u *uuid.UUID) *CharacterCreate {
 		cc.SetID(*u)
 	}
 	return cc
+}
+
+// SetPlayer sets the "player" edge to the Player entity.
+func (cc *CharacterCreate) SetPlayer(p *Player) *CharacterCreate {
+	return cc.SetPlayerID(p.ID)
 }
 
 // Mutation returns the CharacterMutation object of the builder.
@@ -145,6 +200,14 @@ func (cc *CharacterCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (cc *CharacterCreate) defaults() {
+	if _, ok := cc.mutation.CreatedAt(); !ok {
+		v := character.DefaultCreatedAt()
+		cc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := cc.mutation.UpdatedAt(); !ok {
+		v := character.DefaultUpdatedAt()
+		cc.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := cc.mutation.Slot(); !ok {
 		v := character.DefaultSlot
 		cc.mutation.SetSlot(v)
@@ -161,8 +224,22 @@ func (cc *CharacterCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (cc *CharacterCreate) check() error {
-	if _, ok := cc.mutation.Steamid(); !ok {
-		return &ValidationError{Name: "steamid", err: errors.New(`ent: missing required field "Character.steamid"`)}
+	if _, ok := cc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Character.created_at"`)}
+	}
+	if _, ok := cc.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Character.updated_at"`)}
+	}
+	if _, ok := cc.mutation.PlayerID(); !ok {
+		return &ValidationError{Name: "player_id", err: errors.New(`ent: missing required field "Character.player_id"`)}
+	}
+	if _, ok := cc.mutation.Version(); !ok {
+		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "Character.version"`)}
+	}
+	if v, ok := cc.mutation.Version(); ok {
+		if err := character.VersionValidator(v); err != nil {
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "Character.version": %w`, err)}
+		}
 	}
 	if _, ok := cc.mutation.Slot(); !ok {
 		return &ValidationError{Name: "slot", err: errors.New(`ent: missing required field "Character.slot"`)}
@@ -177,6 +254,9 @@ func (cc *CharacterCreate) check() error {
 	}
 	if _, ok := cc.mutation.Data(); !ok {
 		return &ValidationError{Name: "data", err: errors.New(`ent: missing required field "Character.data"`)}
+	}
+	if _, ok := cc.mutation.PlayerID(); !ok {
+		return &ValidationError{Name: "player", err: errors.New(`ent: missing required edge "Character.player"`)}
 	}
 	return nil
 }
@@ -214,13 +294,29 @@ func (cc *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := cc.mutation.Steamid(); ok {
+	if value, ok := cc.mutation.CreatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
+			Type:   field.TypeTime,
 			Value:  value,
-			Column: character.FieldSteamid,
+			Column: character.FieldCreatedAt,
 		})
-		_node.Steamid = value
+		_node.CreatedAt = value
+	}
+	if value, ok := cc.mutation.UpdatedAt(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: character.FieldUpdatedAt,
+		})
+		_node.UpdatedAt = value
+	}
+	if value, ok := cc.mutation.Version(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: character.FieldVersion,
+		})
+		_node.Version = value
 	}
 	if value, ok := cc.mutation.Slot(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
@@ -245,6 +341,34 @@ func (cc *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 			Column: character.FieldData,
 		})
 		_node.Data = value
+	}
+	if value, ok := cc.mutation.DeletedAt(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: character.FieldDeletedAt,
+		})
+		_node.DeletedAt = &value
+	}
+	if nodes := cc.mutation.PlayerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   character.PlayerTable,
+			Columns: []string{character.PlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.PlayerID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

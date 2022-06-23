@@ -11,9 +11,12 @@ import (
 	"github.com/msrevive/nexus2/ent/migrate"
 
 	"github.com/msrevive/nexus2/ent/character"
+	"github.com/msrevive/nexus2/ent/deprecatedcharacter"
+	"github.com/msrevive/nexus2/ent/player"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -23,6 +26,10 @@ type Client struct {
 	Schema *migrate.Schema
 	// Character is the client for interacting with the Character builders.
 	Character *CharacterClient
+	// DeprecatedCharacter is the client for interacting with the DeprecatedCharacter builders.
+	DeprecatedCharacter *DeprecatedCharacterClient
+	// Player is the client for interacting with the Player builders.
+	Player *PlayerClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -37,6 +44,8 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Character = NewCharacterClient(c.config)
+	c.DeprecatedCharacter = NewDeprecatedCharacterClient(c.config)
+	c.Player = NewPlayerClient(c.config)
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -68,9 +77,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:       ctx,
-		config:    cfg,
-		Character: NewCharacterClient(cfg),
+		ctx:                 ctx,
+		config:              cfg,
+		Character:           NewCharacterClient(cfg),
+		DeprecatedCharacter: NewDeprecatedCharacterClient(cfg),
+		Player:              NewPlayerClient(cfg),
 	}, nil
 }
 
@@ -88,9 +99,11 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:       ctx,
-		config:    cfg,
-		Character: NewCharacterClient(cfg),
+		ctx:                 ctx,
+		config:              cfg,
+		Character:           NewCharacterClient(cfg),
+		DeprecatedCharacter: NewDeprecatedCharacterClient(cfg),
+		Player:              NewPlayerClient(cfg),
 	}, nil
 }
 
@@ -121,6 +134,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Character.Use(hooks...)
+	c.DeprecatedCharacter.Use(hooks...)
+	c.Player.Use(hooks...)
 }
 
 // CharacterClient is a client for the Character schema.
@@ -208,7 +223,219 @@ func (c *CharacterClient) GetX(ctx context.Context, id uuid.UUID) *Character {
 	return obj
 }
 
+// QueryPlayer queries the player edge of a Character.
+func (c *CharacterClient) QueryPlayer(ch *Character) *PlayerQuery {
+	query := &PlayerQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := ch.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(character.Table, character.FieldID, id),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, character.PlayerTable, character.PlayerColumn),
+		)
+		fromV = sqlgraph.Neighbors(ch.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *CharacterClient) Hooks() []Hook {
 	return c.hooks.Character
+}
+
+// DeprecatedCharacterClient is a client for the DeprecatedCharacter schema.
+type DeprecatedCharacterClient struct {
+	config
+}
+
+// NewDeprecatedCharacterClient returns a client for the DeprecatedCharacter from the given config.
+func NewDeprecatedCharacterClient(c config) *DeprecatedCharacterClient {
+	return &DeprecatedCharacterClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `deprecatedcharacter.Hooks(f(g(h())))`.
+func (c *DeprecatedCharacterClient) Use(hooks ...Hook) {
+	c.hooks.DeprecatedCharacter = append(c.hooks.DeprecatedCharacter, hooks...)
+}
+
+// Create returns a create builder for DeprecatedCharacter.
+func (c *DeprecatedCharacterClient) Create() *DeprecatedCharacterCreate {
+	mutation := newDeprecatedCharacterMutation(c.config, OpCreate)
+	return &DeprecatedCharacterCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DeprecatedCharacter entities.
+func (c *DeprecatedCharacterClient) CreateBulk(builders ...*DeprecatedCharacterCreate) *DeprecatedCharacterCreateBulk {
+	return &DeprecatedCharacterCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DeprecatedCharacter.
+func (c *DeprecatedCharacterClient) Update() *DeprecatedCharacterUpdate {
+	mutation := newDeprecatedCharacterMutation(c.config, OpUpdate)
+	return &DeprecatedCharacterUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DeprecatedCharacterClient) UpdateOne(dc *DeprecatedCharacter) *DeprecatedCharacterUpdateOne {
+	mutation := newDeprecatedCharacterMutation(c.config, OpUpdateOne, withDeprecatedCharacter(dc))
+	return &DeprecatedCharacterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DeprecatedCharacterClient) UpdateOneID(id uuid.UUID) *DeprecatedCharacterUpdateOne {
+	mutation := newDeprecatedCharacterMutation(c.config, OpUpdateOne, withDeprecatedCharacterID(id))
+	return &DeprecatedCharacterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DeprecatedCharacter.
+func (c *DeprecatedCharacterClient) Delete() *DeprecatedCharacterDelete {
+	mutation := newDeprecatedCharacterMutation(c.config, OpDelete)
+	return &DeprecatedCharacterDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *DeprecatedCharacterClient) DeleteOne(dc *DeprecatedCharacter) *DeprecatedCharacterDeleteOne {
+	return c.DeleteOneID(dc.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *DeprecatedCharacterClient) DeleteOneID(id uuid.UUID) *DeprecatedCharacterDeleteOne {
+	builder := c.Delete().Where(deprecatedcharacter.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DeprecatedCharacterDeleteOne{builder}
+}
+
+// Query returns a query builder for DeprecatedCharacter.
+func (c *DeprecatedCharacterClient) Query() *DeprecatedCharacterQuery {
+	return &DeprecatedCharacterQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a DeprecatedCharacter entity by its id.
+func (c *DeprecatedCharacterClient) Get(ctx context.Context, id uuid.UUID) (*DeprecatedCharacter, error) {
+	return c.Query().Where(deprecatedcharacter.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DeprecatedCharacterClient) GetX(ctx context.Context, id uuid.UUID) *DeprecatedCharacter {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *DeprecatedCharacterClient) Hooks() []Hook {
+	return c.hooks.DeprecatedCharacter
+}
+
+// PlayerClient is a client for the Player schema.
+type PlayerClient struct {
+	config
+}
+
+// NewPlayerClient returns a client for the Player from the given config.
+func NewPlayerClient(c config) *PlayerClient {
+	return &PlayerClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `player.Hooks(f(g(h())))`.
+func (c *PlayerClient) Use(hooks ...Hook) {
+	c.hooks.Player = append(c.hooks.Player, hooks...)
+}
+
+// Create returns a create builder for Player.
+func (c *PlayerClient) Create() *PlayerCreate {
+	mutation := newPlayerMutation(c.config, OpCreate)
+	return &PlayerCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Player entities.
+func (c *PlayerClient) CreateBulk(builders ...*PlayerCreate) *PlayerCreateBulk {
+	return &PlayerCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Player.
+func (c *PlayerClient) Update() *PlayerUpdate {
+	mutation := newPlayerMutation(c.config, OpUpdate)
+	return &PlayerUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PlayerClient) UpdateOne(pl *Player) *PlayerUpdateOne {
+	mutation := newPlayerMutation(c.config, OpUpdateOne, withPlayer(pl))
+	return &PlayerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PlayerClient) UpdateOneID(id uuid.UUID) *PlayerUpdateOne {
+	mutation := newPlayerMutation(c.config, OpUpdateOne, withPlayerID(id))
+	return &PlayerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Player.
+func (c *PlayerClient) Delete() *PlayerDelete {
+	mutation := newPlayerMutation(c.config, OpDelete)
+	return &PlayerDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *PlayerClient) DeleteOne(pl *Player) *PlayerDeleteOne {
+	return c.DeleteOneID(pl.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *PlayerClient) DeleteOneID(id uuid.UUID) *PlayerDeleteOne {
+	builder := c.Delete().Where(player.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PlayerDeleteOne{builder}
+}
+
+// Query returns a query builder for Player.
+func (c *PlayerClient) Query() *PlayerQuery {
+	return &PlayerQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Player entity by its id.
+func (c *PlayerClient) Get(ctx context.Context, id uuid.UUID) (*Player, error) {
+	return c.Query().Where(player.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PlayerClient) GetX(ctx context.Context, id uuid.UUID) *Player {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCharacters queries the characters edge of a Player.
+func (c *PlayerClient) QueryCharacters(pl *Player) *CharacterQuery {
+	query := &CharacterQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(player.Table, player.FieldID, id),
+			sqlgraph.To(character.Table, character.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, player.CharactersTable, player.CharactersColumn),
+		)
+		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PlayerClient) Hooks() []Hook {
+	return c.hooks.Player
 }
