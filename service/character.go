@@ -105,7 +105,6 @@ func (s *service) CharacterCreate(newChar ent.DeprecatedCharacter) (*ent.Depreca
 				character.And(
 					character.PlayerID(player.ID),
 					character.Slot(newChar.Slot),
-					character.DeletedAtNotNil(),
 				),
 			).
 			Exist(s.ctx)
@@ -247,6 +246,93 @@ func (s *service) CharacterRestore(uid uuid.UUID) (*ent.DeprecatedCharacter, err
 	}
 
 	return charToDepChar(player.Steamid, char), nil
+}
+
+func (s *service) CharacterVersions(sid string, slot int) ([]*ent.Character, error) {
+	chars, err := s.client.Character.Query().
+		Where(
+			character.And(
+				character.HasPlayerWith(player.Steamid(sid)),
+				character.Slot(slot),
+			),
+		).
+		All(s.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return chars, nil
+}
+
+func (s *service) CharacterRollback(sid string, slot, version int) (*ent.DeprecatedCharacter, error) {
+	var char *ent.Character
+	err := txn(s.ctx, s.client, func(tx *ent.Tx) error {
+		// Get the current character
+		targeted, err := s.client.Character.Query().
+			Where(
+				character.And(
+					character.HasPlayerWith(player.Steamid(sid)),
+					character.Slot(slot),
+					character.Version(version),
+				),
+			).
+			First(s.ctx)
+		if err != nil {
+			return err
+		}
+
+		// Get the current character
+		current, err := s.client.Character.Query().
+			Where(
+				character.And(
+					character.HasPlayerWith(player.Steamid(sid)),
+					character.Version(1),
+				),
+			).
+			First(s.ctx)
+		if err != nil {
+			return err
+		}
+
+		// Get the latest backup version
+		latest, err := s.client.Character.Query().
+			Select(character.FieldVersion).
+			Where(character.HasPlayerWith(player.Steamid(sid))).
+			Order(ent.Desc(character.FieldVersion)).
+			First(s.ctx)
+		if err != nil {
+			return err
+		}
+
+		// Backup the current version
+		_, err = s.client.Character.Create().
+			SetPlayerID(current.PlayerID).
+			SetVersion(latest.Version + 1).
+			SetSlot(current.Slot).
+			SetSize(current.Size).
+			SetData(current.Data).
+			Save(s.ctx)
+		if err != nil {
+			return err
+		}
+
+		// Update the character
+		c, err := current.Update().
+			SetSize(targeted.Size).
+			SetData(targeted.Data).
+			Save(s.ctx)
+		if err != nil {
+			return err
+		}
+
+		char = c
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return charToDepChar(sid, char), nil
 }
 
 func charToDepChar(s string, c *ent.Character) *ent.DeprecatedCharacter {

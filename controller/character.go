@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -224,6 +225,69 @@ func (c *controller) RestoreCharacter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	char, err := service.New(r.Context()).CharacterRestore(uid)
+	if err != nil {
+		log.Log.Errorln(err)
+		response.Error(w, err)
+		return
+	}
+
+	response.OK(w, char)
+}
+
+//GET /character/{steamid}/{slot}/versions
+func (c *controller) CharacterVersions(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	sid, ok := vars["steamid"]
+	if !ok {
+		err := errors.New("steamid not found")
+		log.Log.Errorln(err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	slot, err := strconv.Atoi(vars["slot"])
+	if err != nil {
+		log.Log.Errorln(err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	char, err := service.New(r.Context()).CharacterVersions(sid, slot)
+	if err != nil {
+		log.Log.Errorln(err)
+		response.Error(w, err)
+		return
+	}
+
+	response.OK(w, char)
+}
+
+//PATCH /character/{steamid}/{slot}/rollback/{version}
+func (c *controller) RollbackCharacter(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	sid, ok := vars["steamid"]
+	if !ok {
+		err := errors.New("steamid not found")
+		log.Log.Errorln(err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	slot, err := strconv.Atoi(vars["slot"])
+	if err != nil {
+		log.Log.Errorln(err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	version, err := strconv.Atoi(vars["version"])
+	if err != nil {
+		log.Log.Errorln(err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	char, err := service.New(r.Context()).CharacterRollback(sid, slot, version)
 	if err != nil {
 		log.Log.Errorln(err)
 		response.Error(w, err)
