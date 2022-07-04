@@ -7,76 +7,69 @@ import (
 	"github.com/goccy/go-json"
 )
 
-type response struct {
+//make public so other packages can create custom responses.
+type Response struct {
   Code int `json:"code"`
   Status bool `json:"status"`
   Error string `json:"error"`
   Data interface{} `json:"data"`
+	IsBanned bool `json:"isBanned, omitempty"`
+	IsAdmin bool `json:"isAdmin, omitempty"`
 }
 
-type responseResult struct {
-	result bool `json:"result"`
-}
-
-type responseCharGet struct {
-  Code int `json:"code"`
-  Status bool `json:"status"`
-  Error string `json:"error"`
-  Data interface{} `json:"data"`
-  IsBanned bool `json:"isBanned"`
-	IsAdmin bool `json:"isAdmin"`
-}
-
-func Raw(w http.ResponseWriter, status bool, code int, err error, data interface{}) {
-  resp := response{
-		Status: status,
-		Code: code,
-		Error: "",
-		Data: data,
-	}
-  
-  if err != nil {
-		resp.Error = err.Error()
-	}
-  
+func (r *Response) SendJson(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
-  json.NewEncoder(w).Encode(resp)
-}
-
-func RawCharGet(w http.ResponseWriter, status bool, code int, err error, ban bool, admin bool, data interface{}) {
-	resp := responseCharGet{
-		Status: status,
-		Code: code,
-		Error: "",
-		Data: data,
-		IsBanned: ban,
-		IsAdmin: admin,
-	}
-	
-	if err != nil {
-		resp.Error = err.Error()
-	}
-	
-	w.Header().Set("Content-Type", "application/json")
-  json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(r)
 }
 
 func OK(w http.ResponseWriter, data interface{}) {
-  Raw(w, true, http.StatusOK, nil, data)
+	resp := Response{
+		Status: true,
+		Code: http.StatusOK,
+		Error: "",
+		Data: data,
+	}
+	resp.SendJson(w)
 }
 
-func OKChar(w http.ResponseWriter, ban bool, admin bool, data interface{}) {
-	RawCharGet(w, true, http.StatusOK, nil, ban, admin, data)
+func OKChar(w http.ResponseWriter, isBanned bool, isAdmin bool, data interface{}) {
+	resp := Response{
+		Status: true,
+		Code: http.StatusOK,
+		Error: "",
+		Data: data,
+		IsBanned: isBanned,
+		IsAdmin: isAdmin,
+	}
+	resp.SendJson(w)
 }
 
 func Result(w http.ResponseWriter, b bool) {
-	Raw(w, true, http.StatusOK, nil, b)
+	resp := Response{
+		Status: true,
+		Code: http.StatusOK,
+		Error: "",
+		Data: b,
+	}
+	resp.SendJson(w)
 }
 
 func BadRequest(w http.ResponseWriter, err error) {
-  Raw(w, false, http.StatusBadRequest, err, nil)
+	resp := Response{
+		Status: false,
+		Code: http.StatusBadRequest,
+		Error: err.Error(),
+		Data: nil,
+	}
+	resp.SendJson(w)
 }
 
 func Error(w http.ResponseWriter, err error) {
-  Raw(w, false, http.StatusInternalServerError, err, nil)
+	resp := Response{
+		Status: false,
+		Code: http.StatusInternalServerError,
+		Error: err.Error(),
+		Data: nil,
+	}
+	resp.SendJson(w)
 }
