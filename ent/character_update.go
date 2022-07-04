@@ -6,11 +6,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/msrevive/nexus2/ent/character"
+	"github.com/msrevive/nexus2/ent/player"
 	"github.com/msrevive/nexus2/ent/predicate"
 )
 
@@ -27,9 +30,28 @@ func (cu *CharacterUpdate) Where(ps ...predicate.Character) *CharacterUpdate {
 	return cu
 }
 
-// SetSteamid sets the "steamid" field.
-func (cu *CharacterUpdate) SetSteamid(s string) *CharacterUpdate {
-	cu.mutation.SetSteamid(s)
+// SetUpdatedAt sets the "updated_at" field.
+func (cu *CharacterUpdate) SetUpdatedAt(t time.Time) *CharacterUpdate {
+	cu.mutation.SetUpdatedAt(t)
+	return cu
+}
+
+// SetPlayerID sets the "player_id" field.
+func (cu *CharacterUpdate) SetPlayerID(u uuid.UUID) *CharacterUpdate {
+	cu.mutation.SetPlayerID(u)
+	return cu
+}
+
+// SetVersion sets the "version" field.
+func (cu *CharacterUpdate) SetVersion(i int) *CharacterUpdate {
+	cu.mutation.ResetVersion()
+	cu.mutation.SetVersion(i)
+	return cu
+}
+
+// AddVersion adds i to the "version" field.
+func (cu *CharacterUpdate) AddVersion(i int) *CharacterUpdate {
+	cu.mutation.AddVersion(i)
 	return cu
 }
 
@@ -81,9 +103,40 @@ func (cu *CharacterUpdate) SetData(s string) *CharacterUpdate {
 	return cu
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (cu *CharacterUpdate) SetDeletedAt(t time.Time) *CharacterUpdate {
+	cu.mutation.SetDeletedAt(t)
+	return cu
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (cu *CharacterUpdate) SetNillableDeletedAt(t *time.Time) *CharacterUpdate {
+	if t != nil {
+		cu.SetDeletedAt(*t)
+	}
+	return cu
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (cu *CharacterUpdate) ClearDeletedAt() *CharacterUpdate {
+	cu.mutation.ClearDeletedAt()
+	return cu
+}
+
+// SetPlayer sets the "player" edge to the Player entity.
+func (cu *CharacterUpdate) SetPlayer(p *Player) *CharacterUpdate {
+	return cu.SetPlayerID(p.ID)
+}
+
 // Mutation returns the CharacterMutation object of the builder.
 func (cu *CharacterUpdate) Mutation() *CharacterMutation {
 	return cu.mutation
+}
+
+// ClearPlayer clears the "player" edge to the Player entity.
+func (cu *CharacterUpdate) ClearPlayer() *CharacterUpdate {
+	cu.mutation.ClearPlayer()
+	return cu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -92,6 +145,7 @@ func (cu *CharacterUpdate) Save(ctx context.Context) (int, error) {
 		err      error
 		affected int
 	)
+	cu.defaults()
 	if len(cu.hooks) == 0 {
 		if err = cu.check(); err != nil {
 			return 0, err
@@ -146,12 +200,28 @@ func (cu *CharacterUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (cu *CharacterUpdate) defaults() {
+	if _, ok := cu.mutation.UpdatedAt(); !ok {
+		v := character.UpdateDefaultUpdatedAt()
+		cu.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (cu *CharacterUpdate) check() error {
+	if v, ok := cu.mutation.Version(); ok {
+		if err := character.VersionValidator(v); err != nil {
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "Character.version": %w`, err)}
+		}
+	}
 	if v, ok := cu.mutation.Slot(); ok {
 		if err := character.SlotValidator(v); err != nil {
 			return &ValidationError{Name: "slot", err: fmt.Errorf(`ent: validator failed for field "Character.slot": %w`, err)}
 		}
+	}
+	if _, ok := cu.mutation.PlayerID(); cu.mutation.PlayerCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Character.player"`)
 	}
 	return nil
 }
@@ -174,11 +244,25 @@ func (cu *CharacterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := cu.mutation.Steamid(); ok {
+	if value, ok := cu.mutation.UpdatedAt(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
+			Type:   field.TypeTime,
 			Value:  value,
-			Column: character.FieldSteamid,
+			Column: character.FieldUpdatedAt,
+		})
+	}
+	if value, ok := cu.mutation.Version(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: character.FieldVersion,
+		})
+	}
+	if value, ok := cu.mutation.AddedVersion(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: character.FieldVersion,
 		})
 	}
 	if value, ok := cu.mutation.Slot(); ok {
@@ -216,6 +300,54 @@ func (cu *CharacterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: character.FieldData,
 		})
 	}
+	if value, ok := cu.mutation.DeletedAt(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: character.FieldDeletedAt,
+		})
+	}
+	if cu.mutation.DeletedAtCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Column: character.FieldDeletedAt,
+		})
+	}
+	if cu.mutation.PlayerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   character.PlayerTable,
+			Columns: []string{character.PlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.PlayerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   character.PlayerTable,
+			Columns: []string{character.PlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{character.Label}
@@ -235,9 +367,28 @@ type CharacterUpdateOne struct {
 	mutation *CharacterMutation
 }
 
-// SetSteamid sets the "steamid" field.
-func (cuo *CharacterUpdateOne) SetSteamid(s string) *CharacterUpdateOne {
-	cuo.mutation.SetSteamid(s)
+// SetUpdatedAt sets the "updated_at" field.
+func (cuo *CharacterUpdateOne) SetUpdatedAt(t time.Time) *CharacterUpdateOne {
+	cuo.mutation.SetUpdatedAt(t)
+	return cuo
+}
+
+// SetPlayerID sets the "player_id" field.
+func (cuo *CharacterUpdateOne) SetPlayerID(u uuid.UUID) *CharacterUpdateOne {
+	cuo.mutation.SetPlayerID(u)
+	return cuo
+}
+
+// SetVersion sets the "version" field.
+func (cuo *CharacterUpdateOne) SetVersion(i int) *CharacterUpdateOne {
+	cuo.mutation.ResetVersion()
+	cuo.mutation.SetVersion(i)
+	return cuo
+}
+
+// AddVersion adds i to the "version" field.
+func (cuo *CharacterUpdateOne) AddVersion(i int) *CharacterUpdateOne {
+	cuo.mutation.AddVersion(i)
 	return cuo
 }
 
@@ -289,9 +440,40 @@ func (cuo *CharacterUpdateOne) SetData(s string) *CharacterUpdateOne {
 	return cuo
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (cuo *CharacterUpdateOne) SetDeletedAt(t time.Time) *CharacterUpdateOne {
+	cuo.mutation.SetDeletedAt(t)
+	return cuo
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (cuo *CharacterUpdateOne) SetNillableDeletedAt(t *time.Time) *CharacterUpdateOne {
+	if t != nil {
+		cuo.SetDeletedAt(*t)
+	}
+	return cuo
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (cuo *CharacterUpdateOne) ClearDeletedAt() *CharacterUpdateOne {
+	cuo.mutation.ClearDeletedAt()
+	return cuo
+}
+
+// SetPlayer sets the "player" edge to the Player entity.
+func (cuo *CharacterUpdateOne) SetPlayer(p *Player) *CharacterUpdateOne {
+	return cuo.SetPlayerID(p.ID)
+}
+
 // Mutation returns the CharacterMutation object of the builder.
 func (cuo *CharacterUpdateOne) Mutation() *CharacterMutation {
 	return cuo.mutation
+}
+
+// ClearPlayer clears the "player" edge to the Player entity.
+func (cuo *CharacterUpdateOne) ClearPlayer() *CharacterUpdateOne {
+	cuo.mutation.ClearPlayer()
+	return cuo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -307,6 +489,7 @@ func (cuo *CharacterUpdateOne) Save(ctx context.Context) (*Character, error) {
 		err  error
 		node *Character
 	)
+	cuo.defaults()
 	if len(cuo.hooks) == 0 {
 		if err = cuo.check(); err != nil {
 			return nil, err
@@ -361,12 +544,28 @@ func (cuo *CharacterUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (cuo *CharacterUpdateOne) defaults() {
+	if _, ok := cuo.mutation.UpdatedAt(); !ok {
+		v := character.UpdateDefaultUpdatedAt()
+		cuo.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (cuo *CharacterUpdateOne) check() error {
+	if v, ok := cuo.mutation.Version(); ok {
+		if err := character.VersionValidator(v); err != nil {
+			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "Character.version": %w`, err)}
+		}
+	}
 	if v, ok := cuo.mutation.Slot(); ok {
 		if err := character.SlotValidator(v); err != nil {
 			return &ValidationError{Name: "slot", err: fmt.Errorf(`ent: validator failed for field "Character.slot": %w`, err)}
 		}
+	}
+	if _, ok := cuo.mutation.PlayerID(); cuo.mutation.PlayerCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Character.player"`)
 	}
 	return nil
 }
@@ -406,11 +605,25 @@ func (cuo *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, e
 			}
 		}
 	}
-	if value, ok := cuo.mutation.Steamid(); ok {
+	if value, ok := cuo.mutation.UpdatedAt(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
+			Type:   field.TypeTime,
 			Value:  value,
-			Column: character.FieldSteamid,
+			Column: character.FieldUpdatedAt,
+		})
+	}
+	if value, ok := cuo.mutation.Version(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: character.FieldVersion,
+		})
+	}
+	if value, ok := cuo.mutation.AddedVersion(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt,
+			Value:  value,
+			Column: character.FieldVersion,
 		})
 	}
 	if value, ok := cuo.mutation.Slot(); ok {
@@ -447,6 +660,54 @@ func (cuo *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, e
 			Value:  value,
 			Column: character.FieldData,
 		})
+	}
+	if value, ok := cuo.mutation.DeletedAt(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: character.FieldDeletedAt,
+		})
+	}
+	if cuo.mutation.DeletedAtCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Column: character.FieldDeletedAt,
+		})
+	}
+	if cuo.mutation.PlayerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   character.PlayerTable,
+			Columns: []string{character.PlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.PlayerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   character.PlayerTable,
+			Columns: []string{character.PlayerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: player.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Character{config: cuo.config}
 	_spec.Assign = _node.assignValues

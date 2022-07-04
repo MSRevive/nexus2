@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 	"github.com/msrevive/nexus2/ent/character"
+	"github.com/msrevive/nexus2/ent/player"
 	"github.com/msrevive/nexus2/ent/predicate"
 )
 
@@ -25,6 +26,8 @@ type CharacterQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Character
+	// eager-loading edges.
+	withPlayer *PlayerQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -59,6 +62,28 @@ func (cq *CharacterQuery) Unique(unique bool) *CharacterQuery {
 func (cq *CharacterQuery) Order(o ...OrderFunc) *CharacterQuery {
 	cq.order = append(cq.order, o...)
 	return cq
+}
+
+// QueryPlayer chains the current query on the "player" edge.
+func (cq *CharacterQuery) QueryPlayer() *PlayerQuery {
+	query := &PlayerQuery{config: cq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(character.Table, character.FieldID, selector),
+			sqlgraph.To(player.Table, player.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, character.PlayerTable, character.PlayerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Character entity from the query.
@@ -242,10 +267,23 @@ func (cq *CharacterQuery) Clone() *CharacterQuery {
 		offset:     cq.offset,
 		order:      append([]OrderFunc{}, cq.order...),
 		predicates: append([]predicate.Character{}, cq.predicates...),
+		withPlayer: cq.withPlayer.Clone(),
 		// clone intermediate query.
-		sql:  cq.sql.Clone(),
-		path: cq.path,
+		sql:    cq.sql.Clone(),
+		path:   cq.path,
+		unique: cq.unique,
 	}
+}
+
+// WithPlayer tells the query-builder to eager-load the nodes that are connected to
+// the "player" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *CharacterQuery) WithPlayer(opts ...func(*PlayerQuery)) *CharacterQuery {
+	query := &PlayerQuery{config: cq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	cq.withPlayer = query
+	return cq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -254,12 +292,12 @@ func (cq *CharacterQuery) Clone() *CharacterQuery {
 // Example:
 //
 //	var v []struct {
-//		Steamid string `json:"steamid,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Character.Query().
-//		GroupBy(character.FieldSteamid).
+//		GroupBy(character.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 //
@@ -281,11 +319,11 @@ func (cq *CharacterQuery) GroupBy(field string, fields ...string) *CharacterGrou
 // Example:
 //
 //	var v []struct {
-//		Steamid string `json:"steamid,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.Character.Query().
-//		Select(character.FieldSteamid).
+//		Select(character.FieldCreatedAt).
 //		Scan(ctx, &v)
 //
 func (cq *CharacterQuery) Select(fields ...string) *CharacterSelect {
@@ -311,8 +349,11 @@ func (cq *CharacterQuery) prepareQuery(ctx context.Context) error {
 
 func (cq *CharacterQuery) sqlAll(ctx context.Context) ([]*Character, error) {
 	var (
-		nodes = []*Character{}
-		_spec = cq.querySpec()
+		nodes       = []*Character{}
+		_spec       = cq.querySpec()
+		loadedTypes = [1]bool{
+			cq.withPlayer != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Character{config: cq.config}
@@ -324,6 +365,7 @@ func (cq *CharacterQuery) sqlAll(ctx context.Context) ([]*Character, error) {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, cq.driver, _spec); err != nil {
@@ -332,6 +374,33 @@ func (cq *CharacterQuery) sqlAll(ctx context.Context) ([]*Character, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := cq.withPlayer; query != nil {
+		ids := make([]uuid.UUID, 0, len(nodes))
+		nodeids := make(map[uuid.UUID][]*Character)
+		for i := range nodes {
+			fk := nodes[i].PlayerID
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(player.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "player_id" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Player = n
+			}
+		}
+	}
+
 	return nodes, nil
 }
 

@@ -14,6 +14,10 @@ type Tx struct {
 	config
 	// Character is the client for interacting with the Character builders.
 	Character *CharacterClient
+	// DeprecatedCharacter is the client for interacting with the DeprecatedCharacter builders.
+	DeprecatedCharacter *DeprecatedCharacterClient
+	// Player is the client for interacting with the Player builders.
+	Player *PlayerClient
 
 	// lazily loaded.
 	client     *Client
@@ -150,6 +154,8 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Character = NewCharacterClient(tx.config)
+	tx.DeprecatedCharacter = NewDeprecatedCharacterClient(tx.config)
+	tx.Player = NewPlayerClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

@@ -9,6 +9,8 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/msrevive/nexus2/ent/character"
+	"github.com/msrevive/nexus2/ent/deprecatedcharacter"
+	"github.com/msrevive/nexus2/ent/player"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -29,7 +31,9 @@ type OrderFunc func(*sql.Selector)
 // columnChecker returns a function indicates if the column exists in the given column.
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
-		character.Table: character.ValidColumn,
+		character.Table:           character.ValidColumn,
+		deprecatedcharacter.Table: deprecatedcharacter.ValidColumn,
+		player.Table:              player.ValidColumn,
 	}
 	check, ok := checks[table]
 	if !ok {

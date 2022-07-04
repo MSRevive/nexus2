@@ -3,6 +3,7 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
@@ -11,16 +12,28 @@ var (
 	// CharactersColumns holds the columns for the "characters" table.
 	CharactersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "steamid", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "version", Type: field.TypeInt},
 		{Name: "slot", Type: field.TypeInt, Default: 0},
 		{Name: "size", Type: field.TypeInt, Default: 0},
 		{Name: "data", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "player_id", Type: field.TypeUUID},
 	}
 	// CharactersTable holds the schema information for the "characters" table.
 	CharactersTable = &schema.Table{
 		Name:       "characters",
 		Columns:    CharactersColumns,
 		PrimaryKey: []*schema.Column{CharactersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "characters_players_characters",
+				Columns:    []*schema.Column{CharactersColumns[8]},
+				RefColumns: []*schema.Column{PlayersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "character_id",
@@ -28,17 +41,74 @@ var (
 				Columns: []*schema.Column{CharactersColumns[0]},
 			},
 			{
-				Name:    "character_steamid_slot",
+				Name:    "character_player_id_slot_version",
+				Unique:  true,
+				Columns: []*schema.Column{CharactersColumns[8], CharactersColumns[4], CharactersColumns[3]},
+			},
+		},
+	}
+	// OldCharactersColumns holds the columns for the "old_characters" table.
+	OldCharactersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "steamid", Type: field.TypeString},
+		{Name: "slot", Type: field.TypeInt, Default: 0},
+		{Name: "size", Type: field.TypeInt, Default: 0},
+		{Name: "data", Type: field.TypeString, SchemaType: map[string]string{"sqlite3": "text"}},
+	}
+	// OldCharactersTable holds the schema information for the "old_characters" table.
+	OldCharactersTable = &schema.Table{
+		Name:       "old_characters",
+		Columns:    OldCharactersColumns,
+		PrimaryKey: []*schema.Column{OldCharactersColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "deprecatedcharacter_id",
+				Unique:  true,
+				Columns: []*schema.Column{OldCharactersColumns[0]},
+			},
+			{
+				Name:    "deprecatedcharacter_steamid_slot",
 				Unique:  false,
-				Columns: []*schema.Column{CharactersColumns[1], CharactersColumns[2]},
+				Columns: []*schema.Column{OldCharactersColumns[1], OldCharactersColumns[2]},
+			},
+		},
+	}
+	// PlayersColumns holds the columns for the "players" table.
+	PlayersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "steamid", Type: field.TypeString},
+	}
+	// PlayersTable holds the schema information for the "players" table.
+	PlayersTable = &schema.Table{
+		Name:       "players",
+		Columns:    PlayersColumns,
+		PrimaryKey: []*schema.Column{PlayersColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "player_id",
+				Unique:  true,
+				Columns: []*schema.Column{PlayersColumns[0]},
+			},
+			{
+				Name:    "player_steamid",
+				Unique:  true,
+				Columns: []*schema.Column{PlayersColumns[3]},
 			},
 		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		CharactersTable,
+		OldCharactersTable,
+		PlayersTable,
 	}
 )
 
 func init() {
+	CharactersTable.ForeignKeys[0].RefTable = PlayersTable
+	OldCharactersTable.Annotation = &entsql.Annotation{
+		Table: "old_characters",
+	}
 }

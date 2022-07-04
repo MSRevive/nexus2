@@ -8,3 +8,9 @@ import (
 
 // Character is the predicate function for character builders.
 type Character func(*sql.Selector)
+
+// DeprecatedCharacter is the predicate function for deprecatedcharacter builders.
+type DeprecatedCharacter func(*sql.Selector)
+
+// Player is the predicate function for player builders.
+type Player func(*sql.Selector)
