@@ -1,9 +1,18 @@
 # Changelog
 
-## v1.0.5
+## v1.1.0
 ### Added
 * Add migration system (with -m flag) to migrate TOML/INI config file to YAML
-* Add authentication to check useragent aswell.
+* Add authentication to check useragent as well.
+* Add database migration system, thanks to [@pbarnum](https://github.com/pbarnum)
+* Add new endpoints for rollback system, thanks to [@pbarnum](https://github.com/pbarnum)
+  * ``PATCH /character/{uid}/restore`` - Restore character to original version.
+  * ``GET /character/{steamid}/{slot}/versions`` - Get all character versions.
+  * ``PATCH /character/{steamid}/{slot}/rollback/{version}`` - Rollback character to specified version.
+  
+### Fixed
+* Fix issue of creating character not overwriting, thanks to [@pbarnum](https://github.com/pbarnum)
+
 
 ## v1.0.4
 ### Added
