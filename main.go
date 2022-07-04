@@ -171,9 +171,9 @@ func main() {
 	charc.R.HandleFunc("/", middleware.Lv2Auth(charc.PostCharacter)).Methods(http.MethodPost)
 	charc.R.HandleFunc("/{uid}", middleware.Lv2Auth(charc.PutCharacter)).Methods(http.MethodPut)
 	charc.R.HandleFunc("/{uid}", middleware.Lv2Auth(charc.DeleteCharacter)).Methods(http.MethodDelete)
-	charc.R.HandleFunc("/{uid}/restore", middleware.Lv2Auth(charc.RestoreCharacter)).Methods(http.MethodPatch)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/versions", middleware.Lv2Auth(charc.CharacterVersions)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/{version:[0-9]+}", middleware.Lv2Auth(charc.RollbackCharacter)).Methods(http.MethodPatch)
+	charc.R.HandleFunc("/{uid}/restore", middleware.Lv1Auth(charc.RestoreCharacter)).Methods(http.MethodPatch)
+	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/versions", middleware.Lv1Auth(charc.CharacterVersions)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/{version:[0-9]+}", middleware.Lv1Auth(charc.RollbackCharacter)).Methods(http.MethodPatch)
 
 	if system.Config.Cert.Enable {
 		cm := autocert.Manager{
