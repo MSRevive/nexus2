@@ -1,3 +1,3 @@
 package system
 
-const Version = "canary"
+var Version = "canary"
