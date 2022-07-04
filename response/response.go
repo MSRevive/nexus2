@@ -1,7 +1,6 @@
 package response
 
 import (
-	//"encoding/json"
 	"net/http"
 	
 	"github.com/goccy/go-json"
@@ -13,13 +12,15 @@ type Response struct {
   Status bool `json:"status"`
   Error string `json:"error"`
   Data interface{} `json:"data"`
-	IsBanned bool `json:"isBanned, omitempty"`
-	IsAdmin bool `json:"isAdmin, omitempty"`
+	IsBanned *bool `json:"isBanned,omitempty"`
+	IsAdmin *bool `json:"isAdmin,omitempty"`
+	
+	w http.ResponseWriter `json:"-"`
 }
 
-func (r *Response) SendJson(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(r)
+func (r *Response) SendJson() {
+	r.w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(r.w).Encode(r)
 }
 
 func OK(w http.ResponseWriter, data interface{}) {
@@ -28,8 +29,9 @@ func OK(w http.ResponseWriter, data interface{}) {
 		Code: http.StatusOK,
 		Error: "",
 		Data: data,
+		w: w,
 	}
-	resp.SendJson(w)
+	resp.SendJson()
 }
 
 func OKChar(w http.ResponseWriter, isBanned bool, isAdmin bool, data interface{}) {
@@ -38,10 +40,11 @@ func OKChar(w http.ResponseWriter, isBanned bool, isAdmin bool, data interface{}
 		Code: http.StatusOK,
 		Error: "",
 		Data: data,
-		IsBanned: isBanned,
-		IsAdmin: isAdmin,
+		IsBanned: &isBanned,
+		IsAdmin: &isAdmin,
+		w: w,
 	}
-	resp.SendJson(w)
+	resp.SendJson()
 }
 
 func Result(w http.ResponseWriter, b bool) {
@@ -50,8 +53,9 @@ func Result(w http.ResponseWriter, b bool) {
 		Code: http.StatusOK,
 		Error: "",
 		Data: b,
+		w: w,
 	}
-	resp.SendJson(w)
+	resp.SendJson()
 }
 
 func BadRequest(w http.ResponseWriter, err error) {
@@ -60,8 +64,9 @@ func BadRequest(w http.ResponseWriter, err error) {
 		Code: http.StatusBadRequest,
 		Error: err.Error(),
 		Data: nil,
+		w: w,
 	}
-	resp.SendJson(w)
+	resp.SendJson()
 }
 
 func Error(w http.ResponseWriter, err error) {
@@ -70,6 +75,7 @@ func Error(w http.ResponseWriter, err error) {
 		Code: http.StatusInternalServerError,
 		Error: err.Error(),
 		Data: nil,
+		w: w,
 	}
-	resp.SendJson(w)
+	resp.SendJson()
 }
