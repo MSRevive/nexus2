@@ -188,6 +188,28 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 			return err
 		}
 
+		// Get all backup characters
+		all, err := s.client.Character.Query().
+			Where(
+				character.And(
+					character.PlayerID(c.PlayerID),
+					character.Slot(c.Slot),
+					character.VersionNEQ(c.Version),
+				),
+			).
+			Order(ent.Desc(character.FieldCreatedAt)).
+			All(s.ctx)
+		if err != nil {
+			return err
+		}
+
+		// Delete all characters beyond 10 backups
+		for _, old := range all[10:] {
+			if err := s.client.Character.DeleteOneID(old.ID).Exec(s.ctx); err != nil {
+				return err
+			}
+		}
+
 		char = c
 		return nil
 	})
