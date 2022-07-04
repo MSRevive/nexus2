@@ -16,7 +16,9 @@ jobs:
       - name: get build tools
         run: sudo apt-get -y install build-essential
       - name: build
-        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o build/msnexus2_linux_amd64 -v .
+        env:
+          REF: ${{ github.ref }}
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X github.com/MSRevive/nexus2/system.Version=${REF:11}" -o build/msnexus2_linux_amd64 -v .
       - name: compress binary
         run: upx build/msnexus2_linux_amd64 && chmod +x build/msnexus2_linux_amd64
       - name: copy runtime directory
