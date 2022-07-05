@@ -2,6 +2,7 @@ package service
 
 import (
 	"time"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/msrevive/nexus2/ent"
@@ -160,7 +161,7 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 		// Get the latest backup version
 		latest, err := s.client.Character.Query().
 			Select(character.FieldVersion).
-			Where(character.Slot(current.Slot)).
+			Where(character.ID(uid)).
 			Order(ent.Desc(character.FieldVersion)).
 			First(s.ctx)
 		if err != nil {
@@ -187,6 +188,8 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 		if err != nil {
 			return err
 		}
+		
+		fmt.Printf("%v", c);
 
 		// Get all backup characters
 		all, err := s.client.Character.Query().
@@ -194,7 +197,7 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 				character.And(
 					character.PlayerID(c.PlayerID),
 					character.Slot(c.Slot),
-					character.VersionNEQ(1),
+					character.VersionNEQ(c.Version),
 				),
 			).
 			Order(ent.Desc(character.FieldCreatedAt)).
@@ -203,9 +206,9 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 			return err
 		}
 
-		// Delete all characters beyond 10 backups (version "1" not in current slice)
-		if len(all) > 9 {
-			for _, old := range all[9:] {
+		// Delete all characters beyond 10 backups
+		if len(all) > 10 {
+			for _, old := range all[10:] {
 				if err := s.client.Character.DeleteOneID(old.ID).Exec(s.ctx); err != nil {
 					return err
 				}
