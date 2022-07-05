@@ -28,7 +28,7 @@ func PanicRecovery(next http.Handler) http.Handler {
     defer func() {
       if panic := recover(); panic != nil {
         http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-        log.Log.Errorf("HTTP Error (500): %s", panic.(error).Error())
+        log.Log.Errorf("Fatal Error: %s", panic.(error).Error())
         log.Log.Errorf(string(debug.Stack()))
       }
     }()

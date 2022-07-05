@@ -2,6 +2,7 @@ package service
 
 import (
 	"time"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/msrevive/nexus2/ent"
@@ -187,6 +188,8 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 		if err != nil {
 			return err
 		}
+		
+		fmt.Printf("%v", c);
 
 		// Get all backup characters
 		all, err := s.client.Character.Query().
@@ -204,9 +207,11 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 		}
 
 		// Delete all characters beyond 10 backups
-		for _, old := range all[10:] {
-			if err := s.client.Character.DeleteOneID(old.ID).Exec(s.ctx); err != nil {
-				return err
+		if len(all) > 10 {
+			for _, old := range all[10:] {
+				if err := s.client.Character.DeleteOneID(old.ID).Exec(s.ctx); err != nil {
+					return err
+				}
 			}
 		}
 
