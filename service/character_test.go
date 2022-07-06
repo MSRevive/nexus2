@@ -605,6 +605,233 @@ func TestCharacterUpdate_With15Backups_RemovesExtraBackups_ReturnsUpdatedCharact
 	assert.Equal(t, 10, count)
 }
 
+func TestCharacterDelete_WithNoCharacter_ReturnsNotFoundError(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	err := service.New(ctx).CharacterDelete(uuid.New())
+	assert.True(t, ent.IsNotFound(err))
+}
+
+func TestCharacterDelete_WithCharacter_ReturnsNoError(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	player := seedPlayer(t, ctx)
+	character := seedCharacter(t, ctx, player)
+
+	err := service.New(ctx).CharacterDelete(character.ID)
+	assert.NoError(t, err)
+
+	dbCharacter, err := system.Client.Character.Get(ctx, character.ID)
+	require.NoError(t, err)
+
+	assert.NotNil(t, dbCharacter.DeletedAt)
+}
+
+func TestCharacterDelete_WithBackups_RemovesAllButLatest_ReturnsNoError(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	player := seedPlayer(t, ctx)
+	characters := seedCharacters(t, ctx, player, 1, 3)
+	require.Len(t, characters, 3)
+
+	// Assert 3 characters in DB (1 character with 2 backups)
+	dbCharacter, err := system.Client.Character.Query().
+		Where(
+			entCharacter.And(
+				entCharacter.HasPlayerWith(
+					entPlayer.Steamid(player.Steamid),
+				),
+				entCharacter.Slot(0),
+			),
+		).
+		All(ctx)
+	require.NoError(t, err)
+	assert.Len(t, dbCharacter, 3)
+
+	err = service.New(ctx).CharacterDelete(characters[0].ID)
+	assert.NoError(t, err)
+
+	dbCharacter, err = system.Client.Character.Query().
+		Where(
+			entCharacter.And(
+				entCharacter.HasPlayerWith(
+					entPlayer.Steamid(player.Steamid),
+				),
+				entCharacter.Slot(0),
+			),
+		).
+		All(ctx)
+	require.NoError(t, err)
+
+	assert.Len(t, dbCharacter, 1)
+	assert.NotNil(t, dbCharacter[0].DeletedAt)
+}
+
+func TestCharacterRestore_WithNoCharacter_ReturnsNotFoundError(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	character, err := service.New(ctx).CharacterRestore(uuid.New())
+	assert.Nil(t, character)
+	assert.True(t, ent.IsNotFound(err))
+}
+
+func TestCharacterRestore_WithCharacter_ReturnsCharacter(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	player := seedPlayer(t, ctx)
+	now := time.Now()
+	character := seedCharacterWithData(t, ctx, player, &ent.Character{Version: 1, DeletedAt: &now})
+
+	actual, err := service.New(ctx).CharacterRestore(character.ID)
+	require.NoError(t, err)
+
+	assert.Equal(t, character.ID, actual.ID)
+	assert.Equal(t, 1, character.Version)
+	assert.Equal(t, character.Slot, actual.Slot)
+	assert.Equal(t, character.Size, actual.Size)
+	assert.Equal(t, character.Data, actual.Data)
+
+	dbCharacter, err := system.Client.Character.Get(ctx, character.ID)
+	require.NoError(t, err)
+
+	assert.Nil(t, dbCharacter.DeletedAt)
+}
+
+func TestCharacterVersions_WithNoCharacter_ReturnsEmptySlice(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	actual, err := service.New(ctx).CharacterVersions(uuid.NewString(), 0)
+	assert.NoError(t, err)
+	assert.Empty(t, actual)
+}
+
+func TestCharacterVersions_WithCharacter_ReturnsOneCharacter(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	player := seedPlayer(t, ctx)
+	character := seedCharacter(t, ctx, player)
+
+	actual, err := service.New(ctx).CharacterVersions(player.Steamid, 0)
+	assert.NoError(t, err)
+	require.Len(t, actual, 1)
+
+	assert.Equal(t, character.ID, actual[0].ID)
+	assert.Equal(t, character.Slot, actual[0].Slot)
+	assert.Equal(t, character.Size, actual[0].Size)
+	assert.Equal(t, character.Data, actual[0].Data)
+}
+
+func TestCharacterVersions_WithCharacter_ReturnsCharacterAndVersions(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	player := seedPlayer(t, ctx)
+	characters := seedCharacters(t, ctx, player, 1, 3)
+	require.Len(t, characters, 3)
+
+	actual, err := service.New(ctx).CharacterVersions(player.Steamid, 0)
+	assert.NoError(t, err)
+	require.Len(t, actual, 3)
+}
+
+func TestCharacterVersions_WithSoftDeletedCharacter_ReturnsOneCharacter(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	player := seedPlayer(t, ctx)
+	now := time.Now()
+	character := seedCharacterWithData(t, ctx, player, &ent.Character{Version: 1, DeletedAt: &now})
+
+	actual, err := service.New(ctx).CharacterVersions(player.Steamid, 0)
+	assert.NoError(t, err)
+	require.Len(t, actual, 1)
+
+	assert.Equal(t, character.ID, actual[0].ID)
+	assert.Equal(t, character.Slot, actual[0].Slot)
+	assert.Equal(t, character.Size, actual[0].Size)
+	assert.Equal(t, character.Data, actual[0].Data)
+	assert.NotNil(t, actual[0].DeletedAt)
+}
+
+func TestCharacterRollback_WithNoCharacter_ReturnsNotFoundError(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	actual, err := service.New(ctx).CharacterRollback(uuid.NewString(), 0, 1)
+	assert.Nil(t, actual)
+	assert.True(t, ent.IsNotFound(err))
+}
+
+func TestCharacterRollback_WithInvalidVersion_ReturnsNotFoundError(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	player := seedPlayer(t, ctx)
+	seedCharacter(t, ctx, player)
+
+	actual, err := service.New(ctx).CharacterRollback(player.Steamid, 0, 2)
+	assert.Nil(t, actual)
+	assert.True(t, ent.IsNotFound(err))
+}
+
+func TestCharacterRollback_WhenTargetingCurrentVersion_ReturnsCharacter(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	player := seedPlayer(t, ctx)
+	character := seedCharacter(t, ctx, player)
+
+	actual, err := service.New(ctx).CharacterRollback(player.Steamid, 0, 1)
+	assert.NoError(t, err)
+
+	assert.Equal(t, character.ID, actual.ID)
+	assert.Equal(t, character.Slot, actual.Slot)
+	assert.Equal(t, character.Size, actual.Size)
+	assert.Equal(t, character.Data, actual.Data)
+}
+
+func TestCharacterRollback_ReturnsCharacter(t *testing.T) {
+	refreshDb()
+
+	ctx := context.Background()
+	player := seedPlayer(t, ctx)
+	characters := seedCharacters(t, ctx, player, 1, 3)
+	require.Len(t, characters, 3)
+
+	actual, err := service.New(ctx).CharacterRollback(player.Steamid, 0, 3)
+	assert.NoError(t, err)
+
+	assert.Equal(t, characters[0].ID, actual.ID)
+	assert.Equal(t, characters[2].Slot, actual.Slot)
+	assert.Equal(t, characters[2].Size, actual.Size)
+	assert.Equal(t, characters[2].Data, actual.Data)
+
+	// Assert previous current character is now the latest backup
+	dbCharacter, err := system.Client.Character.Query().
+		Where(
+			entCharacter.And(
+				entCharacter.HasPlayerWith(
+					entPlayer.Steamid(player.Steamid),
+				),
+				entCharacter.Slot(0),
+				entCharacter.Version(4),
+			),
+		).
+		Only(ctx)
+	require.NoError(t, err)
+
+	assert.Equal(t, dbCharacter.Slot, characters[0].Slot)
+	assert.Equal(t, dbCharacter.Size, characters[0].Size)
+	assert.Equal(t, dbCharacter.Data, characters[0].Data)
+}
+
 func charById(characters []*ent.Character, id uuid.UUID) *ent.Character {
 	for _, c := range characters {
 		if c.ID == id {
@@ -630,7 +857,7 @@ func seedCharacter(t *testing.T, ctx context.Context, player *ent.Player) *ent.C
 
 	character := &ent.Character{
 		Version: 1,
-		Slot:    rand.Intn(3),
+		Slot:    0,
 		Size:    rand.Intn(4096),
 		Data:    "data",
 	}

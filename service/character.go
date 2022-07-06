@@ -9,6 +9,7 @@ import (
 	"github.com/msrevive/nexus2/ent/player"
 )
 
+// CharactersGetAll returns all latest, active Characters
 func (s *service) CharactersGetAll() ([]*ent.DeprecatedCharacter, error) {
 	chars, err := s.client.Character.Query().
 		WithPlayer().
@@ -26,6 +27,7 @@ func (s *service) CharactersGetAll() ([]*ent.DeprecatedCharacter, error) {
 	return charsToDepChars(chars), nil
 }
 
+// CharactersGetBySteamid returns all Characters associated to a Player with the provided Steam ID
 func (s *service) CharactersGetBySteamid(sid string) ([]*ent.DeprecatedCharacter, error) {
 	chars, err := s.client.Character.Query().
 		WithPlayer().
@@ -44,6 +46,8 @@ func (s *service) CharactersGetBySteamid(sid string) ([]*ent.DeprecatedCharacter
 	return charsToDepChars(chars), nil
 }
 
+// CharacterGetBySteamidSlot returns the latest Character for the provided slot associated
+// to a Player with the provided Steam ID
 func (s *service) CharacterGetBySteamidSlot(sid string, slt int) (*ent.DeprecatedCharacter, error) {
 	char, err := s.client.Character.Query().Where(
 		character.And(
@@ -60,6 +64,7 @@ func (s *service) CharacterGetBySteamidSlot(sid string, slt int) (*ent.Deprecate
 	return charToDepChar(sid, char), nil
 }
 
+// CharacterGetByID returns the latest Character with the provided ID
 func (s *service) CharacterGetByID(id uuid.UUID) (*ent.DeprecatedCharacter, error) {
 	char, err := s.client.Character.Query().
 		WithPlayer().
@@ -77,6 +82,15 @@ func (s *service) CharacterGetByID(id uuid.UUID) (*ent.DeprecatedCharacter, erro
 	return charToDepChar(char.Edges.Player.Steamid, char), nil
 }
 
+// CharacterCreate creates and returns a Character for the provided slot and associated
+// to the provided Player Steam ID
+//
+// This function makes the assumption that the newChar parameter has a valid Steam ID
+// and slot number.
+//
+// If a Player resource doesn't exist, it is created
+//
+// If a Character already exists for the designated slot, it is deleted before saving the new Character
 func (s *service) CharacterCreate(newChar ent.DeprecatedCharacter) (*ent.DeprecatedCharacter, error) {
 	var char *ent.Character
 	err := txn(s.ctx, s.client, func(tx *ent.Tx) error {
@@ -148,6 +162,10 @@ func (s *service) CharacterCreate(newChar ent.DeprecatedCharacter) (*ent.Depreca
 	return charToDepChar(newChar.Steamid, char), nil
 }
 
+// CharacterUpdate updates and returns a Character using the provided data within the updateChar parameter
+//
+// The current Character version will be stored as a new backup before updating. If this backup goes over the
+// maximum number of backups for this slot, the oldest backup version will be deleted.
 func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharacter) (*ent.DeprecatedCharacter, error) {
 	var char *ent.Character
 	err := txn(s.ctx, s.client, func(tx *ent.Tx) error {
@@ -222,6 +240,11 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 	return charToDepChar(updateChar.Steamid, char), nil
 }
 
+// CharacterDelete deletes a character
+//
+// The latest Character version will be soft deleted in an effort to preserve the right to
+// restore the Character at a later time, i.e. A Player deletes a Character by accident and wants
+// it restored. Backups will be hard deleted to free up space, since only the latest version is required.
 func (s *service) CharacterDelete(uid uuid.UUID) error {
 	return txn(s.ctx, s.client, func(tx *ent.Tx) error {
 		// Get Current version
@@ -256,6 +279,7 @@ func (s *service) CharacterDelete(uid uuid.UUID) error {
 	})
 }
 
+// CharacterRestore removes the deleted_at timestamp from the Character resource
 func (s *service) CharacterRestore(uid uuid.UUID) (*ent.DeprecatedCharacter, error) {
 	char, err := s.client.Character.UpdateOneID(uid).
 		ClearDeletedAt().
@@ -272,6 +296,8 @@ func (s *service) CharacterRestore(uid uuid.UUID) (*ent.DeprecatedCharacter, err
 	return charToDepChar(player.Steamid, char), nil
 }
 
+// CharacterVersions returns the latest Character version, and all of its backups,
+// ordered by the updated_at timestamp in descending order (current version -> oldest version)
 func (s *service) CharacterVersions(sid string, slot int) ([]*ent.Character, error) {
 	chars, err := s.client.Character.Query().
 		Where(
@@ -280,6 +306,7 @@ func (s *service) CharacterVersions(sid string, slot int) ([]*ent.Character, err
 				character.Slot(slot),
 			),
 		).
+		Order(ent.Desc(character.FieldUpdatedAt)).
 		All(s.ctx)
 	if err != nil {
 		return nil, err
@@ -288,10 +315,29 @@ func (s *service) CharacterVersions(sid string, slot int) ([]*ent.Character, err
 	return chars, nil
 }
 
+// CharacterRollback reverts the Character to a previous version
+//
+// Reverting to a previous version will first save the current version as a backup in an effort
+// to keep a clean and "fast-forward only" history of the Character. There is a side affect from this.
+// If a Character has 10 versions and the Player decides to "rollback" between two versions 10 times,
+// the Character will end up having 2 versions saved 5 times each.
+//
+// Here is an illustration demonstrating this side effect
+// 	Character "abc": v1, v2, v3, v4, v5, v6, v7, v8, v9, v10
+// 	1. Rollback to "v8"
+// 		Previous: v1, v2, v3, v4, v5, v6, v7, v8, v9, v10
+// 		Current:  v8, v3, v4, v5, v6, v7, v8, v9, v10, v1
+// 	2. Rollback to "v1"
+// 		Previous: v8, v3, v4, v5, v6, v7, v8, v9, v10, v1
+// 		Current:  v1, v4, v5, v6, v7, v8, v9, v10, v1, v8
+// 	3. ... continues 8 more times
+// 		Current:  v1, v8, v1, v8, v1, v8, v1, v8, v1, v8
+//
+// Trying to revert to the current version (1) will NOT save an additional backup.
 func (s *service) CharacterRollback(sid string, slot, version int) (*ent.DeprecatedCharacter, error) {
 	var char *ent.Character
 	err := txn(s.ctx, s.client, func(tx *ent.Tx) error {
-		// Get the current character
+		// Get the targeted character version
 		targeted, err := s.client.Character.Query().
 			Where(
 				character.And(
@@ -300,9 +346,15 @@ func (s *service) CharacterRollback(sid string, slot, version int) (*ent.Depreca
 					character.Version(version),
 				),
 			).
-			First(s.ctx)
+			Only(s.ctx)
 		if err != nil {
 			return err
+		}
+
+		// No work needed if targeted version is current version
+		if version == 1 {
+			char = targeted
+			return nil
 		}
 
 		// Get the current character
@@ -310,10 +362,11 @@ func (s *service) CharacterRollback(sid string, slot, version int) (*ent.Depreca
 			Where(
 				character.And(
 					character.HasPlayerWith(player.Steamid(sid)),
+					character.Slot(slot),
 					character.Version(1),
 				),
 			).
-			First(s.ctx)
+			Only(s.ctx)
 		if err != nil {
 			return err
 		}
@@ -321,7 +374,12 @@ func (s *service) CharacterRollback(sid string, slot, version int) (*ent.Depreca
 		// Get the latest backup version
 		latest, err := s.client.Character.Query().
 			Select(character.FieldVersion).
-			Where(character.HasPlayerWith(player.Steamid(sid))).
+			Where(
+				character.And(
+					character.HasPlayerWith(player.Steamid(sid)),
+					character.Slot(slot),
+				),
+			).
 			Order(ent.Desc(character.FieldVersion)).
 			First(s.ctx)
 		if err != nil {
