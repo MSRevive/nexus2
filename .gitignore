@@ -21,3 +21,4 @@ runtime/game/*
 dev/*
 *.log
 *.db
+*.bak
