@@ -34,8 +34,8 @@ func setControlHeaders(w http.ResponseWriter) {
 
 //false = not allowed, true = is allowed
 func checkIP(ip string) bool {
-  if system.Config.ApiAuth.EnforceIP {      
-    if _,ok := system.IPList[ip]; !ok {
+  if system.AuthCfg.IsEnforcingIP() {      
+    if !system.AuthCfg.IsKnownIP(ip) {
       return false
     }
     
@@ -47,8 +47,8 @@ func checkIP(ip string) bool {
 
 //false = not allowed, true = is allowed
 func checkAPIKey(key string) bool {
-  if system.Config.ApiAuth.EnforceKey {
-    if key == system.Config.ApiAuth.Key {
+  if system.AuthCfg.IsEnforcingKey() {
+    if system.AuthCfg.IsValidKey(key) {
       return true
     }
     

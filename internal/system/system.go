@@ -16,17 +16,11 @@ import(
 
 var (
   Client *ent.Client
-  Config config
-  Dbg bool
-  
-  IPList map[string]bool
-  iPListMutex = new(sync.RWMutex)
-  BanList map[string]bool
-  banListMutex = new(sync.RWMutex)
-  MapList map[string]uint32
-  mapListMutex = new(sync.RWMutex)
-  AdminList map[string]bool
-  adminListMutex = new(sync.RWMutex)
+
+  Version = "canary"
+  AuthCfg iCfgAuth = (*config)(nil)
+	VerifyCfg iCfgVerify = (*config)(nil)
+	HelperCfg iCfgHelper = (*config)(nil)
 )
 
 type config struct {
@@ -37,6 +31,7 @@ type config struct {
     Graceful time.Duration
     RootPath string
     DBString string
+    DebugMode bool
   }
   RateLimit struct {
     Enable bool
@@ -68,34 +63,74 @@ type config struct {
     Dir string
     ExpireTime string
   }
+
+  iPList map[string]bool
+  iPListMutex sync.RWMutex
+  banList map[string]bool
+  banListMutex sync.RWMutex
+  mapList map[string]uint32
+  mapListMutex sync.RWMutex
+  adminList map[string]bool
+  adminListMutex sync.RWMutex
 }
 
-func LoadConfig(path string) error {
+func LoadConfig(path string, dbg bool) (*config, error) {
+  var cfg config
+
   switch filepath.Ext(path) {
   case ".toml", ".ini":
-    if err := ini.MapTo(&Config, path); err != nil {
-      return err
+    if err := ini.MapTo(&cfg, path); err != nil {
+      return nil, err
     }
-    
-    return nil
+
   case ".yaml", ".json", ".yml":
     data,err := os.ReadFile(path)
-    if data != nil {
-      err = yaml.Unmarshal(data, &Config)
-    }
-    
     if err != nil {
-      return err
+      return nil, err
     }
     
-    return nil
+    if err := yaml.Unmarshal(data, &cfg); err != nil {
+      return nil, err
+    }
+
   default:
-    return errors.New("unsupported config type")
+    return nil, errors.New("unsupported config type")
   }
+
+  cfg.Core.DebugMode = dbg
+  return &cfg, nil
 }
 
-func MigrateConfig() error {
-  data,err := yaml.Marshal(Config)
+func (cfg *config) LoadIPList() error {
+  cfg.iPListMutex.Lock()
+  defer cfg.iPListMutex.Unlock()
+
+  return loadJsonFile(cfg.ApiAuth.IPListFile, &cfg.iPList)
+}
+
+func (cfg *config) LoadMapList() error {
+  cfg.mapListMutex.Lock()
+  defer cfg.mapListMutex.Unlock()
+
+  return loadJsonFile(cfg.Verify.MapListFile, &cfg.mapList)
+}
+
+func (cfg *config) LoadBanList() error {
+  cfg.banListMutex.Lock()
+  defer cfg.banListMutex.Unlock()
+
+  return loadJsonFile(cfg.Verify.BanListFile, &cfg.banList)
+}
+
+func (cfg *config) LoadAdminList() error {
+  cfg.adminListMutex.Lock()
+  defer cfg.adminListMutex.Unlock()
+
+  return loadJsonFile(cfg.Verify.AdminListFile, &cfg.adminList)
+}
+
+func (cfg *config) Migrate() error {
+  data,err := yaml.Marshal(&cfg)
   if err != nil {
     return err
   }
@@ -107,54 +142,13 @@ func MigrateConfig() error {
   return nil
 }
 
-func LoadIPList(path string) error {
-  file,err := os.ReadFile(path)
-  if err != nil {
-    return err
-  }
-  
-  iPListMutex.Lock()
-  _ = json.Unmarshal([]byte(file), &IPList)
-  iPListMutex.Unlock()
-  
-  return nil
-}
+//interface functions
 
-func LoadMapList(path string) error {
+func loadJsonFile(path string, container interface{}) error {
   file,err := os.ReadFile(path)
   if err != nil {
     return err
   }
-  
-  mapListMutex.Lock()
-  _ = json.Unmarshal([]byte(file), &MapList)
-  mapListMutex.Unlock()
-  
-  return nil
-}
 
-func LoadBanList(path string) error {
-  file,err := os.ReadFile(path)
-  if err != nil {
-    return err
-  }
-  
-  banListMutex.Lock()
-  _ = json.Unmarshal([]byte(file), &BanList)
-  banListMutex.Unlock()
-  
-  return nil
-}
-
-func LoadAdminList(path string) error {
-  file,err := os.ReadFile(path)
-  if err != nil {
-    return err
-  }
-  
-  adminListMutex.Lock()
-  _ = json.Unmarshal([]byte(file), &AdminList)
-  adminListMutex.Unlock()
-  
-  return nil
+  return json.Unmarshal([]byte(file), container)
 }

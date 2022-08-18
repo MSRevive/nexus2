@@ -40,7 +40,7 @@ func PanicRecovery(next http.Handler) http.Handler {
 func RateLimit(next http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     if globalLimiter == nil {
-      globalLimiter = rate.NewLimiter(1, system.Config.RateLimit.MaxRequests, system.Config.RateLimit.MaxAge, 0)
+      globalLimiter = rate.NewLimiter(1, system.HelperCfg.GetMaxRequests(), system.HelperCfg.GetMaxAge(), 0)
     }
 
     globalLimiter.CheckTime()
@@ -116,8 +116,8 @@ func Lv2Auth(next http.HandlerFunc) http.HandlerFunc {
     }
     
     //if useragent in config is empty then just skip.
-    if system.Config.Verify.Useragent != "" {
-      if r.UserAgent() != system.Config.Verify.Useragent {
+    if system.AuthCfg.GetUserAgent() != "" {
+      if r.UserAgent() != system.AuthCfg.GetUserAgent() {
         log.Log.Printf("%s incorrect user agent!", ip)
         http.Error(w, http.StatusText(401), http.StatusUnauthorized)
         return

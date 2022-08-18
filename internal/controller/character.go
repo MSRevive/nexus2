@@ -44,13 +44,8 @@ func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := system.BanList[steamid]; ok && system.Config.Verify.EnforceBan {
-		isBanned = true
-	}
-
-	if _, ok := system.AdminList[steamid]; ok {
-		isAdmin = true
-	}
+	isBanned = system.VerifyCfg.EnforceAndVerifyBanned(steamid)
+	isAdmin = system.VerifyCfg.IsSteamIDAdmin(steamid)
 
 	response.OKChar(w, isBanned, isAdmin, chars)
 }
@@ -75,13 +70,8 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := system.BanList[steamid]; ok && system.Config.Verify.EnforceBan {
-		isBanned = true
-	}
-
-	if _, ok := system.AdminList[steamid]; ok {
-		isAdmin = true
-	}
+	isBanned = system.VerifyCfg.EnforceAndVerifyBanned(steamid)
+	isAdmin = system.VerifyCfg.IsSteamIDAdmin(steamid)
 
 	response.OKChar(w, isBanned, isAdmin, char)
 }
@@ -135,13 +125,8 @@ func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := system.BanList[char.Steamid]; ok && system.Config.Verify.EnforceBan {
-		isBanned = true
-	}
-
-	if _, ok := system.AdminList[char.Steamid]; ok {
-		isAdmin = true
-	}
+	isBanned = system.VerifyCfg.EnforceAndVerifyBanned(char.Steamid)
+	isAdmin = system.VerifyCfg.IsSteamIDAdmin(char.Steamid)
 
 	response.OKChar(w, isBanned, isAdmin, char)
 }

@@ -11,12 +11,7 @@ import (
 )
 
 //GET map/{name}/{hash}
-func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
-  if !system.Config.Verify.EnforceMap {
-    response.Result(w, true)
-    return
-  }
-  
+func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {  
   vars := mux.Vars(r)
   name := vars["name"]
   hash, err := strconv.ParseUint(vars["hash"], 10, 32)
@@ -25,7 +20,7 @@ func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  if res,_ := system.MapList[name]; res == uint32(hash) {
+  if system.VerifyCfg.VerifyMapName(name, uint32(hash)) {
     response.Result(w, true)
     return
   }
@@ -37,15 +32,10 @@ func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
 //GET ban/{steamid}
 //in this case false means player isn't banned
 func (c *controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
-  if !system.Config.Verify.EnforceBan {
-    response.Result(w, false)
-    return
-  }
-  
   vars := mux.Vars(r)
   steamid := vars["steamid"]
   
-  if _,ok := system.BanList[steamid]; ok {
+  if system.VerifyCfg.EnforceAndVerifyBanned(steamid) {
     response.Result(w, true)
     return
   }
@@ -56,11 +46,6 @@ func (c *controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
 
 //GET sc/{hash}
 func (c *controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
-  if !system.Config.Verify.EnforceSC {
-    response.Result(w, true)
-    return
-  }
-  
   vars := mux.Vars(r)
   hash, err := strconv.ParseUint(vars["hash"], 10, 32)
   if err != nil {
@@ -68,7 +53,7 @@ func (c *controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  if system.Config.Verify.SCHash == uint32(hash) {
+  if system.VerifyCfg.VerifySC(uint32(hash)) {
     response.Result(w, true)
     return
   }

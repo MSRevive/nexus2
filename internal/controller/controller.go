@@ -20,7 +20,7 @@ func New(router *mux.Router) *controller {
 }
 
 func (c *controller) TestRoot(w http.ResponseWriter, r *http.Request) {
-	if system.Dbg {
+	if system.HelperCfg.GetDebugMode() {
 		if err := service.New(r.Context()).Debug(); err != nil {
 			response.BadRequest(w, err)
 			return
