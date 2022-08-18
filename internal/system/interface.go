@@ -1,30 +1,30 @@
 package system
 
 import(
-  "time"
+	"time"
 )
 
 type iCfgAuth interface {
 	IsEnforcingIP() bool
 	IsKnownIP(ip string) bool
 	IsEnforcingKey() bool
-  IsValidKey(key string) bool
-  GetUserAgent() string
+	IsValidKey(key string) bool
+	GetUserAgent() string
 }
 
 type iCfgVerify interface {
-  VerifyMapName(name string, calculated uint32) bool
-  VerifySC(calculated uint32) bool
-  IsSteamIDBanned(steamid string) bool
-  IsSteamIDAdmin(steamid string) bool
-  EnforceAndVerifyBanned(steamid string) bool
+	VerifyMapName(name string, calculated uint32) bool
+	VerifySC(calculated uint32) bool
+	IsSteamIDBanned(steamid string) bool
+	IsSteamIDAdmin(steamid string) bool
+	EnforceAndVerifyBanned(steamid string) bool
 }
 
 type iCfgHelper interface {
-  GetDBString() string
-  GetMaxRequests() int
-  GetMaxAge() time.Duration
-  GetDebugMode() bool
+	GetDBString() string
+	GetMaxRequests() int
+	GetMaxAge() time.Duration
+	GetDebugMode() bool
 }
 
 func (c *config) IsEnforcingIP() bool {
@@ -52,22 +52,22 @@ func (c *config) GetUserAgent() string {
 }
 
 func (c *config) VerifyMapName(name string, calculated uint32) bool {
-  if c.Verify.EnforceMap {
-    c.mapListMutex.RLock()
-    defer c.mapListMutex.RUnlock()
+	if c.Verify.EnforceMap {
+		c.mapListMutex.RLock()
+		defer c.mapListMutex.RUnlock()
 
-    return c.mapList[name] == calculated
-  }
+		return c.mapList[name] == calculated
+	}
 
-  return true //return true if enforcemap is false
+	return true //return true if enforcemap is false
 }
 
 func (c *config) VerifySC(calculated uint32) bool {
-  if c.Verify.EnforceSC {
-    return c.Verify.SCHash == calculated
-  }
+	if c.Verify.EnforceSC {
+		return c.Verify.SCHash == calculated
+	}
 
-  return true //return true if enforcesc is false
+	return true //return true if enforcesc is false
 }
 
 func (c *config) IsSteamIDAdmin(steamid string) bool {
@@ -94,17 +94,17 @@ func (c *config) EnforceAndVerifyBanned(steamid string) bool {
 }
 
 func (c *config) GetDBString() string {
-  return c.Core.DBString
+	return c.Core.DBString
 }
 
 func (c *config) GetMaxRequests() int {
-  return c.RateLimit.MaxRequests
+	return c.RateLimit.MaxRequests
 }
 
 func (c *config) GetMaxAge() time.Duration {
-  return c.RateLimit.MaxAge
+	return c.RateLimit.MaxAge
 }
 
 func (c *config) GetDebugMode() bool {
-  return c.Core.DebugMode
+	return c.Core.DebugMode
 }

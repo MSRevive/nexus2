@@ -16,41 +16,41 @@ var (
 
 func Log(next http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    setControlHeaders(w) //best place to set control headers?
-    start := time.Now()
-    next.ServeHTTP(w, r)
-    log.Log.Printf("%s %s from %s (%v)", r.Method, r.RequestURI, getIP(r), time.Since(start))
+	setControlHeaders(w) //best place to set control headers?
+	start := time.Now()
+	next.ServeHTTP(w, r)
+	log.Log.Printf("%s %s from %s (%v)", r.Method, r.RequestURI, getIP(r), time.Since(start))
   })
 }
 
 func PanicRecovery(next http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    defer func() {
-      if panic := recover(); panic != nil {
-        http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-        log.Log.Errorf("Fatal Error: %s", panic.(error).Error())
-        log.Log.Errorf(string(debug.Stack()))
-      }
-    }()
-    
-    next.ServeHTTP(w, r)
+	defer func() {
+	  if panic := recover(); panic != nil {
+		http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+		log.Log.Errorf("Fatal Error: %s", panic.(error).Error())
+		log.Log.Errorf(string(debug.Stack()))
+	  }
+	}()
+	
+	next.ServeHTTP(w, r)
   })
 }
 
 func RateLimit(next http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    if globalLimiter == nil {
-      globalLimiter = rate.NewLimiter(1, system.HelperCfg.GetMaxRequests(), system.HelperCfg.GetMaxAge(), 0)
-    }
+	if globalLimiter == nil {
+	  globalLimiter = rate.NewLimiter(1, system.HelperCfg.GetMaxRequests(), system.HelperCfg.GetMaxAge(), 0)
+	}
 
-    globalLimiter.CheckTime()
-    if globalLimiter.IsAllowed() == false {
-      log.Log.Println("Received too many requests.")
-      http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
-      return
-    }
-    
-    next.ServeHTTP(w, r)
+	globalLimiter.CheckTime()
+	if globalLimiter.IsAllowed() == false {
+	  log.Log.Println("Received too many requests.")
+	  http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
+	  return
+	}
+	
+	next.ServeHTTP(w, r)
   })
 }
 
@@ -59,8 +59,8 @@ func RateLimit(next http.Handler) http.Handler {
 ---*/
 func NoAuth(next http.HandlerFunc) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
-    next(w, r)
-    return
+	next(w, r)
+	return
   }
 }
 
@@ -70,25 +70,25 @@ func NoAuth(next http.HandlerFunc) http.HandlerFunc {
 ---*/
 func Lv1Auth(next http.HandlerFunc) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
-    ip := getIP(r)
-    key := r.Header.Get("Authorization")
-    
-    //IP Auth
-    if !checkIP(ip) {
-      log.Log.Printf("%s is not authorized.", ip)
-      http.Error(w, http.StatusText(401), http.StatusUnauthorized)
-      return
-    }
-    
-    //API Key Auth
-    if !checkAPIKey(key) {
-      log.Log.Printf("%s failed API key check.", ip)
-      http.Error(w, http.StatusText(401), http.StatusUnauthorized)
-      return
-    }
+	ip := getIP(r)
+	key := r.Header.Get("Authorization")
+	
+	//IP Auth
+	if !checkIP(ip) {
+	  log.Log.Printf("%s is not authorized.", ip)
+	  http.Error(w, http.StatusText(401), http.StatusUnauthorized)
+	  return
+	}
+	
+	//API Key Auth
+	if !checkAPIKey(key) {
+	  log.Log.Printf("%s failed API key check.", ip)
+	  http.Error(w, http.StatusText(401), http.StatusUnauthorized)
+	  return
+	}
 
-    next(w, r)
-    return
+	next(w, r)
+	return
   }
 }
 
@@ -98,33 +98,33 @@ func Lv1Auth(next http.HandlerFunc) http.HandlerFunc {
 ---*/
 func Lv2Auth(next http.HandlerFunc) http.HandlerFunc {
   return func(w http.ResponseWriter, r *http.Request) {
-    ip := getIP(r)
-    key := r.Header.Get("Authorization")
-    
-    //IP Auth
-    if !checkIP(ip) {
-      log.Log.Printf("%s is not authorized!", ip)
-      http.Error(w, http.StatusText(401), http.StatusUnauthorized)
-      return
-    }
-    
-    //API Key Auth
-    if !checkAPIKey(key) {
-      log.Log.Printf("%s failed API key check!", ip)
-      http.Error(w, http.StatusText(401), http.StatusUnauthorized)
-      return
-    }
-    
-    //if useragent in config is empty then just skip.
-    if system.AuthCfg.GetUserAgent() != "" {
-      if r.UserAgent() != system.AuthCfg.GetUserAgent() {
-        log.Log.Printf("%s incorrect user agent!", ip)
-        http.Error(w, http.StatusText(401), http.StatusUnauthorized)
-        return
-      }
-    }
+	ip := getIP(r)
+	key := r.Header.Get("Authorization")
+	
+	//IP Auth
+	if !checkIP(ip) {
+	  log.Log.Printf("%s is not authorized!", ip)
+	  http.Error(w, http.StatusText(401), http.StatusUnauthorized)
+	  return
+	}
+	
+	//API Key Auth
+	if !checkAPIKey(key) {
+	  log.Log.Printf("%s failed API key check!", ip)
+	  http.Error(w, http.StatusText(401), http.StatusUnauthorized)
+	  return
+	}
+	
+	//if useragent in config is empty then just skip.
+	if system.AuthCfg.GetUserAgent() != "" {
+	  if r.UserAgent() != system.AuthCfg.GetUserAgent() {
+		log.Log.Printf("%s incorrect user agent!", ip)
+		http.Error(w, http.StatusText(401), http.StatusUnauthorized)
+		return
+	  }
+	}
 
-    next(w, r)
-    return
+	next(w, r)
+	return
   }
 }
