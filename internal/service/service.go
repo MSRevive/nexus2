@@ -12,10 +12,10 @@ type service struct {
 	db *sql.DB
 }
 
-func New(ctx context.Context) *service {
+func New(ctx context.Context, db *sql.DB) *service {
 	return &service{
 		ctx: ctx,
-		db: system.DB,
+		db: db,
 	}
 }
 

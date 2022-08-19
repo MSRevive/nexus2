@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"database/sql"
 
 	"github.com/gorilla/mux"
 	"github.com/msrevive/nexus2/internal/response"
@@ -11,11 +12,13 @@ import (
 
 type controller struct {
 	R *mux.Router
+	db *sql.DB
 }
 
-func New(router *mux.Router) *controller {
+func New(router *mux.Router, db *sql.DB) *controller {
 	return &controller{
 		R: router,
+		db: db,
 	}
 }
 
