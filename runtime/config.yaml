@@ -1,6 +1,4 @@
 core:
-  address: 127.0.0.1
-  port: 1337
   maxthreads: 0
   graceful: 15 # Request timeout in minutes
   rootpath: /api/v1

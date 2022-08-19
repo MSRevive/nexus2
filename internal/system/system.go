@@ -6,7 +6,6 @@ import(
 	"sync"
 	"errors"
 	"path/filepath"
-	"database/sql"
 
 	"gopkg.in/ini.v1"
 	"gopkg.in/yaml.v2"
@@ -14,8 +13,6 @@ import(
 )
 
 var (
-	DB *sql.DB
-
 	Version = "canary"
 	AuthCfg iCfgAuth = (*config)(nil)
 	VerifyCfg iCfgVerify = (*config)(nil)
@@ -24,8 +21,6 @@ var (
 
 type config struct {
 	Core struct {
-		Address string
-		Port int
 		MaxThreads int
 		Graceful time.Duration
 		RootPath string
