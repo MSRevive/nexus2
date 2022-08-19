@@ -4,7 +4,7 @@ core:
   maxthreads: 0
   graceful: 15 # Request timeout in minutes
   rootpath: /api/v1
-  dbstring: file:./runtime/chars.db?cache=shared&mode=rwc&_fk=1 # file:ent?cache=shared&mode=memory&_fk=1
+  dbstring: file:./runtime/chars2.db?cache=shared&mode=rwc&_fk=1 # file:ent?cache=shared&mode=memory&_fk=1
 ratelimit:
   enable: false
   maxrequests: 500 # Max amount of requests in time range of MaxAge

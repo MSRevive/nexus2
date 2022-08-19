@@ -13,18 +13,19 @@ import (
 	"time"
 	"errors"
 
-	entd "entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/schema"
-	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/gorilla/mux"
 	"github.com/msrevive/nexus2/internal/controller"
-	"github.com/msrevive/nexus2/internal/ent"
-	"github.com/msrevive/nexus2/internal/ent/player"
 	"github.com/msrevive/nexus2/internal/log"
 	"github.com/msrevive/nexus2/internal/middleware"
 	"github.com/msrevive/nexus2/internal/system"
+	"github.com/msrevive/nexus2/internal/service"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
+)
+
+var (
+
 )
 
 func initPrint() {
@@ -79,7 +80,7 @@ func main() {
 		runtime.GOMAXPROCS(config.Core.MaxThreads)
 	}
 
-	//Load json files.
+	//Load JSON files.
 	if config.ApiAuth.EnforceIP {
 		log.Log.Printf("Loading IP list from %s", config.ApiAuth.IPListFile)
 		if err := config.LoadIPList(); err != nil {
@@ -108,8 +109,16 @@ func main() {
 
 	//Connect database.
 	log.Log.Println("Connecting to database")
-	tmpMigration(config.Core.DBString)
-	defer system.Client.Close()
+	system.DB, err = sql.Open("sqlite3", config.Core.DBString)
+	if err != nil {
+		log.Log.Fatalf("Failed to connect to DB, %s", err)
+		exit(-1)
+	}
+	//have our service handle table creation.
+	service.New(context.Background()).CreateTables()
+	//we will write up a migration system at the end.
+	//tmpMigration(config.Core.DBString)
+	defer system.DB.Close()
 
 	//variables for web server
 	var srv *http.Server
@@ -201,6 +210,7 @@ func main() {
 
 // tmpMigration will convert all current characters to the new schema
 // If any failure is detected, the current database will not be affected
+/*
 func tmpMigration(dbstring string) {
 	ctx := context.Background()
 	dbFileName := "./runtime/chars.db"
@@ -399,4 +409,4 @@ func tmpMigration(dbstring string) {
 		// happy path cleanup, we don't want to delete old one incase we need to revert suddenly.
 		os.Remove(dbBakFileName)
 	}
-}
+}*/

@@ -6,8 +6,7 @@ import(
 	"sync"
 	"errors"
 	"path/filepath"
-
-	"github.com/msrevive/nexus2/internal/ent"
+	"database/sql"
 
 	"gopkg.in/ini.v1"
 	"gopkg.in/yaml.v2"
@@ -15,7 +14,7 @@ import(
 )
 
 var (
-	Client *ent.Client
+	DB *sql.DB
 
 	Version = "canary"
 	AuthCfg iCfgAuth = (*config)(nil)
@@ -141,8 +140,6 @@ func (cfg *config) Migrate() error {
 	
 	return nil
 }
-
-//interface functions
 
 func loadJsonFile(path string, container interface{}) error {
 	file,err := os.ReadFile(path)
