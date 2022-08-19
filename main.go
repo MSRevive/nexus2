@@ -17,12 +17,12 @@ import (
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/msrevive/nexus2/controller"
-	"github.com/msrevive/nexus2/ent"
-	"github.com/msrevive/nexus2/ent/player"
-	"github.com/msrevive/nexus2/log"
-	"github.com/msrevive/nexus2/middleware"
-	"github.com/msrevive/nexus2/system"
+	"github.com/msrevive/nexus2/internal/controller"
+	"github.com/msrevive/nexus2/internal/ent"
+	"github.com/msrevive/nexus2/internal/ent/player"
+	"github.com/msrevive/nexus2/internal/log"
+	"github.com/msrevive/nexus2/internal/middleware"
+	"github.com/msrevive/nexus2/internal/system"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 )
@@ -44,69 +44,71 @@ License: GPL-3.0 https://github.com/MSRevive/nexus2/blob/main/LICENSE %s`, time.
 
 func main() {
 	var cfile string
+	var dbg bool
 	var migrateConfig bool //migrates ini/toml config to yaml
 	flag.StringVar(&cfile, "cfile", "./runtime/config.yaml", "Location of via config file")
-	flag.BoolVar(&system.Dbg, "dbg", false, "Run with debug mode.")
+	flag.BoolVar(&dbg, "dbg", false, "Run with debug mode.")
 	flag.BoolVar(&migrateConfig, "m", false, "Migrate the ini/toml config to YAML")
 	flag.Parse()
 
-	if err := system.LoadConfig(cfile); err != nil {
+	config, err := system.LoadConfig(cfile, dbg)
+	if err != nil {
 		panic(err)
 	}
 
 	if migrateConfig {
-		fmt.Println("Running migration...")
-		if err := system.MigrateConfig(); err != nil {
-			fmt.Printf("Migration error: %s", err)
+		fmt.Println("Running config migration...")
+		if err := config.Migrate(); err != nil {
+			fmt.Printf("Config migration error: %s", err)
 		}
-		fmt.Println("Finished migration, starting server...")
+		fmt.Println("Finished config migration, starting server...")
 	}
 
 	//initial print
 	initPrint()
 
 	//Initiate logging
-	log.InitLogging("server.log", system.Config.Log.Dir, system.Config.Log.Level, system.Config.Log.ExpireTime)
+	log.InitLogging("server.log", config.Log.Dir, config.Log.Level, config.Log.ExpireTime)
 
-	if system.Dbg {
+	if dbg {
 		log.Log.Warnln("Running in Debug mode, do not use in production!")
 	}
 
 	//Max threads allowed.
-	if system.Config.Core.MaxThreads != 0 {
-		runtime.GOMAXPROCS(system.Config.Core.MaxThreads)
+	if config.Core.MaxThreads != 0 {
+		runtime.GOMAXPROCS(config.Core.MaxThreads)
 	}
 
 	//Load json files.
-	if system.Config.ApiAuth.EnforceIP {
-		log.Log.Printf("Loading IP list from %s", system.Config.ApiAuth.IPListFile)
-		if err := system.LoadIPList(system.Config.ApiAuth.IPListFile); err != nil {
+	if config.ApiAuth.EnforceIP {
+		log.Log.Printf("Loading IP list from %s", config.ApiAuth.IPListFile)
+		if err := config.LoadIPList(); err != nil {
 			log.Log.Warnln("Failed to load IP list.")
 		}
 	}
 
-	if system.Config.Verify.EnforceMap {
-		log.Log.Printf("Loading Map list from %s", system.Config.Verify.MapListFile)
-		if err := system.LoadMapList(system.Config.Verify.MapListFile); err != nil {
+	if config.Verify.EnforceMap {
+		log.Log.Printf("Loading Map list from %s", config.Verify.MapListFile)
+		if err := config.LoadMapList(); err != nil {
 			log.Log.Warnln("Failed to load Map list.")
 		}
 	}
 
-	if system.Config.Verify.EnforceBan {
-		log.Log.Printf("Loading Ban list from %s", system.Config.Verify.BanListFile)
-		if err := system.LoadBanList(system.Config.Verify.BanListFile); err != nil {
+	if config.Verify.EnforceBan {
+		log.Log.Printf("Loading Ban list from %s", config.Verify.BanListFile)
+		if err := config.LoadBanList(); err != nil {
 			log.Log.Warnln("Failed to load Ban list.")
 		}
 	}
 
-	log.Log.Printf("Loading Admin list from %s", system.Config.Verify.AdminListFile)
-	if err := system.LoadAdminList(system.Config.Verify.AdminListFile); err != nil {
+	log.Log.Printf("Loading Admin list from %s", config.Verify.AdminListFile)
+	if err := config.LoadAdminList(); err != nil {
 		log.Log.Warnln("Failed to load Admin list.")
 	}
 
 	//Connect database.
 	log.Log.Println("Connecting to database")
-	tmpMigration()
+	tmpMigration(config.Core.DBString)
 	defer system.Client.Close()
 
 	//variables for web server
@@ -114,7 +116,7 @@ func main() {
 	router := mux.NewRouter()
 	srv = &http.Server{
 		Handler:      router,
-		Addr:         system.Config.Core.Address + ":" + strconv.Itoa(system.Config.Core.Port),
+		Addr:         config.Core.Address + ":" + strconv.Itoa(config.Core.Port),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 		// DefaultTLSConfig sets sane defaults to use when configuring the internal
@@ -142,19 +144,19 @@ func main() {
 	//middleware
 	router.Use(middleware.PanicRecovery)
 	router.Use(middleware.Log)
-	if system.Config.RateLimit.Enable {
+	if config.RateLimit.Enable {
 		router.Use(middleware.RateLimit)
 	}
 
 	//api routes
-	apic := controller.New(router.PathPrefix(system.Config.Core.RootPath).Subrouter())
+	apic := controller.New(router.PathPrefix(config.Core.RootPath).Subrouter())
 	apic.R.HandleFunc("/ping", middleware.Lv2Auth(apic.GetPing)).Methods(http.MethodGet)
 	apic.R.HandleFunc("/map/{name}/{hash}", middleware.Lv1Auth(apic.GetMapVerify)).Methods(http.MethodGet)
 	apic.R.HandleFunc("/ban/{steamid:[0-9]+}", middleware.Lv1Auth(apic.GetBanVerify)).Methods(http.MethodGet)
 	apic.R.HandleFunc("/sc/{hash}", middleware.Lv1Auth(apic.GetSCVerify)).Methods(http.MethodGet)
 
 	//character routes
-	charc := controller.New(router.PathPrefix(system.Config.Core.RootPath + "/character").Subrouter())
+	charc := controller.New(router.PathPrefix(config.Core.RootPath + "/character").Subrouter())
 	charc.R.HandleFunc("/", middleware.Lv1Auth(charc.GetAllCharacters)).Methods(http.MethodGet)
 	charc.R.HandleFunc("/id/{uid}", middleware.Lv1Auth(charc.GetCharacterByID)).Methods(http.MethodGet)
 	charc.R.HandleFunc("/{steamid:[0-9]+}", middleware.Lv1Auth(charc.GetCharacters)).Methods(http.MethodGet)
@@ -167,10 +169,10 @@ func main() {
 	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/versions", middleware.Lv1Auth(charc.CharacterVersions)).Methods(http.MethodGet)
 	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/{version:[0-9]+}", middleware.Lv1Auth(charc.RollbackCharacter)).Methods(http.MethodPatch)
 
-	if system.Config.Cert.Enable {
+	if config.Cert.Enable {
 		cm := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(system.Config.Cert.Domain),
+			HostPolicy: autocert.HostWhitelist(config.Cert.Domain),
 			Cache:      autocert.DirCache("./runtime/certs"),
 		}
 
@@ -199,7 +201,7 @@ func main() {
 
 // tmpMigration will convert all current characters to the new schema
 // If any failure is detected, the current database will not be affected
-func tmpMigration() {
+func tmpMigration(dbstring string) {
 	ctx := context.Background()
 	dbFileName := "./runtime/chars.db"
 	oldDbFileName := "./runtime/old_chars.db"
@@ -208,7 +210,7 @@ func tmpMigration() {
 	
 	//if file doesn't exists then no migration is needed.
 	if _, ferr := os.Stat(dbFileName); errors.Is(ferr, os.ErrNotExist) {
-		client, err := ent.Open("sqlite3", system.Config.Core.DBString)
+		client, err := ent.Open("sqlite3", dbstring)
 		if err != nil {
 			log.Log.Fatalf("failed to open connection to sqlite3: %v", err)
 		}
@@ -241,7 +243,7 @@ func tmpMigration() {
 				log.Log.Println("DB already migrated")
 	
 				// Set the connection as normal
-				client, err := ent.Open("sqlite3", system.Config.Core.DBString)
+				client, err := ent.Open("sqlite3", dbstring)
 				if err != nil {
 					log.Log.Errorf("failed to open connection to sqlite3: %v", err)
 					return err
@@ -330,7 +332,7 @@ func tmpMigration() {
 			// 2. Loop through old characters
 			// 3. Convert old character to new Player + Versioned Character
 			// 4. Log any conversion errors
-			client, err = ent.Open("sqlite3", system.Config.Core.DBString)
+			client, err = ent.Open("sqlite3", dbstring)
 			if err != nil {
 				log.Log.Errorf("failed to open connection to sqlite3: %v", err)
 				return err
