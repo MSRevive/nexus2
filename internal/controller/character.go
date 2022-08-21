@@ -12,7 +12,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/msrevive/nexus2/internal/ent"
 	"github.com/msrevive/nexus2/internal/helper"
-	"github.com/msrevive/nexus2/internal/log"
 	"github.com/msrevive/nexus2/internal/response"
 	"github.com/msrevive/nexus2/internal/service"
 	"github.com/msrevive/nexus2/internal/system"
@@ -22,7 +21,7 @@ import (
 func (c *controller) GetAllCharacters(w http.ResponseWriter, r *http.Request) {
 	chars, err := service.New(r.Context()).CharactersGetAll()
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -39,7 +38,7 @@ func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 
 	chars, err := service.New(r.Context()).CharactersGetBySteamid(steamid)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -56,7 +55,7 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	steamid := vars["steamid"]
 	slot, err := strconv.Atoi(vars["slot"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -65,7 +64,7 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 
 	char, err := service.New(r.Context()).CharacterGetBySteamidSlot(steamid, slot)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -82,21 +81,21 @@ func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
 	steamid := vars["steamid"]
 	slot, err := strconv.Atoi(vars["slot"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	char, err := service.New(r.Context()).CharacterGetBySteamidSlot(steamid, slot)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	file, path, err := helper.GenerateCharFile(steamid, slot, char.Data)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -111,7 +110,7 @@ func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := uuid.Parse(vars["uid"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -120,7 +119,7 @@ func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 
 	char, err := service.New(r.Context()).CharacterGetByID(uid)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -136,14 +135,14 @@ func (c *controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 	var newChar ent.DeprecatedCharacter
 	err := json.NewDecoder(r.Body).Decode(&newChar)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	char, err := service.New(r.Context()).CharacterCreate(newChar)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -156,7 +155,7 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := uuid.Parse(vars["uid"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -164,14 +163,14 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	var updateChar ent.DeprecatedCharacter
 	err = json.NewDecoder(r.Body).Decode(&updateChar)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	char, err := service.New(r.Context()).CharacterUpdate(uid, updateChar)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -184,14 +183,14 @@ func (c *controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := uuid.Parse(vars["uid"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	err = service.New(r.Context()).CharacterDelete(uid)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -204,14 +203,14 @@ func (c *controller) RestoreCharacter(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := uuid.Parse(vars["uid"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	char, err := service.New(r.Context()).CharacterRestore(uid)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -225,21 +224,21 @@ func (c *controller) CharacterVersions(w http.ResponseWriter, r *http.Request) {
 	sid, ok := vars["steamid"]
 	if !ok {
 		err := errors.New("steamid not found")
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	slot, err := strconv.Atoi(vars["slot"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	char, err := service.New(r.Context()).CharacterVersions(sid, slot)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -253,28 +252,28 @@ func (c *controller) RollbackCharacter(w http.ResponseWriter, r *http.Request) {
 	sid, ok := vars["steamid"]
 	if !ok {
 		err := errors.New("steamid not found")
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	slot, err := strconv.Atoi(vars["slot"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	version, err := strconv.Atoi(vars["version"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	char, err := service.New(r.Context()).CharacterRollback(sid, slot, version)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.log.Errorln(err)
 		response.Error(w, err)
 		return
 	}

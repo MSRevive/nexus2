@@ -8,17 +8,20 @@ import (
 	"github.com/msrevive/nexus2/internal/response"
 	"github.com/msrevive/nexus2/internal/service"
 	"github.com/msrevive/nexus2/internal/system"
+	"github.com/saintwish/auralog"
 )
 
 type controller struct {
 	R *mux.Router
 	db *sql.DB
+	log *auralog.Logger
 }
 
-func New(router *mux.Router, db *sql.DB) *controller {
+func New(router *mux.Router, db *sql.DB, log *auralog.Logger) *controller {
 	return &controller{
 		R: router,
 		db: db,
+		log: log,
 	}
 }
 

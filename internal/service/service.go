@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-
-	"github.com/msrevive/nexus2/internal/system"
 )
 
 type service struct {

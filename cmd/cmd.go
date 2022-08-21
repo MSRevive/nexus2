@@ -17,12 +17,17 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/gorilla/mux"
 	"github.com/msrevive/nexus2/internal/controller"
-	"github.com/msrevive/nexus2/internal/log"
-	mw "github.com/msrevive/nexus2/internal/middleware"
+	"github.com/msrevive/nexus2/internal/middleware"
 	"github.com/msrevive/nexus2/internal/system"
 	"github.com/msrevive/nexus2/internal/service"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
+	"github.com/saintwish/auralog"
+)
+
+var (
+	logCore *auralog.Logger // Logs for core/server
+	logAPI *auralog.Logger // Logs for endpoints/middleware
 )
 
 type flags struct {
@@ -56,6 +61,41 @@ func doDatabase(dbstring string) *sql.DB, error {
 	return db, nil
 }
 
+func initLoggers(filename string, dir string, level string, expire string) {
+	ex, _ := time.ParseDuration(expire)
+	flags := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds
+	flagsWarn := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds
+	flagsError := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
+	flagsDebug := auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
+
+	file := &auralog.RotateWriter{
+		Dir: dir,
+		Filename: filename,
+		ExTime: ex,
+		MaxSize: 5 * auralog.Megabyte,
+	}
+
+	logCore = auralog.New(auralog.Config{
+		Output: io.MultiWriter(os.Stdout, file),
+		Prefix: "[CORE] ",
+		Level: auralog.ToLogLevel(level),
+		Flag: flags,
+		WarnFlag: flagsWarn,
+		ErrorFlag: flagsError,
+		DebugFlag: flagsDebug,
+	})
+
+	logAPI = auralog.New(auralog.Config{
+		Output: io.MultiWriter(os.Stdout, file),
+		Prefix: "[API] ",
+		Level: auralog.ToLogLevel(level),
+		Flag: flags,
+		WarnFlag: flagsWarn,
+		ErrorFlag: flagsError,
+		DebugFlag: flagsDebug,
+	})
+}
+
 func Run(args []string) error {
 	flgs := doFlags(args)
 
@@ -76,7 +116,8 @@ func Run(args []string) error {
 		fmt.Println("Running in Debug mode, do not use in production!")
 	}
 
-	log.InitLogging("server.log", config.Log.Dir, config.Log.Level, config.Log.ExpireTime)
+	fmt.Println("Initiating Loggers...")
+	initLoggers("server.log", config.Log.Dir, config.Log.Level, config.Log.ExpireTime)
 
 	//Max threads allowed.
 	if config.Core.MaxThreads != 0 {
@@ -85,32 +126,32 @@ func Run(args []string) error {
 
 	//Load JSON files.
 	if config.ApiAuth.EnforceIP {
-		log.Log.Printf("Loading IP list from %s", config.ApiAuth.IPListFile)
+		logCore.Printf("Loading IP list from %s", config.ApiAuth.IPListFile)
 		if err := config.LoadIPList(); err != nil {
-			log.Log.Warnln("Failed to load IP list.")
+			logCore.Warnln("Failed to load IP list.")
 		}
 	}
 
 	if config.Verify.EnforceMap {
-		log.Log.Printf("Loading Map list from %s", config.Verify.MapListFile)
+		logCore.Printf("Loading Map list from %s", config.Verify.MapListFile)
 		if err := config.LoadMapList(); err != nil {
-			log.Log.Warnln("Failed to load Map list.")
+			logCore.Warnln("Failed to load Map list.")
 		}
 	}
 
 	if config.Verify.EnforceBan {
-		log.Log.Printf("Loading Ban list from %s", config.Verify.BanListFile)
+		logCore.Printf("Loading Ban list from %s", config.Verify.BanListFile)
 		if err := config.LoadBanList(); err != nil {
-			log.Log.Warnln("Failed to load Ban list.")
+			logCore.Warnln("Failed to load Ban list.")
 		}
 	}
 
-	log.Log.Printf("Loading Admin list from %s", config.Verify.AdminListFile)
+	logCore.Printf("Loading Admin list from %s", config.Verify.AdminListFile)
 	if err := config.LoadAdminList(); err != nil {
-		log.Log.Warnln("Failed to load Admin list.")
+		logCore.Warnln("Failed to load Admin list.")
 	}
 
-	log.Log.Println("Connecting to database")
+	logCore.Println("Connecting to database")
 	db, err := doDatabase(config.Core.DBString)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to connect to database, %s", err))
@@ -153,6 +194,7 @@ func Run(args []string) error {
 	}
 
 	//middleware
+	mw := middleware.New(logAPI)
 	router.Use(mw.PanicRecovery)
 	router.Use(mw.Log)
 	if config.RateLimit.Enable {
@@ -160,14 +202,14 @@ func Run(args []string) error {
 	}
 
 	//API Routes
-	api := controller.New(router.PathPrefix(config.Core.RootPath).Subrouter(), db)
+	api := controller.New(router.PathPrefix(config.Core.RootPath).Subrouter(), db, logAPI)
 	api.R.HandleFunc("/ping", mw.Lv2Auth(api.GetPing)).Methods(http.MethodGet)
 	api.R.HandleFunc("/map/{name}/{hash}", mw.Lv1Auth(api.GetMapVerify)).Methods(http.MethodGet)
 	api.R.HandleFunc("/ban/{steamid:[0-9]+}", mw.Lv1Auth(api.GetBanVerify)).Methods(http.MethodGet)
 	api.R.HandleFunc("/sc/{hash}", mw.Lv1Auth(api.GetSCVerify)).Methods(http.MethodGet)
 
 	//Character Routes
-	capi := controller.New(router.PathPrefix(config.Core.RootPath + "/character").Subrouter(), db)
+	capi := controller.New(router.PathPrefix(config.Core.RootPath + "/character").Subrouter(), db, logAPI)
 	capi.R.HandleFunc("/", mw.Lv1Auth(capi.GetAllCharacters)).Methods(http.MethodGet)
 	capi.R.HandleFunc("/id/{uid}", mw.Lv1Auth(capi.GetCharacterByID)).Methods(http.MethodGet)
 	capi.R.HandleFunc("/{steamid:[0-9]+}", mw.Lv1Auth(capi.GetCharacters)).Methods(http.MethodGet)
@@ -198,12 +240,12 @@ func Run(args []string) error {
 			}
 		}()
 
-		log.Log.Printf("Listening on: %s TLS", srv.Addr)
+		logCore.Printf("Listening on: %s TLS", srv.Addr)
 		if err := srv.ListenAndServeTLS("", ""); err != nil {
 			return errors.New(fmt.Sprintf("failed to serve over HTTPS: %v", err))
 		}
 	} else {
-		log.Log.Printf("Listening on: %s", srv.Addr)
+		logCore.Printf("Listening on: %s", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil {
 			return errors.New(fmt.Sprintf("failed to serve over HTTP: %v", err))
 		}
