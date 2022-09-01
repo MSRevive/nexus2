@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/msrevive/nexus2/cmd"
-	"github.com/msrevive/nexus2/system"
+	"github.com/msrevive/nexus2/internal/system"
 )
 
 var spMsg string = `

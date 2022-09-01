@@ -105,7 +105,7 @@ func (mw *middleware) Lv1Auth(next http.HandlerFunc) http.HandlerFunc {
   Performs level 1 authentication and user agent check.
   This should be used to make sure the request came from a MSR game server.
 ---*/
-func (mw *middleware) Lv2Auth(next http.HandlerFunc) http.HandleFunc {
+func (mw *middleware) Lv2Auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ip := getIP(r)
 		key := r.Header.Get("Authorization")
