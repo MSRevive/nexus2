@@ -39,9 +39,9 @@ type flags struct {
 }
 
 func doFlags(args []string) *flags {
-	flgs = &flags{}
+	flgs := &flags{}
 
-	flagSet = flag.NewFlagSet(args[0], flag.ContinueOnError)
+	flagSet := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	flagSet.StringVar(flgs.address, "addr", "127.0.0.1", "The address of the server.")
 	flagSet.IntVar(flgs.port, "port", 1337, "The port this should run on.")
 	flagSet.StringVar(flgs.configFile, "cfile", "./runtime/config.yaml", "Location of via config file")
