@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"net/http"
 	"database/sql"
+	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/msrevive/nexus2/internal/response"
@@ -12,15 +12,15 @@ import (
 )
 
 type controller struct {
-	R *mux.Router
-	db *sql.DB
+	R   *mux.Router
+	db  *sql.DB
 	log *auralog.Logger
 }
 
 func New(router *mux.Router, db *sql.DB, log *auralog.Logger) *controller {
 	return &controller{
-		R: router,
-		db: db,
+		R:   router,
+		db:  db,
 		log: log,
 	}
 }

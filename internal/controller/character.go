@@ -17,7 +17,7 @@ import (
 	"github.com/msrevive/nexus2/internal/system"
 )
 
-//GET /character/
+// GET /character/
 func (c *controller) GetAllCharacters(w http.ResponseWriter, r *http.Request) {
 	chars, err := service.New(r.Context()).CharactersGetAll()
 	if err != nil {
@@ -29,12 +29,12 @@ func (c *controller) GetAllCharacters(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, chars)
 }
 
-//GET /character/{steamid}
+// GET /character/{steamid}
 func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	steamid := vars["steamid"]
-	var isBanned bool = false
-	var isAdmin bool = false
+	var isBanned bool
+	var isAdmin bool
 
 	chars, err := service.New(r.Context()).CharactersGetBySteamid(steamid)
 	if err != nil {
@@ -49,7 +49,7 @@ func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 	response.OKChar(w, isBanned, isAdmin, chars)
 }
 
-//GET /character/{steamid}/{slot}
+// GET /character/{steamid}/{slot}
 func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	steamid := vars["steamid"]
@@ -59,8 +59,8 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 		response.BadRequest(w, err)
 		return
 	}
-	var isBanned bool = false
-	var isAdmin bool = false
+	var isBanned bool
+	var isAdmin bool
 
 	char, err := service.New(r.Context()).CharacterGetBySteamidSlot(steamid, slot)
 	if err != nil {
@@ -75,7 +75,7 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	response.OKChar(w, isBanned, isAdmin, char)
 }
 
-//GET /character/export/{steamid}/{slot}
+// GET /character/export/{steamid}/{slot}
 func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	steamid := vars["steamid"]
@@ -105,7 +105,7 @@ func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, file)
 }
 
-//GET /character/id/{uid}
+// GET /character/id/{uid}
 func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := uuid.Parse(vars["uid"])
@@ -114,8 +114,8 @@ func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 		response.BadRequest(w, err)
 		return
 	}
-	var isBanned bool = false
-	var isAdmin bool = false
+	var isBanned bool
+	var isAdmin bool
 
 	char, err := service.New(r.Context()).CharacterGetByID(uid)
 	if err != nil {
@@ -130,7 +130,7 @@ func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 	response.OKChar(w, isBanned, isAdmin, char)
 }
 
-//POST /character/
+// POST /character/
 func (c *controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 	var newChar ent.DeprecatedCharacter
 	err := json.NewDecoder(r.Body).Decode(&newChar)
@@ -150,7 +150,7 @@ func (c *controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, char)
 }
 
-//PUT /character/{uid}
+// PUT /character/{uid}
 func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := uuid.Parse(vars["uid"])
@@ -178,7 +178,7 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, char)
 }
 
-//DELETE /character/{uid}
+// DELETE /character/{uid}
 func (c *controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := uuid.Parse(vars["uid"])
@@ -198,7 +198,7 @@ func (c *controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, uid)
 }
 
-//PATCH /character/{uid}/restore
+// PATCH /character/{uid}/restore
 func (c *controller) RestoreCharacter(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := uuid.Parse(vars["uid"])
@@ -218,7 +218,7 @@ func (c *controller) RestoreCharacter(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, char)
 }
 
-//GET /character/{steamid}/{slot}/versions
+// GET /character/{steamid}/{slot}/versions
 func (c *controller) CharacterVersions(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	sid, ok := vars["steamid"]
@@ -246,7 +246,7 @@ func (c *controller) CharacterVersions(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, char)
 }
 
-//PATCH /character/{steamid}/{slot}/rollback/{version}
+// PATCH /character/{steamid}/{slot}/rollback/{version}
 func (c *controller) RollbackCharacter(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	sid, ok := vars["steamid"]

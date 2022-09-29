@@ -1,65 +1,56 @@
-package cmd
+package main
 
 import (
 	"context"
 	"crypto/tls"
-	"flag"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"runtime"
-	"strconv"
 	"time"
-	"errors"
-	"database/sql"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/gorilla/mux"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/msrevive/nexus2/internal/config"
 	"github.com/msrevive/nexus2/internal/controller"
 	"github.com/msrevive/nexus2/internal/middleware"
-	"github.com/msrevive/nexus2/internal/system"
 	"github.com/msrevive/nexus2/internal/service"
+	"github.com/saintwish/auralog"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
-	"github.com/saintwish/auralog"
 )
+
+var spMsg string = `
+    _   __                    ___
+   / | / /__  _  ____  Nexus2|__ \
+  /  |/ / _ \| |/_/ / / / ___/_/ /
+ / /|  /  __/>  </ /_/ (__  ) __/
+/_/ |_/\___/_/|_|\__,_/____/____/
+
+Copyright © %d, Team MSRebirth
+
+Version: %s
+Website: https://msrebirth.net/
+License: GPL-3.0 https://github.com/MSRevive/nexus2/blob/main/LICENSE %s
+`
+
+var Version = "canary"
+
+func main() {
+	fmt.Printf(spMsg, time.Now().Year(), Version, "\n\n")
+
+	if err := run(os.Args); err != nil {
+		fmt.Printf("critical error detected: %s", err)
+		os.Exit(1)
+	}
+}
 
 var (
 	logCore *auralog.Logger // Logs for core/server
-	logAPI *auralog.Logger // Logs for endpoints/middleware
+	logAPI  *auralog.Logger // Logs for endpoints/middleware
 )
-
-type flags struct {
-	address string
-	port int
-	configFile string
-	migrateConfig bool
-	debug bool
-}
-
-func doFlags(args []string) *flags {
-	flgs := &flags{}
-
-	flagSet := flag.NewFlagSet(args[0], flag.ContinueOnError)
-	flagSet.StringVar(&flgs.address, "addr", "127.0.0.1", "The address of the server.")
-	flagSet.IntVar(&flgs.port, "port", 1337, "The port this should run on.")
-	flagSet.StringVar(&flgs.configFile, "cfile", "./runtime/config.yaml", "Location of via config file")
-	flagSet.BoolVar(&flgs.debug, "d", false, "Run with debug mode.")
-	flagSet.BoolVar(&flgs.migrateConfig, "m", false, "Migrate the ini/toml config to YAML")
-	flagSet.Parse(args[1:])
-
-	return flgs
-}
-
-func doDatabase(dbstring string) *sql.DB, error {
-	db, err = sql.Open("sqlite3", dbstring)
-	if err != nil {
-		return err
-	}
-
-	return db, nil
-}
 
 func initLoggers(filename string, dir string, level string, expire string) {
 	ex, _ := time.ParseDuration(expire)
@@ -69,90 +60,90 @@ func initLoggers(filename string, dir string, level string, expire string) {
 	flagsDebug := auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
 
 	file := &auralog.RotateWriter{
-		Dir: dir,
+		Dir:      dir,
 		Filename: filename,
-		ExTime: ex,
-		MaxSize: 5 * auralog.Megabyte,
+		ExTime:   ex,
+		MaxSize:  5 * auralog.Megabyte,
 	}
 
 	logCore = auralog.New(auralog.Config{
-		Output: io.MultiWriter(os.Stdout, file),
-		Prefix: "[CORE] ",
-		Level: auralog.ToLogLevel(level),
-		Flag: flags,
-		WarnFlag: flagsWarn,
+		Output:    io.MultiWriter(os.Stdout, file),
+		Prefix:    "[CORE] ",
+		Level:     auralog.ToLogLevel(level),
+		Flag:      flags,
+		WarnFlag:  flagsWarn,
 		ErrorFlag: flagsError,
 		DebugFlag: flagsDebug,
 	})
 
 	logAPI = auralog.New(auralog.Config{
-		Output: io.MultiWriter(os.Stdout, file),
-		Prefix: "[API] ",
-		Level: auralog.ToLogLevel(level),
-		Flag: flags,
-		WarnFlag: flagsWarn,
+		Output:    io.MultiWriter(os.Stdout, file),
+		Prefix:    "[API] ",
+		Level:     auralog.ToLogLevel(level),
+		Flag:      flags,
+		WarnFlag:  flagsWarn,
 		ErrorFlag: flagsError,
 		DebugFlag: flagsDebug,
 	})
 }
 
-func Run(args []string) error {
-	flgs := doFlags(args)
+func run(args []string) error {
+	flgs := config.InitializeFlags(args)
 
-	config, err := system.LoadConfig(flgs.configFile, flgs.debug)
+	cfg, err := config.LoadConfig(flgs.ConfigFile, flgs.Debug)
 	if err != nil {
 		return err
 	}
 
-	if flgs.migrateConfig {
+	if flgs.MigrateConfig {
 		fmt.Println("Running config migration...")
-		if err := config.Migrate(); err != nil {
+		if err := cfg.Migrate(); err != nil {
 			fmt.Printf("Config migration error: %s", err)
 		}
 		fmt.Println("Finished config migration, starting server...")
 	}
 
-	if flgs.debug {
+	if flgs.Debug {
 		fmt.Println("Running in Debug mode, do not use in production!")
 	}
 
 	fmt.Println("Initiating Loggers...")
-	initLoggers("server.log", config.Log.Dir, config.Log.Level, config.Log.ExpireTime)
+	initLoggers("server.log", cfg.Log.Dir, cfg.Log.Level, cfg.Log.ExpireTime)
 
 	//Max threads allowed.
-	if config.Core.MaxThreads != 0 {
-		runtime.GOMAXPROCS(config.Core.MaxThreads)
+	if cfg.Core.MaxThreads != 0 {
+		runtime.GOMAXPROCS(cfg.Core.MaxThreads)
 	}
 
 	//Load JSON files.
-	if config.ApiAuth.EnforceIP {
-		logCore.Printf("Loading IP list from %s", config.ApiAuth.IPListFile)
-		if err := config.LoadIPList(); err != nil {
+	if cfg.ApiAuth.EnforceIP {
+		logCore.Printf("Loading IP list from %s", cfg.ApiAuth.IPListFile)
+		if err := cfg.LoadIPList(); err != nil {
 			logCore.Warnln("Failed to load IP list.")
 		}
 	}
 
-	if config.Verify.EnforceMap {
-		logCore.Printf("Loading Map list from %s", config.Verify.MapListFile)
-		if err := config.LoadMapList(); err != nil {
+	if cfg.Verify.EnforceMap {
+		logCore.Printf("Loading Map list from %s", cfg.Verify.MapListFile)
+		if err := cfg.LoadMapList(); err != nil {
 			logCore.Warnln("Failed to load Map list.")
 		}
 	}
 
-	if config.Verify.EnforceBan {
-		logCore.Printf("Loading Ban list from %s", config.Verify.BanListFile)
-		if err := config.LoadBanList(); err != nil {
+	if cfg.Verify.EnforceBan {
+		logCore.Printf("Loading Ban list from %s", cfg.Verify.BanListFile)
+		if err := cfg.LoadBanList(); err != nil {
 			logCore.Warnln("Failed to load Ban list.")
 		}
 	}
 
-	logCore.Printf("Loading Admin list from %s", config.Verify.AdminListFile)
-	if err := config.LoadAdminList(); err != nil {
+	logCore.Printf("Loading Admin list from %s", cfg.Verify.AdminListFile)
+	if err := cfg.LoadAdminList(); err != nil {
 		logCore.Warnln("Failed to load Admin list.")
 	}
 
 	logCore.Println("Connecting to database")
-	db, err := doDatabase(config.Core.DBString)
+	db, err := config.InitializeDb(cfg.Core.DBString)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to connect to database, %s", err))
 	}
@@ -168,7 +159,7 @@ func Run(args []string) error {
 	router := mux.NewRouter()
 	srv := &http.Server{
 		Handler:      router,
-		Addr:         flgs.address + ":" + strconv.Itoa(flgs.port),
+		Addr:         fmt.Sprintf("%s:%d", flgs.Address, flgs.Port),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 		// DefaultTLSConfig sets sane defaults to use when configuring the internal
@@ -197,19 +188,19 @@ func Run(args []string) error {
 	mw := middleware.New(logAPI)
 	router.Use(mw.PanicRecovery)
 	router.Use(mw.Log)
-	if config.RateLimit.Enable {
+	if cfg.RateLimit.Enable {
 		router.Use(mw.RateLimit)
 	}
 
 	//API Routes
-	api := controller.New(router.PathPrefix(config.Core.RootPath).Subrouter(), db, logAPI)
+	api := controller.New(router.PathPrefix(cfg.Core.RootPath).Subrouter(), db, logAPI)
 	api.R.HandleFunc("/ping", mw.Lv2Auth(api.GetPing)).Methods(http.MethodGet)
 	api.R.HandleFunc("/map/{name}/{hash}", mw.Lv1Auth(api.GetMapVerify)).Methods(http.MethodGet)
 	api.R.HandleFunc("/ban/{steamid:[0-9]+}", mw.Lv1Auth(api.GetBanVerify)).Methods(http.MethodGet)
 	api.R.HandleFunc("/sc/{hash}", mw.Lv1Auth(api.GetSCVerify)).Methods(http.MethodGet)
 
 	//Character Routes
-	capi := controller.New(router.PathPrefix(config.Core.RootPath + "/character").Subrouter(), db, logAPI)
+	capi := controller.New(router.PathPrefix(cfg.Core.RootPath+"/character").Subrouter(), db, logAPI)
 	capi.R.HandleFunc("/", mw.Lv1Auth(capi.GetAllCharacters)).Methods(http.MethodGet)
 	capi.R.HandleFunc("/id/{uid}", mw.Lv1Auth(capi.GetCharacterByID)).Methods(http.MethodGet)
 	capi.R.HandleFunc("/{steamid:[0-9]+}", mw.Lv1Auth(capi.GetCharacters)).Methods(http.MethodGet)
@@ -222,10 +213,10 @@ func Run(args []string) error {
 	capi.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/versions", mw.Lv1Auth(capi.CharacterVersions)).Methods(http.MethodGet)
 	capi.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/{version:[0-9]+}", mw.Lv1Auth(capi.RollbackCharacter)).Methods(http.MethodPatch)
 
-	if config.Cert.Enable {
+	if cfg.Cert.Enable {
 		cm := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(config.Cert.Domain),
+			HostPolicy: autocert.HostWhitelist(cfg.Cert.Domain),
 			Cache:      autocert.DirCache("./runtime/certs"),
 		}
 
@@ -236,7 +227,7 @@ func Run(args []string) error {
 
 		go func() {
 			if err := http.ListenAndServe(":http", cm.HTTPHandler(nil)); err != nil {
-				return errors.New(fmt.Sprintf("failed to serve autocert server: %v", err))
+				fmt.Printf("failed to serve autocert server: %v\n", err)
 			}
 		}()
 
@@ -250,6 +241,8 @@ func Run(args []string) error {
 			return errors.New(fmt.Sprintf("failed to serve over HTTP: %v", err))
 		}
 	}
+
+	return nil
 }
 
 // tmpMigration will convert all current characters to the new schema
@@ -261,7 +254,7 @@ func tmpMigration(dbstring string) {
 	oldDbFileName := "./runtime/old_chars.db"
 	dbBakFileName := dbFileName + ".bak"
 	dbBakConnStr := "file:" + oldDbFileName + "?cache=shared&mode=rwc&_fk=1"
-	
+
 	//if file doesn't exists then no migration is needed.
 	if _, ferr := os.Stat(dbFileName); errors.Is(ferr, os.ErrNotExist) {
 		client, err := ent.Open("sqlite3", dbstring)
@@ -282,20 +275,20 @@ func tmpMigration(dbstring string) {
 				log.Log.Errorf("failed to open connection to sqlite3: %v", err)
 				return err
 			}
-	
+
 			rows, err := sqlClient.DB().Query("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='players';")
 			if err != nil {
 				log.Log.Errorf("failed to get table: %v", err)
 				return err
 			}
-	
+
 			var count int64
 			for rows.Next() {
 				rows.Scan(&count)
 			}
 			if count > 0 {
 				log.Log.Println("DB already migrated")
-	
+
 				// Set the connection as normal
 				client, err := ent.Open("sqlite3", dbstring)
 				if err != nil {
@@ -307,13 +300,13 @@ func tmpMigration(dbstring string) {
 					return err
 				}
 				system.Client = client
-	
+
 				return nil
 			}
 			sqlClient.Close()
-	
+
 			log.Log.Println("DB not migrated")
-	
+
 			/////////////////////////////////////////////////
 			/////////// Prepare DB files
 			// 1. Copy current DB file (prevents irreversible changes)
@@ -323,13 +316,13 @@ func tmpMigration(dbstring string) {
 				log.Log.Errorf("failed to open current DB file: %v", err)
 				return err
 			}
-	
+
 			backupDbFile, err := os.Create(dbBakFileName)
 			if err != nil {
 				log.Log.Errorf("failed to create backup DB file: %v", err)
 				return err
 			}
-	
+
 			_, err = io.Copy(backupDbFile, currentDbFile)
 			if err != nil {
 				log.Log.Errorf("failed to backup DB file: %v", err)
@@ -337,13 +330,13 @@ func tmpMigration(dbstring string) {
 			}
 			currentDbFile.Close()
 			backupDbFile.Close()
-	
+
 			if err := os.Rename(dbFileName, oldDbFileName); err != nil {
 				log.Log.Errorf("failed to rename original DB file: %v", err)
 				return err
 			}
 			log.Log.Println("Backed up DB file")
-	
+
 			/////////////////////////////////////////////////
 			/////////// Prepare DB schema
 			// 1. Rename 'characters' table (allows the use of ORM)
@@ -353,7 +346,7 @@ func tmpMigration(dbstring string) {
 				return err
 			}
 			log.Log.Println("Connected to old DB")
-	
+
 			_, err = sqlClient.DB().Exec("ALTER TABLE characters RENAME TO old_characters;")
 			if err != nil {
 				log.Log.Errorf("failed to rename old table: %v", err)
@@ -361,7 +354,7 @@ func tmpMigration(dbstring string) {
 			}
 			sqlClient.Close()
 			log.Log.Println("Renamed table")
-	
+
 			/////////////////////////////////////////////////
 			/////////// Collect old data
 			// 1. Load all characters into memory using ORM
@@ -371,7 +364,7 @@ func tmpMigration(dbstring string) {
 				return err
 			}
 			log.Log.Println("Connected to old db")
-	
+
 			oldCharacters, err := client.DeprecatedCharacter.Query().All(ctx)
 			if err != nil {
 				log.Log.Errorf("failed to get all old characters: %v", err)
@@ -379,7 +372,7 @@ func tmpMigration(dbstring string) {
 			}
 			client.Close()
 			log.Log.Println("Loaded all characters")
-	
+
 			/////////////////////////////////////////////////
 			/////////// Migrate characters to new DB
 			// 1. Connect to new DB (creating file in the process)
@@ -397,13 +390,13 @@ func tmpMigration(dbstring string) {
 			}
 			system.Client = client
 			log.Log.Println("connected to new db")
-	
+
 			errLog, err := os.Create("./runtime/logs/migration_errors.log")
 			if err != nil {
 				log.Log.Errorf("failed to create migration error log: %v", err)
 				return err
 			}
-	
+
 			cLen := len(oldCharacters)
 			var failed int
 			for i, c := range oldCharacters {
@@ -436,10 +429,10 @@ func tmpMigration(dbstring string) {
 				log.Log.Printf("completed migration with %d errors!\n", failed)
 			}
 			log.Log.Println("Migrated all characters")
-	
+
 			return nil
 		}()
-		
+
 		if err != nil {
 			// Error detected, revert db changes if possible
 			if _, err := os.Stat(dbBakFileName); err == nil {
@@ -449,7 +442,7 @@ func tmpMigration(dbstring string) {
 			}
 			log.Log.Fatalln("failed to migrate DB")
 		}
-		
+
 		// happy path cleanup, we don't want to delete old one incase we need to revert suddenly.
 		os.Remove(dbBakFileName)
 	}
