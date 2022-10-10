@@ -6,7 +6,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/msrevive/nexus2/internal/response"
-	"github.com/msrevive/nexus2/internal/system"
 )
 
 // GET map/{name}/{hash}
@@ -19,7 +18,7 @@ func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if system.VerifyCfg.VerifyMapName(name, uint32(hash)) {
+	if c.cfg.VerifyMapName(name, uint32(hash)) {
 		response.Result(w, true)
 		return
 	}
@@ -34,7 +33,7 @@ func (c *controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	steamid := vars["steamid"]
 
-	if system.VerifyCfg.EnforceAndVerifyBanned(steamid) {
+	if c.cfg.EnforceAndVerifyBanned(steamid) {
 		response.Result(w, true)
 		return
 	}
@@ -52,7 +51,7 @@ func (c *controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if system.VerifyCfg.VerifySC(uint32(hash)) {
+	if c.cfg.VerifySC(uint32(hash)) {
 		response.Result(w, true)
 		return
 	}

@@ -13,8 +13,6 @@ import (
 	"github.com/msrevive/nexus2/internal/ent"
 	"github.com/msrevive/nexus2/internal/helper"
 	"github.com/msrevive/nexus2/internal/response"
-	"github.com/msrevive/nexus2/internal/service"
-	"github.com/msrevive/nexus2/internal/system"
 )
 
 // GET /character/
@@ -43,8 +41,8 @@ func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isBanned = system.VerifyCfg.EnforceAndVerifyBanned(steamid)
-	isAdmin = system.VerifyCfg.IsSteamIDAdmin(steamid)
+	isBanned = c.cfg.EnforceAndVerifyBanned(steamid)
+	isAdmin = c.cfg.IsSteamIDAdmin(steamid)
 
 	response.OKChar(w, isBanned, isAdmin, chars)
 }
@@ -69,8 +67,8 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isBanned = system.VerifyCfg.EnforceAndVerifyBanned(steamid)
-	isAdmin = system.VerifyCfg.IsSteamIDAdmin(steamid)
+	isBanned = c.cfg.EnforceAndVerifyBanned(steamid)
+	isAdmin = c.cfg.IsSteamIDAdmin(steamid)
 
 	response.OKChar(w, isBanned, isAdmin, char)
 }
@@ -124,8 +122,8 @@ func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isBanned = system.VerifyCfg.EnforceAndVerifyBanned(char.Steamid)
-	isAdmin = system.VerifyCfg.IsSteamIDAdmin(char.Steamid)
+	isBanned = c.cfg.EnforceAndVerifyBanned(char.Steamid)
+	isAdmin = c.cfg.IsSteamIDAdmin(char.Steamid)
 
 	response.OKChar(w, isBanned, isAdmin, char)
 }

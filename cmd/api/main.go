@@ -3,20 +3,19 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 	"time"
 
-	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/msrevive/nexus2/internal/api"
 	"github.com/msrevive/nexus2/internal/config"
-	"github.com/msrevive/nexus2/internal/controller"
-	"github.com/msrevive/nexus2/internal/middleware"
-	"github.com/msrevive/nexus2/internal/service"
+	"github.com/pkg/errors"
 	"github.com/saintwish/auralog"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
@@ -47,46 +46,6 @@ func main() {
 	}
 }
 
-var (
-	logCore *auralog.Logger // Logs for core/server
-	logAPI  *auralog.Logger // Logs for endpoints/middleware
-)
-
-func initLoggers(filename string, dir string, level string, expire string) {
-	ex, _ := time.ParseDuration(expire)
-	flags := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds
-	flagsWarn := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds
-	flagsError := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
-	flagsDebug := auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
-
-	file := &auralog.RotateWriter{
-		Dir:      dir,
-		Filename: filename,
-		ExTime:   ex,
-		MaxSize:  5 * auralog.Megabyte,
-	}
-
-	logCore = auralog.New(auralog.Config{
-		Output:    io.MultiWriter(os.Stdout, file),
-		Prefix:    "[CORE] ",
-		Level:     auralog.ToLogLevel(level),
-		Flag:      flags,
-		WarnFlag:  flagsWarn,
-		ErrorFlag: flagsError,
-		DebugFlag: flagsDebug,
-	})
-
-	logAPI = auralog.New(auralog.Config{
-		Output:    io.MultiWriter(os.Stdout, file),
-		Prefix:    "[API] ",
-		Level:     auralog.ToLogLevel(level),
-		Flag:      flags,
-		WarnFlag:  flagsWarn,
-		ErrorFlag: flagsError,
-		DebugFlag: flagsDebug,
-	})
-}
-
 func run(args []string) error {
 	flgs := config.InitializeFlags(args)
 
@@ -108,14 +67,14 @@ func run(args []string) error {
 	}
 
 	fmt.Println("Initiating Loggers...")
-	initLoggers("server.log", cfg.Log.Dir, cfg.Log.Level, cfg.Log.ExpireTime)
+	logCore, logApi := initLoggers("server.log", cfg.Log.Dir, cfg.Log.Level, cfg.Log.ExpireTime)
 
-	//Max threads allowed.
+	// Max threads allowed.
 	if cfg.Core.MaxThreads != 0 {
 		runtime.GOMAXPROCS(cfg.Core.MaxThreads)
 	}
 
-	//Load JSON files.
+	// Load JSON files.
 	if cfg.ApiAuth.EnforceIP {
 		logCore.Printf("Loading IP list from %s", cfg.ApiAuth.IPListFile)
 		if err := cfg.LoadIPList(); err != nil {
@@ -149,19 +108,19 @@ func run(args []string) error {
 	}
 	defer db.Close()
 
-	//create tables for new database file.
-	service.New(context.Background(), db).CreateTables()
+	// Make a channel to listen for an interrupt or terminate signal from the OS.
+	// Use a buffered channel because the signal package requires it.
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
-	//TODO: old database migration.
+	// FIXME: Set this as env var or CLI flag
+	timeout := 15 * time.Second
 
-	//variables for web server
-	//var srv *http.Server
-	router := mux.NewRouter()
-	srv := &http.Server{
-		Handler:      router,
+	svr := http.Server{
 		Addr:         fmt.Sprintf("%s:%d", flgs.Address, flgs.Port),
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		Handler:      api.NewRouter(cfg, logApi, db),
+		ReadTimeout:  timeout,
+		WriteTimeout: timeout,
 		// DefaultTLSConfig sets sane defaults to use when configuring the internal
 		// webserver to listen for public connections.
 		//
@@ -184,65 +143,102 @@ func run(args []string) error {
 		},
 	}
 
-	//middleware
-	mw := middleware.New(logAPI)
-	router.Use(mw.PanicRecovery)
-	router.Use(mw.Log)
-	if cfg.RateLimit.Enable {
-		router.Use(mw.RateLimit)
-	}
+	// Make a channel to listen for errors coming from the listener. Use a
+	// buffered channel so the goroutine can exit if we don't collect this error.
+	serverErrors := make(chan error, 1)
 
-	//API Routes
-	api := controller.New(router.PathPrefix(cfg.Core.RootPath).Subrouter(), db, logAPI)
-	api.R.HandleFunc("/ping", mw.Lv2Auth(api.GetPing)).Methods(http.MethodGet)
-	api.R.HandleFunc("/map/{name}/{hash}", mw.Lv1Auth(api.GetMapVerify)).Methods(http.MethodGet)
-	api.R.HandleFunc("/ban/{steamid:[0-9]+}", mw.Lv1Auth(api.GetBanVerify)).Methods(http.MethodGet)
-	api.R.HandleFunc("/sc/{hash}", mw.Lv1Auth(api.GetSCVerify)).Methods(http.MethodGet)
-
-	//Character Routes
-	capi := controller.New(router.PathPrefix(cfg.Core.RootPath+"/character").Subrouter(), db, logAPI)
-	capi.R.HandleFunc("/", mw.Lv1Auth(capi.GetAllCharacters)).Methods(http.MethodGet)
-	capi.R.HandleFunc("/id/{uid}", mw.Lv1Auth(capi.GetCharacterByID)).Methods(http.MethodGet)
-	capi.R.HandleFunc("/{steamid:[0-9]+}", mw.Lv1Auth(capi.GetCharacters)).Methods(http.MethodGet)
-	capi.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(capi.GetCharacter)).Methods(http.MethodGet)
-	capi.R.HandleFunc("/export/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(capi.ExportCharacter)).Methods(http.MethodGet)
-	capi.R.HandleFunc("/", mw.Lv2Auth(capi.PostCharacter)).Methods(http.MethodPost)
-	capi.R.HandleFunc("/{uid}", mw.Lv2Auth(capi.PutCharacter)).Methods(http.MethodPut)
-	capi.R.HandleFunc("/{uid}", mw.Lv2Auth(capi.DeleteCharacter)).Methods(http.MethodDelete)
-	capi.R.HandleFunc("/{uid}/restore", mw.Lv1Auth(capi.RestoreCharacter)).Methods(http.MethodPatch)
-	capi.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/versions", mw.Lv1Auth(capi.CharacterVersions)).Methods(http.MethodGet)
-	capi.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/{version:[0-9]+}", mw.Lv1Auth(capi.RollbackCharacter)).Methods(http.MethodPatch)
-
-	if cfg.Cert.Enable {
-		cm := autocert.Manager{
-			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(cfg.Cert.Domain),
-			Cache:      autocert.DirCache("./runtime/certs"),
-		}
-
-		srv.TLSConfig = &tls.Config{
-			GetCertificate: cm.GetCertificate,
-			NextProtos:     append(srv.TLSConfig.NextProtos, acme.ALPNProto), // enable tls-alpn ACME challenges
-		}
-
-		go func() {
-			if err := http.ListenAndServe(":http", cm.HTTPHandler(nil)); err != nil {
-				fmt.Printf("failed to serve autocert server: %v\n", err)
+	// Start the service listening for requests.
+	go func() {
+		if cfg.Cert.Enable {
+			cm := autocert.Manager{
+				Prompt:     autocert.AcceptTOS,
+				HostPolicy: autocert.HostWhitelist(cfg.Cert.Domain),
+				Cache:      autocert.DirCache("./runtime/certs"),
 			}
-		}()
 
-		logCore.Printf("Listening on: %s TLS", srv.Addr)
-		if err := srv.ListenAndServeTLS("", ""); err != nil {
-			return errors.New(fmt.Sprintf("failed to serve over HTTPS: %v", err))
+			svr.TLSConfig = &tls.Config{
+				GetCertificate: cm.GetCertificate,
+				NextProtos:     append(svr.TLSConfig.NextProtos, acme.ALPNProto), // enable tls-alpn ACME challenges
+			}
+
+			go func() {
+				if err := http.ListenAndServe(":http", cm.HTTPHandler(nil)); err != nil {
+					fmt.Printf("failed to serve autocert server: %v\n", err)
+				}
+			}()
+
+			logCore.Printf("Listening on: %s TLS", svr.Addr)
+			serverErrors <- svr.ListenAndServeTLS("", "")
+		} else {
+			logCore.Printf("Listening on: %s", svr.Addr)
+			serverErrors <- svr.ListenAndServe()
 		}
-	} else {
-		logCore.Printf("Listening on: %s", srv.Addr)
-		if err := srv.ListenAndServe(); err != nil {
-			return errors.New(fmt.Sprintf("failed to serve over HTTP: %v", err))
+	}()
+
+	// Blocking main and waiting for shutdown.
+	select {
+	case err := <-serverErrors:
+		return errors.Wrap(err, "server error")
+
+	case sig := <-shutdown:
+		logCore.Printf("starting shutdown after received signal: %v", sig)
+
+		// Create a deadline to wait for proper shutdown
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		// Attempt to gracefully shutdown API
+		err := svr.Shutdown(ctx)
+		if err != nil {
+			logCore.Errorf("graceful shutdown failed: %w", err)
+			err = svr.Close()
 		}
+
+		// Log the status of this shutdown
+		switch {
+		case sig == syscall.SIGSTOP:
+			return errors.New("integrity issue caused shutdown")
+		case err != nil:
+			return fmt.Errorf("could not stop server gracefully: %w", err)
+		}
+
+		logCore.Print("shutdown gracefully")
 	}
 
 	return nil
+}
+
+func initLoggers(filename string, dir string, level string, expire string) (*auralog.Logger, *auralog.Logger) {
+	ex, _ := time.ParseDuration(expire)
+	flags := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds
+	flagsWarn := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds
+	flagsError := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
+	flagsDebug := auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
+
+	file := &auralog.RotateWriter{
+		Dir:      dir,
+		Filename: filename,
+		ExTime:   ex,
+		MaxSize:  5 * auralog.Megabyte,
+	}
+
+	return auralog.New(auralog.Config{
+			Output:    io.MultiWriter(os.Stdout, file),
+			Prefix:    "[CORE] ",
+			Level:     auralog.ToLogLevel(level),
+			Flag:      flags,
+			WarnFlag:  flagsWarn,
+			ErrorFlag: flagsError,
+			DebugFlag: flagsDebug,
+		}), auralog.New(auralog.Config{
+			Output:    io.MultiWriter(os.Stdout, file),
+			Prefix:    "[API] ",
+			Level:     auralog.ToLogLevel(level),
+			Flag:      flags,
+			WarnFlag:  flagsWarn,
+			ErrorFlag: flagsError,
+			DebugFlag: flagsDebug,
+		})
 }
 
 // tmpMigration will convert all current characters to the new schema

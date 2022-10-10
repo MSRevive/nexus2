@@ -5,15 +5,16 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/msrevive/nexus2/internal/config"
 	"github.com/msrevive/nexus2/internal/response"
 	"github.com/msrevive/nexus2/internal/service"
-	"github.com/msrevive/nexus2/internal/system"
 	"github.com/saintwish/auralog"
 )
 
 type controller struct {
 	R   *mux.Router
 	db  *sql.DB
+	cfg config.ApiConfig
 	log *auralog.Logger
 }
 
@@ -26,7 +27,7 @@ func New(router *mux.Router, db *sql.DB, log *auralog.Logger) *controller {
 }
 
 func (c *controller) TestRoot(w http.ResponseWriter, r *http.Request) {
-	if system.HelperCfg.GetDebugMode() {
+	if c.cfg.GetDebugMode() {
 		if err := service.New(r.Context()).Debug(); err != nil {
 			response.BadRequest(w, err)
 			return

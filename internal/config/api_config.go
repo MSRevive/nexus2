@@ -12,37 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type iCfgAuth interface {
-	IsEnforcingIP() bool
-	IsKnownIP(ip string) bool
-	IsEnforcingKey() bool
-	IsValidKey(key string) bool
-	GetUserAgent() string
-}
-
-type iCfgVerify interface {
-	VerifyMapName(name string, calculated uint32) bool
-	VerifySC(calculated uint32) bool
-	IsSteamIDBanned(steamid string) bool
-	IsSteamIDAdmin(steamid string) bool
-	EnforceAndVerifyBanned(steamid string) bool
-}
-
-type iCfgHelper interface {
-	GetDBString() string
-	GetMaxRequests() int
-	GetMaxAge() time.Duration
-	GetDebugMode() bool
-}
-
-// Verify that apiConfig implements these interfaces
-var (
-	_ iCfgAuth   = (*apiConfig)(nil)
-	_ iCfgVerify = (*apiConfig)(nil)
-	_ iCfgHelper = (*apiConfig)(nil)
-)
-
-type apiConfig struct {
+type ApiConfig struct {
 	Core struct {
 		MaxThreads int
 		Graceful   time.Duration
@@ -91,8 +61,8 @@ type apiConfig struct {
 	adminListMutex sync.RWMutex
 }
 
-func LoadConfig(path string, dbg bool) (*apiConfig, error) {
-	var cfg apiConfig
+func LoadConfig(path string, dbg bool) (*ApiConfig, error) {
+	var cfg ApiConfig
 
 	switch filepath.Ext(path) {
 	case ".toml", ".ini":
@@ -118,35 +88,35 @@ func LoadConfig(path string, dbg bool) (*apiConfig, error) {
 	return &cfg, nil
 }
 
-func (cfg *apiConfig) LoadIPList() error {
+func (cfg *ApiConfig) LoadIPList() error {
 	cfg.iPListMutex.Lock()
 	defer cfg.iPListMutex.Unlock()
 
 	return loadJsonFile(cfg.ApiAuth.IPListFile, &cfg.iPList)
 }
 
-func (cfg *apiConfig) LoadMapList() error {
+func (cfg *ApiConfig) LoadMapList() error {
 	cfg.mapListMutex.Lock()
 	defer cfg.mapListMutex.Unlock()
 
 	return loadJsonFile(cfg.Verify.MapListFile, &cfg.mapList)
 }
 
-func (cfg *apiConfig) LoadBanList() error {
+func (cfg *ApiConfig) LoadBanList() error {
 	cfg.banListMutex.Lock()
 	defer cfg.banListMutex.Unlock()
 
 	return loadJsonFile(cfg.Verify.BanListFile, &cfg.banList)
 }
 
-func (cfg *apiConfig) LoadAdminList() error {
+func (cfg *ApiConfig) LoadAdminList() error {
 	cfg.adminListMutex.Lock()
 	defer cfg.adminListMutex.Unlock()
 
 	return loadJsonFile(cfg.Verify.AdminListFile, &cfg.adminList)
 }
 
-func (cfg *apiConfig) Migrate() error {
+func (cfg *ApiConfig) Migrate() error {
 	data, err := yaml.Marshal(&cfg)
 	if err != nil {
 		return err
@@ -159,11 +129,11 @@ func (cfg *apiConfig) Migrate() error {
 	return nil
 }
 
-func (c *apiConfig) IsEnforcingIP() bool {
+func (c *ApiConfig) IsEnforcingIP() bool {
 	return c.ApiAuth.EnforceIP
 }
 
-func (c *apiConfig) IsKnownIP(ip string) bool {
+func (c *ApiConfig) IsKnownIP(ip string) bool {
 	c.iPListMutex.RLock()
 	defer c.iPListMutex.RUnlock()
 
@@ -171,19 +141,19 @@ func (c *apiConfig) IsKnownIP(ip string) bool {
 	return ok
 }
 
-func (c *apiConfig) IsEnforcingKey() bool {
+func (c *ApiConfig) IsEnforcingKey() bool {
 	return c.ApiAuth.EnforceKey
 }
 
-func (c *apiConfig) IsValidKey(key string) bool {
+func (c *ApiConfig) IsValidKey(key string) bool {
 	return c.ApiAuth.Key == key
 }
 
-func (c *apiConfig) GetUserAgent() string {
+func (c *ApiConfig) GetUserAgent() string {
 	return c.Verify.Useragent
 }
 
-func (c *apiConfig) VerifyMapName(name string, calculated uint32) bool {
+func (c *ApiConfig) VerifyMapName(name string, calculated uint32) bool {
 	if c.Verify.EnforceMap {
 		c.mapListMutex.RLock()
 		defer c.mapListMutex.RUnlock()
@@ -194,7 +164,7 @@ func (c *apiConfig) VerifyMapName(name string, calculated uint32) bool {
 	return true // return true if enforcemap is false
 }
 
-func (c *apiConfig) VerifySC(calculated uint32) bool {
+func (c *ApiConfig) VerifySC(calculated uint32) bool {
 	if c.Verify.EnforceSC {
 		return c.Verify.SCHash == calculated
 	}
@@ -202,7 +172,7 @@ func (c *apiConfig) VerifySC(calculated uint32) bool {
 	return true // return true if enforcesc is false
 }
 
-func (c *apiConfig) IsSteamIDAdmin(steamid string) bool {
+func (c *ApiConfig) IsSteamIDAdmin(steamid string) bool {
 	c.adminListMutex.RLock()
 	defer c.adminListMutex.RUnlock()
 
@@ -210,7 +180,7 @@ func (c *apiConfig) IsSteamIDAdmin(steamid string) bool {
 	return ok
 }
 
-func (c *apiConfig) IsSteamIDBanned(steamid string) bool {
+func (c *ApiConfig) IsSteamIDBanned(steamid string) bool {
 	c.banListMutex.RLock()
 	defer c.banListMutex.RUnlock()
 
@@ -218,26 +188,30 @@ func (c *apiConfig) IsSteamIDBanned(steamid string) bool {
 	return ok
 }
 
-func (c *apiConfig) EnforceAndVerifyBanned(steamid string) bool {
+func (c *ApiConfig) EnforceAndVerifyBanned(steamid string) bool {
 	if c.Verify.EnforceBan {
 		return c.IsSteamIDBanned(steamid)
 	}
 	return false
 }
 
-func (c *apiConfig) GetDBString() string {
+func (c *ApiConfig) GetDBString() string {
 	return c.Core.DBString
 }
 
-func (c *apiConfig) GetMaxRequests() int {
+func (c *ApiConfig) IsRateLimitEnabled() bool {
+	return c.RateLimit.Enable
+}
+
+func (c *ApiConfig) GetMaxRequests() int {
 	return c.RateLimit.MaxRequests
 }
 
-func (c *apiConfig) GetMaxAge() time.Duration {
+func (c *ApiConfig) GetMaxAge() time.Duration {
 	return c.RateLimit.MaxAge
 }
 
-func (c *apiConfig) GetDebugMode() bool {
+func (c *ApiConfig) GetDebugMode() bool {
 	return c.Core.DebugMode
 }
 

@@ -1,11 +1,11 @@
 package middleware
 
-import(
+import (
 	"net"
-	"strings"
 	"net/http"
-	
-	"github.com/msrevive/nexus2/internal/system"
+	"strings"
+
+	"github.com/msrevive/nexus2/internal/config"
 )
 
 func getIP(r *http.Request) string {
@@ -13,10 +13,10 @@ func getIP(r *http.Request) string {
 	if ip == "" {
 		ips := strings.Split(r.Header.Get("X_Forwarded_For"), ", ")
 		if ips[0] != "" {
-			 return ips[0]
+			return ips[0]
 		}
 
-		ip,_,_ = net.SplitHostPort(r.RemoteAddr)
+		ip, _, _ = net.SplitHostPort(r.RemoteAddr)
 		return ip
 	}
 
@@ -32,28 +32,28 @@ func setControlHeaders(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Max-Age", "7200")
 }
 
-//false = not allowed, true = is allowed
+// false = not allowed, true = is allowed
 func checkIP(ip string) bool {
-	if system.AuthCfg.IsEnforcingIP() {      
-		if !system.AuthCfg.IsKnownIP(ip) {
+	if config.AuthCfg.IsEnforcingIP() {
+		if !config.AuthCfg.IsKnownIP(ip) {
 			return false
 		}
-		
+
 		return true
 	}
-	
+
 	return true
 }
 
-//false = not allowed, true = is allowed
+// false = not allowed, true = is allowed
 func checkAPIKey(key string) bool {
-	if system.AuthCfg.IsEnforcingKey() {
-		if system.AuthCfg.IsValidKey(key) {
+	if config.AuthCfg.IsEnforcingKey() {
+		if config.AuthCfg.IsValidKey(key) {
 			return true
 		}
-		
+
 		return false
 	}
-	
+
 	return true
 }
