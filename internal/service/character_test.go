@@ -10,8 +10,8 @@ import (
 	"github.com/msrevive/nexus2/ent"
 	entCharacter "github.com/msrevive/nexus2/ent/character"
 	entPlayer "github.com/msrevive/nexus2/ent/player"
-	"github.com/msrevive/nexus2/service"
-	"github.com/msrevive/nexus2/system"
+	"github.com/msrevive/nexus2/internal/service"
+	"github.com/msrevive/nexus2/internal/system"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

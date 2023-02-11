@@ -11,11 +11,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/msrevive/nexus2/ent"
-	"github.com/msrevive/nexus2/helper"
+	"github.com/msrevive/nexus2/pkg/helper"
 	"github.com/msrevive/nexus2/log"
 	"github.com/msrevive/nexus2/response"
-	"github.com/msrevive/nexus2/service"
-	"github.com/msrevive/nexus2/system"
+	"github.com/msrevive/nexus2/internal/service"
+	"github.com/msrevive/nexus2/internal/system"
 )
 
 //GET /character/

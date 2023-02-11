@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/msrevive/nexus2/ent"
-	"github.com/msrevive/nexus2/system"
+	"github.com/msrevive/nexus2/internal/system"
 )
 
 type service struct {

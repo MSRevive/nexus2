@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/msrevive/nexus2/ent"
-	"github.com/msrevive/nexus2/system"
+	"github.com/msrevive/nexus2/internal/system"
 )
 
 var (

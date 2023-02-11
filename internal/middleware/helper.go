@@ -5,7 +5,7 @@ import(
   "strings"
   "net/http"
   
-  "github.com/msrevive/nexus2/system"
+  "github.com/msrevive/nexus2/internal/system"
 )
 
 func getIP(r *http.Request) string {

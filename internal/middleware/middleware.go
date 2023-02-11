@@ -5,9 +5,9 @@ import(
   "net/http"
   "runtime/debug"
   
-  "github.com/msrevive/nexus2/system"
+  "github.com/msrevive/nexus2/internal/system"
   "github.com/msrevive/nexus2/log"
-  "github.com/msrevive/nexus2/rate"
+  "github.com/msrevive/nexus2/pkg/rate"
 )
 
 var (

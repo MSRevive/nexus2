@@ -4,8 +4,8 @@ import (
   "strconv"
   "net/http"
   
-  "github.com/msrevive/nexus2/response"
-  "github.com/msrevive/nexus2/system"
+  "github.com/msrevive/nexus2/pkg/response"
+  "github.com/msrevive/nexus2/internal/system"
   
   "github.com/gorilla/mux"
 )
