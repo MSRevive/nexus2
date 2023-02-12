@@ -18,9 +18,12 @@ import (
 
 var (
 	dbOnce sync.Once
+	testApp *app.App
 )
 
-func NewDb(apps *app.App) func() {
+testApp = app.New(nil)
+
+func NewDb() func() {
 	teardown := func() {}
 	dbOnce.Do(func() {
 		fileName := uuid.NewString() + ".db"
@@ -29,7 +32,7 @@ func NewDb(apps *app.App) func() {
 			panic(fmt.Errorf("initializing database failed: %w", err))
 		}
 
-		apps.Client = client
+		testApp.Client = client
 		teardown = func() {
 			client.Close()
 			os.Remove(fileName)
@@ -38,12 +41,12 @@ func NewDb(apps *app.App) func() {
 	return teardown
 }
 
-func refreshDb(apps *app.App) {
-	if apps.Client == nil {
+func refreshDb() {
+	if testApp.Client == nil {
 		panic("database client expected to be initialized")
 	}
-	apps.Client.Character.Delete().Exec(context.Background())
-	apps.Client.Player.Delete().Exec(context.Background())
+	testApp.Client.Character.Delete().Exec(context.Background())
+	testApp.Client.Player.Delete().Exec(context.Background())
 }
 
 func TestMain(m *testing.M) {

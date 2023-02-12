@@ -11,7 +11,6 @@ import (
 	entCharacter "github.com/msrevive/nexus2/ent/character"
 	entPlayer "github.com/msrevive/nexus2/ent/player"
 	"github.com/msrevive/nexus2/internal/service"
-	"github.com/msrevive/nexus2/internal/system"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -339,14 +338,14 @@ func TestCharacterCreate_WithNoPlayer_ReturnsCharacter(t *testing.T) {
 	assert.Equal(t, character.Data, actual.Data)
 
 	// Assert Player record
-	dbPlayer, err := system.Client.Player.Query().Where(entPlayer.Steamid(character.Steamid)).Only(ctx)
+	dbPlayer, err := testApp.Client.Player.Query().Where(entPlayer.Steamid(character.Steamid)).Only(ctx)
 	require.NoError(t, err)
 
 	assert.NotEqual(t, uuid.Nil, dbPlayer.ID)
 	assert.Equal(t, dbPlayer.Steamid, actual.Steamid)
 
 	// Assert Character record
-	dbCharacter, err := system.Client.Character.Get(ctx, actual.ID)
+	dbCharacter, err := testApp.Client.Character.Get(ctx, actual.ID)
 	require.NoError(t, err)
 
 	assert.Equal(t, dbCharacter.ID, actual.ID)
@@ -377,14 +376,14 @@ func TestCharacterCreate_WithPlayer_ReturnsCharacter(t *testing.T) {
 	assert.Equal(t, character.Data, actual.Data)
 
 	// Assert Player record
-	dbPlayer, err := system.Client.Player.Query().Where(entPlayer.Steamid(character.Steamid)).Only(ctx)
+	dbPlayer, err := testApp.Client.Player.Query().Where(entPlayer.Steamid(character.Steamid)).Only(ctx)
 	require.NoError(t, err)
 
 	assert.NotEqual(t, uuid.Nil, dbPlayer.ID)
 	assert.Equal(t, dbPlayer.Steamid, actual.Steamid)
 
 	// Assert Character record
-	dbCharacter, err := system.Client.Character.Get(ctx, actual.ID)
+	dbCharacter, err := testApp.Client.Character.Get(ctx, actual.ID)
 	require.NoError(t, err)
 
 	assert.Equal(t, dbCharacter.ID, actual.ID)
@@ -408,7 +407,7 @@ func TestCharacterCreate_WithPlayer_WithSoftDeletedCharacter_ReturnsCharacter(t 
 	character.Steamid = player.Steamid
 
 	// Assert one soft deleted Character
-	count, err := system.Client.Character.Query().
+	count, err := testApp.Client.Character.Query().
 		Where(
 			entCharacter.And(
 				entCharacter.HasPlayerWith(
@@ -432,14 +431,14 @@ func TestCharacterCreate_WithPlayer_WithSoftDeletedCharacter_ReturnsCharacter(t 
 	assert.Equal(t, character.Data, actual.Data)
 
 	// Assert Player record
-	dbPlayer, err := system.Client.Player.Query().Where(entPlayer.Steamid(character.Steamid)).Only(ctx)
+	dbPlayer, err := testApp.Client.Player.Query().Where(entPlayer.Steamid(character.Steamid)).Only(ctx)
 	require.NoError(t, err)
 
 	assert.NotEqual(t, uuid.Nil, dbPlayer.ID)
 	assert.Equal(t, dbPlayer.Steamid, actual.Steamid)
 
 	// Assert Character record
-	dbCharacter, err := system.Client.Character.Get(ctx, actual.ID)
+	dbCharacter, err := testApp.Client.Character.Get(ctx, actual.ID)
 	require.NoError(t, err)
 
 	assert.Equal(t, dbCharacter.ID, actual.ID)
@@ -451,7 +450,7 @@ func TestCharacterCreate_WithPlayer_WithSoftDeletedCharacter_ReturnsCharacter(t 
 	assert.Nil(t, dbCharacter.DeletedAt)
 
 	// Assert only one Character in slot
-	count, err = system.Client.Character.Query().
+	count, err = testApp.Client.Character.Query().
 		Where(
 			entCharacter.HasPlayerWith(
 				entPlayer.Steamid(player.Steamid),
@@ -495,14 +494,14 @@ func TestCharacterUpdate_WithNoBackups_ReturnsUpdatedCharacter(t *testing.T) {
 	assert.Equal(t, updatedCharacter.Data, actual.Data)
 
 	// Assert Player record
-	dbPlayer, err := system.Client.Player.Query().Where(entPlayer.Steamid(updatedCharacter.Steamid)).Only(ctx)
+	dbPlayer, err := testApp.Client.Player.Query().Where(entPlayer.Steamid(updatedCharacter.Steamid)).Only(ctx)
 	require.NoError(t, err)
 
 	assert.NotEqual(t, uuid.Nil, dbPlayer.ID)
 	assert.Equal(t, dbPlayer.Steamid, actual.Steamid)
 
 	// Assert Character record
-	dbCharacter, err := system.Client.Character.Get(ctx, actual.ID)
+	dbCharacter, err := testApp.Client.Character.Get(ctx, actual.ID)
 	require.NoError(t, err)
 
 	assert.Equal(t, dbCharacter.ID, actual.ID)
@@ -514,7 +513,7 @@ func TestCharacterUpdate_WithNoBackups_ReturnsUpdatedCharacter(t *testing.T) {
 	assert.Nil(t, dbCharacter.DeletedAt)
 
 	// Assert two versions of the Character in slot
-	count, err := system.Client.Character.Query().
+	count, err := testApp.Client.Character.Query().
 		Where(
 			entCharacter.And(
 				entCharacter.HasPlayerWith(
@@ -528,7 +527,7 @@ func TestCharacterUpdate_WithNoBackups_ReturnsUpdatedCharacter(t *testing.T) {
 	assert.Equal(t, 2, count)
 
 	// Assert backup Character
-	dbBackup, err := system.Client.Character.Query().
+	dbBackup, err := testApp.Client.Character.Query().
 		Where(
 			entCharacter.And(
 				entCharacter.HasPlayerWith(
@@ -572,14 +571,14 @@ func TestCharacterUpdate_With15Backups_RemovesExtraBackups_ReturnsUpdatedCharact
 	assert.Equal(t, updatedCharacter.Data, actual.Data)
 
 	// Assert Player record
-	dbPlayer, err := system.Client.Player.Query().Where(entPlayer.Steamid(updatedCharacter.Steamid)).Only(ctx)
+	dbPlayer, err := testApp.Client.Player.Query().Where(entPlayer.Steamid(updatedCharacter.Steamid)).Only(ctx)
 	require.NoError(t, err)
 
 	assert.NotEqual(t, uuid.Nil, dbPlayer.ID)
 	assert.Equal(t, dbPlayer.Steamid, actual.Steamid)
 
 	// Assert Character record
-	dbCharacter, err := system.Client.Character.Get(ctx, actual.ID)
+	dbCharacter, err := testApp.Client.Character.Get(ctx, actual.ID)
 	require.NoError(t, err)
 
 	assert.Equal(t, dbCharacter.ID, actual.ID)
@@ -591,7 +590,7 @@ func TestCharacterUpdate_With15Backups_RemovesExtraBackups_ReturnsUpdatedCharact
 	assert.Nil(t, dbCharacter.DeletedAt)
 
 	// Assert max 10 versions of the Character in slot
-	count, err := system.Client.Character.Query().
+	count, err := testApp.Client.Character.Query().
 		Where(
 			entCharacter.And(
 				entCharacter.HasPlayerWith(
@@ -623,7 +622,7 @@ func TestCharacterDelete_WithCharacter_ReturnsNoError(t *testing.T) {
 	err := service.New(ctx).CharacterDelete(character.ID)
 	assert.NoError(t, err)
 
-	dbCharacter, err := system.Client.Character.Get(ctx, character.ID)
+	dbCharacter, err := testApp.Client.Character.Get(ctx, character.ID)
 	require.NoError(t, err)
 
 	assert.NotNil(t, dbCharacter.DeletedAt)
@@ -638,7 +637,7 @@ func TestCharacterDelete_WithBackups_RemovesAllButLatest_ReturnsNoError(t *testi
 	require.Len(t, characters, 3)
 
 	// Assert 3 characters in DB (1 character with 2 backups)
-	dbCharacter, err := system.Client.Character.Query().
+	dbCharacter, err := testApp.Client.Character.Query().
 		Where(
 			entCharacter.And(
 				entCharacter.HasPlayerWith(
@@ -654,7 +653,7 @@ func TestCharacterDelete_WithBackups_RemovesAllButLatest_ReturnsNoError(t *testi
 	err = service.New(ctx).CharacterDelete(characters[0].ID)
 	assert.NoError(t, err)
 
-	dbCharacter, err = system.Client.Character.Query().
+	dbCharacter, err = testApp.Client.Character.Query().
 		Where(
 			entCharacter.And(
 				entCharacter.HasPlayerWith(
@@ -696,7 +695,7 @@ func TestCharacterRestore_WithCharacter_ReturnsCharacter(t *testing.T) {
 	assert.Equal(t, character.Size, actual.Size)
 	assert.Equal(t, character.Data, actual.Data)
 
-	dbCharacter, err := system.Client.Character.Get(ctx, character.ID)
+	dbCharacter, err := testApp.Client.Character.Get(ctx, character.ID)
 	require.NoError(t, err)
 
 	assert.Nil(t, dbCharacter.DeletedAt)
@@ -814,7 +813,7 @@ func TestCharacterRollback_ReturnsCharacter(t *testing.T) {
 	assert.Equal(t, characters[2].Data, actual.Data)
 
 	// Assert previous current character is now the latest backup
-	dbCharacter, err := system.Client.Character.Query().
+	dbCharacter, err := testApp.Client.Character.Query().
 		Where(
 			entCharacter.And(
 				entCharacter.HasPlayerWith(
@@ -842,7 +841,7 @@ func charById(characters []*ent.Character, id uuid.UUID) *ent.Character {
 }
 
 func seedPlayer(t *testing.T, ctx context.Context) *ent.Player {
-	player, err := system.Client.Player.Create().
+	player, err := testApp.Client.Player.Create().
 		SetSteamid(uuid.NewString()).
 		Save(ctx)
 	require.NoError(t, err, "failed to create Player")
@@ -890,7 +889,7 @@ func seedCharacterWithData(t *testing.T, ctx context.Context, player *ent.Player
 		panic("failed to create Character; Player or character is nil")
 	}
 
-	builder := system.Client.Character.Create().
+	builder := testApp.Client.Character.Create().
 		SetPlayer(player).
 		SetVersion(c.Version).
 		SetSize(c.Size).
