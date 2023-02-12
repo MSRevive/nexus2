@@ -20,7 +20,7 @@ var (
 )
 
 type App struct {
-	Config *config
+	Config *Config
 	Client *ent.Client
 	LogCore *auralog.Logger
 	LogAPI *auralog.Logger
@@ -31,7 +31,7 @@ type App struct {
 	AdminList map[string]bool
 }
 
-func New(cfg *config) *App {
+func New(cfg *Config) *App {
 	return &App {
 		Config: cfg,
 	}

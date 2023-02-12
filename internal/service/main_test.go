@@ -21,8 +21,6 @@ var (
 	testApp *app.App
 )
 
-testApp = app.New(nil)
-
 func NewDb() func() {
 	teardown := func() {}
 	dbOnce.Do(func() {
@@ -52,6 +50,10 @@ func refreshDb() {
 func TestMain(m *testing.M) {
 	// Run Setup
 	rand.Seed(time.Now().UnixNano())
+	cfg := &app.Config{}
+	cfg.Char.BackupTime = "1s"
+	cfg.Char.MaxBackups = 10
+	testApp = app.New(cfg)
 	teardown := NewDb()
 
 	// Run tests

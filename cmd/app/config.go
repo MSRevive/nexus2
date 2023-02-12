@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type config struct {
+type Config struct {
 	Core struct {
 		Address string
 		Port int
@@ -55,8 +55,8 @@ type config struct {
 	}
 }
   
-func LoadConfig(path string) (*config, error) {
-	var cfg config
+func LoadConfig(path string) (*Config, error) {
+	var cfg Config
 
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		return nil, os.ErrNotExist
