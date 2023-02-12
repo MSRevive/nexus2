@@ -5,6 +5,7 @@ import (
   "net/http"
   
   "github.com/msrevive/nexus2/pkg/response"
+  "github.com/msrevive/nexus2/pkg/helper"
   
   "github.com/gorilla/mux"
 )
@@ -29,6 +30,7 @@ func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
     return
   }
   
+  c.App.LogAPI.Warnf("%s failed map (%s) verfication.", helper.GetIP(r), name)
   response.Result(w, false)
   return
 }
@@ -49,6 +51,7 @@ func (c *controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
     return
   }
   
+  c.App.LogAPI.Warnf("%s: player (%s) is banned!", helper.GetIP(r), steamid)
   response.Result(w, false)
   return
 }
@@ -72,6 +75,7 @@ func (c *controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
     return
   }
   
+  c.App.LogAPI.Warnf("%s failed SC check!", helper.GetIP(r))
   response.Result(w, false)
 }
 
