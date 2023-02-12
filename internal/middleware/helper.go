@@ -1,27 +1,10 @@
 package middleware
 
 import (
-	"net"
-	"strings"
 	"net/http"
 
 	"github.com/msrevive/nexus2/cmd/app"
 )
-
-func getIP(r *http.Request) string {
-	ip := r.Header.Get("X_Real_IP")
-	if ip == "" {
-		ips := strings.Split(r.Header.Get("X_Forwarded_For"), ", ")
-		if ips[0] != "" {
-			return ips[0]
-		}
-
-		ip,_,_ = net.SplitHostPort(r.RemoteAddr)
-		return ip
-	}
-
-	return ip
-}
 
 func setControlHeaders(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
