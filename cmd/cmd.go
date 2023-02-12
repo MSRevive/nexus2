@@ -382,7 +382,7 @@ func Run(args []string) error {
 
 	//middleware
 	mw := middleware.New(apps)
-	
+
 	router.Use(mw.PanicRecovery)
 	router.Use(mw.Log)
 	if apps.Config.RateLimit.Enable {
@@ -391,24 +391,24 @@ func Run(args []string) error {
 
 	//api routes
 	apic := controller.New(router.PathPrefix(apps.Config.Core.RootPath).Subrouter(), apps)
-	apic.R.HandleFunc("/ping", middleware.Lv2Auth(apic.GetPing, apps)).Methods(http.MethodGet)
-	apic.R.HandleFunc("/map/{name}/{hash}", middleware.Lv1Auth(apic.GetMapVerify, apps)).Methods(http.MethodGet)
-	apic.R.HandleFunc("/ban/{steamid:[0-9]+}", middleware.Lv1Auth(apic.GetBanVerify, apps)).Methods(http.MethodGet)
-	apic.R.HandleFunc("/sc/{hash}", middleware.Lv1Auth(apic.GetSCVerify, apps)).Methods(http.MethodGet)
+	apic.R.HandleFunc("/ping", mw.Lv2Auth(apic.GetPing)).Methods(http.MethodGet)
+	apic.R.HandleFunc("/map/{name}/{hash}", mw.Lv1Auth(apic.GetMapVerify)).Methods(http.MethodGet)
+	apic.R.HandleFunc("/ban/{steamid:[0-9]+}", mw.Lv1Auth(apic.GetBanVerify)).Methods(http.MethodGet)
+	apic.R.HandleFunc("/sc/{hash}", mw.Lv1Auth(apic.GetSCVerify)).Methods(http.MethodGet)
 
 	//character routes
 	charc := controller.New(router.PathPrefix(apps.Config.Core.RootPath + "/character").Subrouter(), apps)
-	charc.R.HandleFunc("/", middleware.Lv1Auth(charc.GetAllCharacters, apps)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/id/{uid}", middleware.Lv1Auth(charc.GetCharacterByID, apps)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/{steamid:[0-9]+}", middleware.Lv1Auth(charc.GetCharacters, apps)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}", middleware.Lv1Auth(charc.GetCharacter, apps)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/export/{steamid:[0-9]+}/{slot:[0-9]}", middleware.Lv1Auth(charc.ExportCharacter, apps)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/", middleware.Lv2Auth(charc.PostCharacter, apps)).Methods(http.MethodPost)
-	charc.R.HandleFunc("/{uid}", middleware.Lv2Auth(charc.PutCharacter, apps)).Methods(http.MethodPut)
-	charc.R.HandleFunc("/{uid}", middleware.Lv2Auth(charc.DeleteCharacter, apps)).Methods(http.MethodDelete)
-	charc.R.HandleFunc("/{uid}/restore", middleware.Lv1Auth(charc.RestoreCharacter, apps)).Methods(http.MethodPatch)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/versions", middleware.Lv1Auth(charc.CharacterVersions, apps)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/{version:[0-9]+}", middleware.Lv1Auth(charc.RollbackCharacter, apps)).Methods(http.MethodPatch)
+	charc.R.HandleFunc("/", mw.Lv1Auth(charc.GetAllCharacters)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/id/{uid}", mw.Lv1Auth(charc.GetCharacterByID)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/{steamid:[0-9]+}", mw.Lv1Auth(charc.GetCharacters)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(charc.GetCharacter)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/export/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(charc.ExportCharacter)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/", mw.Lv2Auth(charc.PostCharacter)).Methods(http.MethodPost)
+	charc.R.HandleFunc("/{uid}", mw.Lv2Auth(charc.PutCharacter)).Methods(http.MethodPut)
+	charc.R.HandleFunc("/{uid}", mw.Lv2Auth(charc.DeleteCharacter)).Methods(http.MethodDelete)
+	charc.R.HandleFunc("/{uid}/restore", mw.Lv1Auth(charc.RestoreCharacter)).Methods(http.MethodPatch)
+	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/versions", mw.Lv1Auth(charc.CharacterVersions)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/{version:[0-9]+}", mw.Lv1Auth(charc.RollbackCharacter)).Methods(http.MethodPatch)
 
 	if apps.Config.Cert.Enable {
 		cm := autocert.Manager{

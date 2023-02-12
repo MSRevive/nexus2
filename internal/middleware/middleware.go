@@ -63,7 +63,7 @@ func (m *Middleware) RateLimit(next http.Handler) http.Handler {
 /* no authentication 
   Does not do any authentication
 ---*/
-func NoAuth(next http.HandlerFunc) http.HandlerFunc {
+func (mw *Middleware) NoAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		next(w, r)
 		return
@@ -74,21 +74,21 @@ func NoAuth(next http.HandlerFunc) http.HandlerFunc {
   Performs IP whitelist and API key checks against what's allowed (if they're enabled in the config).
   This should be used as the basic authentication
 ---*/
-func Lv1Auth(next http.HandlerFunc, a *app.App) http.HandlerFunc {
+func (mw *Middleware) Lv1Auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ip := getIP(r)
 		key := r.Header.Get("Authorization")
 		
 		//IP Auth
-		if !checkIP(ip, a) {
-			a.LogAPI.Printf("%s is not authorized.", ip)
+		if !checkIP(ip, mw.app) {
+			mw.app.LogAPI.Printf("%s is not authorized.", ip)
 			http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 			return
 		}
 		
 		//API Key Auth
-		if !checkAPIKey(key, a) {
-			a.LogAPI.Printf("%s failed API key check.", ip)
+		if !checkAPIKey(key, mw.app) {
+			mw.app.LogAPI.Printf("%s failed API key check.", ip)
 			http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 			return
 		}
@@ -102,29 +102,29 @@ func Lv1Auth(next http.HandlerFunc, a *app.App) http.HandlerFunc {
   Performs level 1 authentication and user agent check.
   This should be used to make sure the request came from msr game server.
 ---*/
-func Lv2Auth(next http.HandlerFunc, a *app.App) http.HandlerFunc {
+func (mw *Middleware) Lv2Auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ip := getIP(r)
 		key := r.Header.Get("Authorization")
 		
 		//IP Auth
-		if !checkIP(ip, a) {
-			a.LogAPI.Printf("%s is not authorized!", ip)
+		if !checkIP(ip, mw.app) {
+			mw.app.LogAPI.Printf("%s is not authorized!", ip)
 			http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 			return
 		}
 		
 		//API Key Auth
-		if !checkAPIKey(key, a) {
-			a.LogAPI.Printf("%s failed API key check!", ip)
+		if !checkAPIKey(key, mw.app) {
+			mw.app.LogAPI.Printf("%s failed API key check!", ip)
 			http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 			return
 		}
 		
 		//if useragent in config is empty then just skip.
-		if a.Config.Verify.Useragent != "" {
-			if r.UserAgent() != a.Config.Verify.Useragent {
-				a.LogAPI.Printf("%s incorrect user agent!", ip)
+		if mw.app.Config.Verify.Useragent != "" {
+			if r.UserAgent() != mw.app.Config.Verify.Useragent {
+				mw.app.LogAPI.Printf("%s incorrect user agent!", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}
