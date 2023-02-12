@@ -44,6 +44,10 @@ type config struct {
 		SCHash uint32
 		Useragent string
 	}
+	Char struct {
+		MaxBackups int
+		BackupTime string
+	}
 	Log struct {
 		Level string
 		Dir string

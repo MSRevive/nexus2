@@ -174,10 +174,9 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 		if err != nil {
 			return err
 		}
-
+		
 		// Get the latest backup version
 		latest, err := s.client.Character.Query().
-			Select(character.FieldVersion).
 			Where(character.Slot(current.Slot)).
 			Order(ent.Desc(character.FieldVersion)).
 			First(s.ctx)
@@ -186,15 +185,22 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 		}
 
 		// Backup the current version
-		_, err = s.client.Character.Create().
-			SetPlayerID(current.PlayerID).
-			SetVersion(latest.Version + 1).
-			SetSlot(current.Slot).
-			SetSize(current.Size).
-			SetData(current.Data).
-			Save(s.ctx)
+		backupTime,err := time.ParseDuration(s.apps.Config.Char.BackupTime)
 		if err != nil {
 			return err
+		}
+		timeCheck := latest.UpdatedAt.Add(backupTime)
+		if (current.UpdatedAt.After(timeCheck)) {
+			_, err = s.client.Character.Create().
+				SetPlayerID(current.PlayerID).
+				SetVersion(latest.Version + 1).
+				SetSlot(current.Slot).
+				SetSize(current.Size).
+				SetData(current.Data).
+				Save(s.ctx)
+			if err != nil {
+				return err
+			}
 		}
 
 		// Update the character
@@ -222,8 +228,9 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 		}
 
 		// Delete all characters beyond 10 backups (version "1" not in current slice)
-		if len(all) > 9 {
-			for _, old := range all[9:] {
+		maxBackups := s.apps.Config.Char.MaxBackups-1
+		if len(all) > maxBackups {
+			for _, old := range all[maxBackups:] {
 				if err := s.client.Character.DeleteOneID(old.ID).Exec(s.ctx); err != nil {
 					return err
 				}
