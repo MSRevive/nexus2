@@ -13,11 +13,12 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/msrevive/nexus2/ent"
-	"github.com/msrevive/nexus2/system"
+	"github.com/msrevive/nexus2/cmd/app"
 )
 
 var (
 	dbOnce sync.Once
+	testApp *app.App
 )
 
 func NewDb() func() {
@@ -29,7 +30,7 @@ func NewDb() func() {
 			panic(fmt.Errorf("initializing database failed: %w", err))
 		}
 
-		system.Client = client
+		testApp.Client = client
 		teardown = func() {
 			client.Close()
 			os.Remove(fileName)
@@ -39,16 +40,20 @@ func NewDb() func() {
 }
 
 func refreshDb() {
-	if system.Client == nil {
+	if testApp.Client == nil {
 		panic("database client expected to be initialized")
 	}
-	system.Client.Character.Delete().Exec(context.Background())
-	system.Client.Player.Delete().Exec(context.Background())
+	testApp.Client.Character.Delete().Exec(context.Background())
+	testApp.Client.Player.Delete().Exec(context.Background())
 }
 
 func TestMain(m *testing.M) {
 	// Run Setup
 	rand.Seed(time.Now().UnixNano())
+	cfg := &app.Config{}
+	cfg.Char.BackupTime = "1s"
+	cfg.Char.MaxBackups = 10
+	testApp = app.New(cfg)
 	teardown := NewDb()
 
 	// Run tests

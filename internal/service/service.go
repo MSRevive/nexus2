@@ -3,19 +3,21 @@ package service
 import (
 	"context"
 
+	"github.com/msrevive/nexus2/cmd/app"
 	"github.com/msrevive/nexus2/ent"
-	"github.com/msrevive/nexus2/system"
 )
 
 type service struct {
-	ctx    context.Context
-	client *ent.Client
+	ctx 	context.Context
+	apps 	*app.App
+	client 	*ent.Client
 }
 
-func New(ctx context.Context) *service {
+func New(ctx context.Context, apps *app.App) *service {
 	return &service{
 		ctx:    ctx,
-		client: system.Client,
+		apps: 	apps,
+		client: apps.Client,
 	}
 }
 
