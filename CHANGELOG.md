@@ -2,6 +2,14 @@
 
 ## v1.1.0
 ### Added
+* Added config options ``BackupTime`` and ``MaxBackups``
+  * Customize how max character backups and how often to do character backups
+
+### Changed
+* Refactor the code and the project structure.
+
+## v1.1.0
+### Added
 * Add migration system (with -m flag) to migrate TOML/INI config file to YAML
 * Add authentication to check useragent as well.
 * Add database migration system, thanks to [@pbarnum](https://github.com/pbarnum)
