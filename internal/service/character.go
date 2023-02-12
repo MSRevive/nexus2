@@ -190,7 +190,7 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 			return err
 		}
 		timeCheck := latest.UpdatedAt.Add(backupTime)
-		if (current.UpdatedAt.After(timeCheck)) {
+		if (current.UpdatedAt.After(timeCheck) || latest.Version == 1) {
 			_, err = s.client.Character.Create().
 				SetPlayerID(current.PlayerID).
 				SetVersion(latest.Version + 1).
@@ -422,6 +422,101 @@ func (s *service) CharacterRollback(sid string, slot, version int) (*ent.Depreca
 	}
 
 	return charToDepChar(sid, char), nil
+}
+
+func (s *service) CharacterRollbackLatest(sid string, slot int) (*ent.DeprecatedCharacter, error) {
+	var char *ent.Character
+	err := txn(s.ctx, s.client, func(tx *ent.Tx) error {
+		// Get the current character
+		current, err := s.client.Character.Query().
+			Where(
+				character.And(
+					character.HasPlayerWith(player.Steamid(sid)),
+					character.Slot(slot),
+					character.Version(1),
+				),
+			).
+			Only(s.ctx)
+		if err != nil {
+			return err
+		}
+
+		// Get the latest backup version
+		latest, err := s.client.Character.Query().
+			Where(
+				character.And(
+					character.HasPlayerWith(player.Steamid(sid)),
+					character.Slot(slot),
+				),
+			).
+			Order(ent.Desc(character.FieldVersion)).
+			First(s.ctx)
+		if err != nil {
+			return err
+		}
+
+		// Backup the current version
+		_, err = s.client.Character.Create().
+			SetPlayerID(current.PlayerID).
+			SetVersion(latest.Version + 1).
+			SetSlot(current.Slot).
+			SetSize(current.Size).
+			SetData(current.Data).
+			Save(s.ctx)
+		if err != nil {
+			return err
+		}
+
+		// Update the character
+		c, err := current.Update().
+			SetSize(latest.Size).
+			SetData(latest.Data).
+			Save(s.ctx)
+		if err != nil {
+			return err
+		}
+
+		char = c
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return charToDepChar(sid, char), nil
+}
+
+func (s *service) CharacterDeleteRollbacks(sid string, slot int) error {
+	return txn(s.ctx, s.client, func(tx *ent.Tx) error {
+		char, err := s.client.Character.Query().
+			Where(
+				character.And(
+					character.HasPlayerWith(player.Steamid(sid)),
+					character.Slot(slot),
+					character.Version(1),
+				),
+			).
+			Only(s.ctx)
+		if err != nil {
+			return err
+		}
+
+		// Hard delete backups
+		_, err = s.client.Character.Delete().
+			Where(
+				character.And(
+					character.PlayerID(char.PlayerID),
+					character.Slot(slot),
+					character.VersionNEQ(char.Version),
+				),
+			).
+			Exec(s.ctx)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func charToDepChar(s string, c *ent.Character) *ent.DeprecatedCharacter {

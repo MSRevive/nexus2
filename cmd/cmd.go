@@ -409,6 +409,8 @@ func Run(args []string) error {
 	charc.R.HandleFunc("/{uid}/restore", mw.Lv1Auth(charc.RestoreCharacter)).Methods(http.MethodPatch)
 	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/versions", mw.Lv1Auth(charc.CharacterVersions)).Methods(http.MethodGet)
 	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/{version:[0-9]+}", mw.Lv1Auth(charc.RollbackCharacter)).Methods(http.MethodPatch)
+	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/latest", mw.Lv1Auth(charc.RollbackLatestCharacter)).Methods(http.MethodPatch)
+	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback", mw.Lv1Auth(charc.DeleteRollbacksCharacter)).Methods(http.MethodDelete)
 
 	if apps.Config.Cert.Enable {
 		cm := autocert.Manager{
