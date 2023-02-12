@@ -13,14 +13,14 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/msrevive/nexus2/ent"
-	"github.com/msrevive/nexus2/internal/system"
+	"github.com/msrevive/nexus2/cmd/app"
 )
 
 var (
 	dbOnce sync.Once
 )
 
-func NewDb() func() {
+func NewDb(apps *app.App) func() {
 	teardown := func() {}
 	dbOnce.Do(func() {
 		fileName := uuid.NewString() + ".db"
@@ -29,7 +29,7 @@ func NewDb() func() {
 			panic(fmt.Errorf("initializing database failed: %w", err))
 		}
 
-		system.Client = client
+		apps.Client = client
 		teardown = func() {
 			client.Close()
 			os.Remove(fileName)
@@ -38,12 +38,12 @@ func NewDb() func() {
 	return teardown
 }
 
-func refreshDb() {
-	if system.Client == nil {
+func refreshDb(apps *app.App) {
+	if apps.Client == nil {
 		panic("database client expected to be initialized")
 	}
-	system.Client.Character.Delete().Exec(context.Background())
-	system.Client.Player.Delete().Exec(context.Background())
+	apps.Client.Character.Delete().Exec(context.Background())
+	apps.Client.Player.Delete().Exec(context.Background())
 }
 
 func TestMain(m *testing.M) {

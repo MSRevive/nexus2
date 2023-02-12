@@ -13,13 +13,13 @@ import (
 	"time"
 	"errors"
 
+	"github.com/msrevive/nexus2/cmd/app"
 	"github.com/msrevive/nexus2/internal/controller"
 	"github.com/msrevive/nexus2/internal/middleware"
-	"github.com/msrevive/nexus2/internal/system"
 	"github.com/msrevive/nexus2/ent"
 	"github.com/msrevive/nexus2/ent/player"
-	"github.com/msrevive/nexus2/log"
 
+	"github.com/saintwish/auralog"
 	entd "entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/schema"
 	"github.com/gorilla/mux"
@@ -90,8 +90,9 @@ func initLoggers(filename string, dir string, level string, expire string) {
 	})
 }
 
-func tmpMigration(dbstring string) {
+func tmpMigration(apps *app.App) {
 	ctx := context.Background()
+	dbstring := apps.Config.Core.DBString
 	dbFileName := "./runtime/chars.db"
 	oldDbFileName := "./runtime/old_chars.db"
 	dbBakFileName := dbFileName + ".bak"
@@ -106,7 +107,7 @@ func tmpMigration(dbstring string) {
 		if err := client.Schema.Create(ctx, schema.WithAtlas(true)); err != nil {
 			logCore.Fatalf("failed to create schema resources: %v", err)
 		}
-		system.Client = client
+		apps.Client = client
 	} else {
 		err := func() error {
 			/////////////////////////////////////////////////
@@ -141,7 +142,7 @@ func tmpMigration(dbstring string) {
 					logCore.Errorf("failed to create schema resources: %v", err)
 					return err
 				}
-				system.Client = client
+				apps.Client = client
 	
 				return nil
 			}
@@ -230,7 +231,7 @@ func tmpMigration(dbstring string) {
 				logCore.Errorf("failed to create schema resources: %v", err)
 				return err
 			}
-			system.Client = client
+			apps.Client = client
 			logCore.Println("connected to new db")
 	
 			errLog, err := os.Create("./runtime/logs/migration_errors.log")
@@ -293,71 +294,68 @@ func tmpMigration(dbstring string) {
 func Run(args []string) error {
 	flgs := doFlags(args)
 
-	if err := system.LoadConfig(cfile); err != nil {
-		return err;
+	config, err := app.LoadConfig(flgs.configFile)
+	if err != nil {
+		return err
 	}
 
-	if migrateConfig {
+	apps := app.New(config);
+
+	if flgs.migrateConfig {
 		fmt.Println("Running migration...")
-		if err := system.MigrateConfig(); err != nil {
+		if err := apps.MigrateConfig(); err != nil {
 			fmt.Printf("Migration error: %s", err)
 		}
 		fmt.Println("Finished migration, starting server...")
 	}
 
-	//initial print
-	initPrint()
-
 	//Initiate logging
-	log.InitLogging("server.log", system.Config.Log.Dir, system.Config.Log.Level, system.Config.Log.ExpireTime)
-
-	if system.Dbg {
-		logCore.Warnln("Running in Debug mode, do not use in production!")
-	}
+	initLoggers("server.log", apps.Config.Log.Dir, apps.Config.Log.Level, apps.Config.Log.ExpireTime)
+	apps.SetupLoggers(logCore, logAPI)
 
 	//Max threads allowed.
-	if system.Config.Core.MaxThreads != 0 {
-		runtime.GOMAXPROCS(system.Config.Core.MaxThreads)
+	if apps.Config.Core.MaxThreads != 0 {
+		runtime.GOMAXPROCS(apps.Config.Core.MaxThreads)
 	}
 
 	//Load json files.
-	if system.Config.ApiAuth.EnforceIP {
-		logCore.Printf("Loading IP list from %s", system.Config.ApiAuth.IPListFile)
-		if err := system.LoadIPList(system.Config.ApiAuth.IPListFile); err != nil {
+	if apps.Config.ApiAuth.EnforceIP {
+		logCore.Printf("Loading IP list from %s", apps.Config.ApiAuth.IPListFile)
+		if err := apps.LoadIPList(apps.Config.ApiAuth.IPListFile); err != nil {
 			logCore.Warnln("Failed to load IP list.")
 		}
 	}
 
-	if system.Config.Verify.EnforceMap {
-		logCore.Printf("Loading Map list from %s", system.Config.Verify.MapListFile)
-		if err := system.LoadMapList(system.Config.Verify.MapListFile); err != nil {
+	if apps.Config.Verify.EnforceMap {
+		logCore.Printf("Loading Map list from %s", apps.Config.Verify.MapListFile)
+		if err := apps.LoadMapList(apps.Config.Verify.MapListFile); err != nil {
 			logCore.Warnln("Failed to load Map list.")
 		}
 	}
 
-	if system.Config.Verify.EnforceBan {
-		logCore.Printf("Loading Ban list from %s", system.Config.Verify.BanListFile)
-		if err := system.LoadBanList(system.Config.Verify.BanListFile); err != nil {
+	if apps.Config.Verify.EnforceBan {
+		logCore.Printf("Loading Ban list from %s", apps.Config.Verify.BanListFile)
+		if err := apps.LoadBanList(apps.Config.Verify.BanListFile); err != nil {
 			logCore.Warnln("Failed to load Ban list.")
 		}
 	}
 
-	logCore.Printf("Loading Admin list from %s", system.Config.Verify.AdminListFile)
-	if err := system.LoadAdminList(system.Config.Verify.AdminListFile); err != nil {
+	logCore.Printf("Loading Admin list from %s", apps.Config.Verify.AdminListFile)
+	if err := apps.LoadAdminList(apps.Config.Verify.AdminListFile); err != nil {
 		logCore.Warnln("Failed to load Admin list.")
 	}
 
 	//Connect database.
 	logCore.Println("Connecting to database")
-	tmpMigration()
-	defer system.Client.Close()
+	tmpMigration(apps)
+	defer apps.Client.Close()
 
 	//variables for web server
 	var srv *http.Server
 	router := mux.NewRouter()
 	srv = &http.Server{
 		Handler:      router,
-		Addr:         system.Config.Core.Address + ":" + strconv.Itoa(system.Config.Core.Port),
+		Addr:         apps.Config.Core.Address + ":" + strconv.Itoa(apps.Config.Core.Port),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 		// DefaultTLSConfig sets sane defaults to use when configuring the internal
@@ -383,37 +381,39 @@ func Run(args []string) error {
 	}
 
 	//middleware
-	router.Use(middleware.PanicRecovery)
-	router.Use(middleware.Log)
-	if system.Config.RateLimit.Enable {
-		router.Use(middleware.RateLimit)
+	mw := middleware.New(apps)
+	
+	router.Use(mw.PanicRecovery)
+	router.Use(mw.Log)
+	if apps.Config.RateLimit.Enable {
+		router.Use(mw.RateLimit)
 	}
 
 	//api routes
-	apic := controller.New(router.PathPrefix(system.Config.Core.RootPath).Subrouter())
-	apic.R.HandleFunc("/ping", middleware.Lv2Auth(apic.GetPing)).Methods(http.MethodGet)
-	apic.R.HandleFunc("/map/{name}/{hash}", middleware.Lv1Auth(apic.GetMapVerify)).Methods(http.MethodGet)
-	apic.R.HandleFunc("/ban/{steamid:[0-9]+}", middleware.Lv1Auth(apic.GetBanVerify)).Methods(http.MethodGet)
-	apic.R.HandleFunc("/sc/{hash}", middleware.Lv1Auth(apic.GetSCVerify)).Methods(http.MethodGet)
+	apic := controller.New(router.PathPrefix(apps.Config.Core.RootPath).Subrouter(), apps)
+	apic.R.HandleFunc("/ping", middleware.Lv2Auth(apic.GetPing, apps)).Methods(http.MethodGet)
+	apic.R.HandleFunc("/map/{name}/{hash}", middleware.Lv1Auth(apic.GetMapVerify, apps)).Methods(http.MethodGet)
+	apic.R.HandleFunc("/ban/{steamid:[0-9]+}", middleware.Lv1Auth(apic.GetBanVerify, apps)).Methods(http.MethodGet)
+	apic.R.HandleFunc("/sc/{hash}", middleware.Lv1Auth(apic.GetSCVerify, apps)).Methods(http.MethodGet)
 
 	//character routes
-	charc := controller.New(router.PathPrefix(system.Config.Core.RootPath + "/character").Subrouter())
-	charc.R.HandleFunc("/", middleware.Lv1Auth(charc.GetAllCharacters)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/id/{uid}", middleware.Lv1Auth(charc.GetCharacterByID)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/{steamid:[0-9]+}", middleware.Lv1Auth(charc.GetCharacters)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}", middleware.Lv1Auth(charc.GetCharacter)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/export/{steamid:[0-9]+}/{slot:[0-9]}", middleware.Lv1Auth(charc.ExportCharacter)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/", middleware.Lv2Auth(charc.PostCharacter)).Methods(http.MethodPost)
-	charc.R.HandleFunc("/{uid}", middleware.Lv2Auth(charc.PutCharacter)).Methods(http.MethodPut)
-	charc.R.HandleFunc("/{uid}", middleware.Lv2Auth(charc.DeleteCharacter)).Methods(http.MethodDelete)
-	charc.R.HandleFunc("/{uid}/restore", middleware.Lv1Auth(charc.RestoreCharacter)).Methods(http.MethodPatch)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/versions", middleware.Lv1Auth(charc.CharacterVersions)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/{version:[0-9]+}", middleware.Lv1Auth(charc.RollbackCharacter)).Methods(http.MethodPatch)
+	charc := controller.New(router.PathPrefix(apps.Config.Core.RootPath + "/character").Subrouter(), apps)
+	charc.R.HandleFunc("/", middleware.Lv1Auth(charc.GetAllCharacters, apps)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/id/{uid}", middleware.Lv1Auth(charc.GetCharacterByID, apps)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/{steamid:[0-9]+}", middleware.Lv1Auth(charc.GetCharacters, apps)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}", middleware.Lv1Auth(charc.GetCharacter, apps)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/export/{steamid:[0-9]+}/{slot:[0-9]}", middleware.Lv1Auth(charc.ExportCharacter, apps)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/", middleware.Lv2Auth(charc.PostCharacter, apps)).Methods(http.MethodPost)
+	charc.R.HandleFunc("/{uid}", middleware.Lv2Auth(charc.PutCharacter, apps)).Methods(http.MethodPut)
+	charc.R.HandleFunc("/{uid}", middleware.Lv2Auth(charc.DeleteCharacter, apps)).Methods(http.MethodDelete)
+	charc.R.HandleFunc("/{uid}/restore", middleware.Lv1Auth(charc.RestoreCharacter, apps)).Methods(http.MethodPatch)
+	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/versions", middleware.Lv1Auth(charc.CharacterVersions, apps)).Methods(http.MethodGet)
+	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/{version:[0-9]+}", middleware.Lv1Auth(charc.RollbackCharacter, apps)).Methods(http.MethodPatch)
 
-	if system.Config.Cert.Enable {
+	if apps.Config.Cert.Enable {
 		cm := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(system.Config.Cert.Domain),
+			HostPolicy: autocert.HostWhitelist(apps.Config.Cert.Domain),
 			Cache:      autocert.DirCache("./runtime/certs"),
 		}
 
@@ -424,7 +424,7 @@ func Run(args []string) error {
 
 		go func() {
 			if err := http.ListenAndServe(":http", cm.HTTPHandler(nil)); err != nil {
-				return errors.New(fmt.Sprintf("failed to serve autocert server: %v", err))
+				apps.LogCore.Errorf("failed to serve autocert server: %v", err)
 			}
 		}()
 

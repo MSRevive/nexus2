@@ -5,14 +5,13 @@ import (
   "net/http"
   
   "github.com/msrevive/nexus2/pkg/response"
-  "github.com/msrevive/nexus2/internal/system"
   
   "github.com/gorilla/mux"
 )
 
 //GET map/{name}/{hash}
 func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
-  if !system.Config.Verify.EnforceMap {
+  if !c.App.Config.Verify.EnforceMap {
     response.Result(w, true)
     return
   }
@@ -25,7 +24,7 @@ func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  if res,_ := system.MapList[name]; res == uint32(hash) {
+  if res,_ := c.App.MapList[name]; res == uint32(hash) {
     response.Result(w, true)
     return
   }
@@ -37,7 +36,7 @@ func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
 //GET ban/{steamid}
 //in this case false means player isn't banned
 func (c *controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
-  if !system.Config.Verify.EnforceBan {
+  if !c.App.Config.Verify.EnforceBan {
     response.Result(w, false)
     return
   }
@@ -45,7 +44,7 @@ func (c *controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   steamid := vars["steamid"]
   
-  if _,ok := system.BanList[steamid]; ok {
+  if _,ok := c.App.BanList[steamid]; ok {
     response.Result(w, true)
     return
   }
@@ -56,7 +55,7 @@ func (c *controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
 
 //GET sc/{hash}
 func (c *controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
-  if !system.Config.Verify.EnforceSC {
+  if !c.App.Config.Verify.EnforceSC {
     response.Result(w, true)
     return
   }
@@ -68,7 +67,7 @@ func (c *controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  if system.Config.Verify.SCHash == uint32(hash) {
+  if c.App.Config.Verify.SCHash == uint32(hash) {
     response.Result(w, true)
     return
   }

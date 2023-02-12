@@ -12,17 +12,15 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/msrevive/nexus2/ent"
 	"github.com/msrevive/nexus2/pkg/helper"
-	"github.com/msrevive/nexus2/log"
-	"github.com/msrevive/nexus2/response"
+	"github.com/msrevive/nexus2/pkg/response"
 	"github.com/msrevive/nexus2/internal/service"
-	"github.com/msrevive/nexus2/internal/system"
 )
 
 //GET /character/
 func (c *controller) GetAllCharacters(w http.ResponseWriter, r *http.Request) {
-	chars, err := service.New(r.Context()).CharactersGetAll()
+	chars, err := service.New(r.Context(), c.App).CharactersGetAll()
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -37,18 +35,18 @@ func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 	var isBanned bool = false
 	var isAdmin bool = false
 
-	chars, err := service.New(r.Context()).CharactersGetBySteamid(steamid)
+	chars, err := service.New(r.Context(), c.App).CharactersGetBySteamid(steamid)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	if _, ok := system.BanList[steamid]; ok && system.Config.Verify.EnforceBan {
+	if _, ok := c.App.BanList[steamid]; ok && c.App.Config.Verify.EnforceBan {
 		isBanned = true
 	}
 
-	if _, ok := system.AdminList[steamid]; ok {
+	if _, ok := c.App.AdminList[steamid]; ok {
 		isAdmin = true
 	}
 
@@ -61,25 +59,25 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	steamid := vars["steamid"]
 	slot, err := strconv.Atoi(vars["slot"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 	var isBanned bool = false
 	var isAdmin bool = false
 
-	char, err := service.New(r.Context()).CharacterGetBySteamidSlot(steamid, slot)
+	char, err := service.New(r.Context(), c.App).CharacterGetBySteamidSlot(steamid, slot)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	if _, ok := system.BanList[steamid]; ok && system.Config.Verify.EnforceBan {
+	if _, ok := c.App.BanList[steamid]; ok && c.App.Config.Verify.EnforceBan {
 		isBanned = true
 	}
 
-	if _, ok := system.AdminList[steamid]; ok {
+	if _, ok := c.App.AdminList[steamid]; ok {
 		isAdmin = true
 	}
 
@@ -92,21 +90,21 @@ func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
 	steamid := vars["steamid"]
 	slot, err := strconv.Atoi(vars["slot"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	char, err := service.New(r.Context()).CharacterGetBySteamidSlot(steamid, slot)
+	char, err := service.New(r.Context(), c.App).CharacterGetBySteamidSlot(steamid, slot)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	file, path, err := helper.GenerateCharFile(steamid, slot, char.Data)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -121,25 +119,25 @@ func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := uuid.Parse(vars["uid"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 	var isBanned bool = false
 	var isAdmin bool = false
 
-	char, err := service.New(r.Context()).CharacterGetByID(uid)
+	char, err := service.New(r.Context(), c.App).CharacterGetByID(uid)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	if _, ok := system.BanList[char.Steamid]; ok && system.Config.Verify.EnforceBan {
+	if _, ok := c.App.BanList[char.Steamid]; ok && c.App.Config.Verify.EnforceBan {
 		isBanned = true
 	}
 
-	if _, ok := system.AdminList[char.Steamid]; ok {
+	if _, ok := c.App.AdminList[char.Steamid]; ok {
 		isAdmin = true
 	}
 
@@ -151,14 +149,14 @@ func (c *controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 	var newChar ent.DeprecatedCharacter
 	err := json.NewDecoder(r.Body).Decode(&newChar)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	char, err := service.New(r.Context()).CharacterCreate(newChar)
+	char, err := service.New(r.Context(), c.App).CharacterCreate(newChar)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -171,7 +169,7 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := uuid.Parse(vars["uid"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -179,14 +177,14 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	var updateChar ent.DeprecatedCharacter
 	err = json.NewDecoder(r.Body).Decode(&updateChar)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	char, err := service.New(r.Context()).CharacterUpdate(uid, updateChar)
+	char, err := service.New(r.Context(), c.App).CharacterUpdate(uid, updateChar)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -199,14 +197,14 @@ func (c *controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := uuid.Parse(vars["uid"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	err = service.New(r.Context()).CharacterDelete(uid)
+	err = service.New(r.Context(), c.App).CharacterDelete(uid)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -219,14 +217,14 @@ func (c *controller) RestoreCharacter(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := uuid.Parse(vars["uid"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	char, err := service.New(r.Context()).CharacterRestore(uid)
+	char, err := service.New(r.Context(), c.App).CharacterRestore(uid)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -240,21 +238,21 @@ func (c *controller) CharacterVersions(w http.ResponseWriter, r *http.Request) {
 	sid, ok := vars["steamid"]
 	if !ok {
 		err := errors.New("steamid not found")
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	slot, err := strconv.Atoi(vars["slot"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	char, err := service.New(r.Context()).CharacterVersions(sid, slot)
+	char, err := service.New(r.Context(), c.App).CharacterVersions(sid, slot)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -268,28 +266,28 @@ func (c *controller) RollbackCharacter(w http.ResponseWriter, r *http.Request) {
 	sid, ok := vars["steamid"]
 	if !ok {
 		err := errors.New("steamid not found")
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	slot, err := strconv.Atoi(vars["slot"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	version, err := strconv.Atoi(vars["version"])
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	char, err := service.New(r.Context()).CharacterRollback(sid, slot, version)
+	char, err := service.New(r.Context(), c.App).CharacterRollback(sid, slot, version)
 	if err != nil {
-		log.Log.Errorln(err)
+		c.App.LogAPI.Errorln(err)
 		response.Error(w, err)
 		return
 	}
