@@ -524,28 +524,28 @@ func TestCharacterUpdate_WithNoBackups_ReturnsUpdatedCharacter(t *testing.T) {
 		).
 		Count(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, 1, count)
+	assert.Equal(t, 2, count)
 
 	// Assert backup Character
-	// dbBackup, err := testApp.Client.Character.Query().
-	// 	Where(
-	// 		entCharacter.And(
-	// 			entCharacter.HasPlayerWith(
-	// 				entPlayer.Steamid(player.Steamid),
-	// 			),
-	// 			entCharacter.Version(2),
-	// 		),
-	// 	).
-	// 	Only(ctx)
-	// require.NoError(t, err)
-	// assert.NotEqual(t, uuid.Nil, dbBackup.ID)
-	// assert.NotEqual(t, dbBackup.ID, dbCharacter.ID)
-	// assert.Equal(t, dbBackup.PlayerID, dbCharacter.PlayerID)
-	// assert.Equal(t, 2, dbBackup.Version)
-	// assert.Equal(t, character.Slot, dbBackup.Slot)
-	// assert.Equal(t, character.Size, dbBackup.Size)
-	// assert.Equal(t, character.Data, dbBackup.Data)
-	// assert.Nil(t, dbCharacter.DeletedAt)
+	dbBackup, err := testApp.Client.Character.Query().
+		Where(
+			entCharacter.And(
+				entCharacter.HasPlayerWith(
+					entPlayer.Steamid(player.Steamid),
+				),
+				entCharacter.Version(2),
+			),
+		).
+		Only(ctx)
+	require.NoError(t, err)
+	assert.NotEqual(t, uuid.Nil, dbBackup.ID)
+	assert.NotEqual(t, dbBackup.ID, dbCharacter.ID)
+	assert.Equal(t, dbBackup.PlayerID, dbCharacter.PlayerID)
+	assert.Equal(t, 2, dbBackup.Version)
+	assert.Equal(t, character.Slot, dbBackup.Slot)
+	assert.Equal(t, character.Size, dbBackup.Size)
+	assert.Equal(t, character.Data, dbBackup.Data)
+	assert.Nil(t, dbCharacter.DeletedAt)
 }
 
 func TestCharacterUpdate_With15Backups_RemovesExtraBackups_ReturnsUpdatedCharacter(t *testing.T) {
