@@ -8,10 +8,10 @@ import (
 
 //make public so other packages can create custom responses.
 type Response struct {
-  Code int `json:"code"`
-  Status bool `json:"status"`
-  Error string `json:"error"`
-  Data interface{} `json:"data"`
+	Code int `json:"code"`
+	Status bool `json:"status"`
+	Error string `json:"error"`
+	Data interface{} `json:"data"`
 	IsBanned *bool `json:"isBanned,omitempty"`
 	IsAdmin *bool `json:"isAdmin,omitempty"`
 	
