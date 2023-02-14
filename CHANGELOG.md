@@ -1,9 +1,10 @@
 # Changelog
 
-## v1.1.0
+## v1.2.0
 ### Added
 * Added config options ``BackupTime`` and ``MaxBackups``
   * Customize how max character backups and how often to do character backups
+* Added new endpoint ``PATCH /character/{steamid}/{slot}/rollback/latest`` which restore the character to via latest backup.
 
 ### Changed
 * Refactor the code and the project structure.
