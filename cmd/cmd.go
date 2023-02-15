@@ -453,7 +453,10 @@ func Run(args []string) error {
 	signal.Notify(s, os.Interrupt)
 	<-s
 
-	if err := srv.Shutdown(context.TODO()); err != nil {
+	//wait 5 seconds before timing out
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
 		return err // failure/timeout shutting down the server gracefully
 	}
 
