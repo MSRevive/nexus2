@@ -1,6 +1,6 @@
 module github.com/msrevive/nexus2
 
-go 1.17
+go 1.19
 
 require (
 	entgo.io/ent v0.10.1
