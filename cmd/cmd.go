@@ -450,7 +450,7 @@ func Run(args []string) error {
 	}
 
 	s := make(chan os.Signal, 1)
-	signal.Notify(s, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(s, os.Interrupt)
 	<-s
 
 	if err := srv.Shutdown(context.TODO()); err != nil {
