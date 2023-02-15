@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"time"
 	"errors"
-	"syscall"
 	"os/signal"
 
 	"github.com/msrevive/nexus2/cmd/app"
