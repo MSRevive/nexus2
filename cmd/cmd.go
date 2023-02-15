@@ -360,6 +360,7 @@ func Run(args []string) error {
 		Addr:         apps.Config.Core.Address + ":" + strconv.Itoa(apps.Config.Core.Port),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 		// DefaultTLSConfig sets sane defaults to use when configuring the internal
 		// webserver to listen for public connections.
 		//
