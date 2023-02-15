@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"time"
 	"errors"
+	"syscall"
+	"os/signal"
 
 	"github.com/msrevive/nexus2/cmd/app"
 	"github.com/msrevive/nexus2/internal/controller"
@@ -426,19 +428,33 @@ func Run(args []string) error {
 
 		go func() {
 			if err := http.ListenAndServe(":http", cm.HTTPHandler(nil)); err != nil {
-				apps.LogCore.Errorf("failed to serve autocert server: %v", err)
+				logCore.Errorf("failed to serve autocert server: %v", err)
 			}
 		}()
-
-		logCore.Printf("Listening on: %s TLS", srv.Addr)
-		if err := srv.ListenAndServeTLS("", ""); err != nil {
-			return errors.New(fmt.Sprintf("failed to serve over HTTPS: %v", err))
-		}
+		
+		go func() {
+			logCore.Printf("Listening on: %s TLS", srv.Addr)
+			if err := srv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+				errMsg := errors.New(fmt.Sprintf("failed to serve over HTTPS: %v", err))
+				panic(errMsg)
+			}
+		}()
 	} else {
-		logCore.Printf("Listening on: %s", srv.Addr)
-		if err := srv.ListenAndServe(); err != nil {
-			return errors.New(fmt.Sprintf("failed to serve over HTTP: %v", err))
-		}
+		go func() {
+			logCore.Printf("Listening on: %s", srv.Addr)
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				errMsg := errors.New(fmt.Sprintf("failed to serve over HTTP: %v", err))
+				panic(errMsg)
+			}
+		}()
+	}
+
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, syscall.SIGINT, syscall.SIGTERM)
+	<-s
+
+	if err := srv.Shutdown(context.TODO()); err != nil {
+		return err // failure/timeout shutting down the server gracefully
 	}
 
 	return nil
