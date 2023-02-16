@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.2.1
+### Added
+* Timeout for database in config.
+
+### Fixed
+* Gradefully shutdown server on signal.
+
 ## v1.2.0
 ### Added
 * Added config options ``BackupTime`` and ``MaxBackups``
