@@ -184,7 +184,8 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 
 	char, err := service.New(r.Context(), c.App).CharacterUpdate(uid, updateChar)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		//c.App.LogAPI.Errorln(err)
+		c.App.LogAPI.Debugln(err)
 		response.Error(w, err)
 		return
 	}
