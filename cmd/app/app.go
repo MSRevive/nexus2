@@ -250,8 +250,8 @@ func (a *App) SetupClient() error {
 			os.Remove(oldDbFileName)
 			os.Rename(dbBakFileName, dbFileName)
 		}
-		
-		return errors.New(fmt.Sprintf("failed to migrate DB", err))
+
+		return errors.New(fmt.Sprintf("failed to migrate DB: %v", err))
 	}
 	
 	// happy path cleanup, we don't want to delete old one incase we need to revert suddenly.
