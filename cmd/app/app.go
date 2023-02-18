@@ -82,7 +82,7 @@ func (a *App) SetupClient() error {
 	// if file doesn't exists then no migration is needed.
 	if info, ferr := os.Stat(dbFileName); errors.Is(ferr, os.ErrNotExist) {
 		perm := info.Mode().Perm()
-		if perm&0b110000000 != 0b110000000 {
+		if perm != 0o755 {
 			return errors.New(fmt.Sprintf("incorrect database permission: %s", perm))
 		}
 
