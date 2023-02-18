@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.3.0
+### Added
+* Config options to modify the driver for SQLite.
+  * ``maxidleconns: 0 # Max idle connections``
+  * ``maxopenconns: 0 # Max open connections``
+  * ``connmaxlifetime: "" # Max lifetime of connections.``
+
+### Changed
+* Changed the router to chi instead of gorilla/mux
+  * RiP gorilla/mux since it's no longer maintained.
+* Better error handling for database opening.
+* Switched back to ``encoding/json`` instead of ``go-json``, it didn't offer us any meaningful performance benefit.
+* ``/character/rollback`` endpoints are now in their own routing group. This will break any automated rollback systems.
+
+### Fixed
+* Fixed SQL connection not being closed.
+
 ## v1.2.1
 ### Added
 * Timeout for database in config.
