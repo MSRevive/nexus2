@@ -236,7 +236,7 @@ func (a *App) SetupClient() error {
 		}
 		errLog.Close()
 		if failed > 0 {
-			a.LogCore.Debugln("completed migration with %d errors!\n", failed)
+			a.LogCore.Debugf("completed migration with %d errors!", failed)
 		}
 		a.LogCore.Debugln("Migrated all characters")
 
