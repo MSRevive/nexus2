@@ -2,7 +2,7 @@ package response
 
 import (
 	"net/http"
-	"encoding/json"
+	"github.com/goccy/go-json"
 )
 
 //make public so other packages can create custom responses.

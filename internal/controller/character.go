@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"encoding/json"
+	"github.com/goccy/go-json"
 
 	"github.com/msrevive/nexus2/ent"
 	"github.com/msrevive/nexus2/pkg/helper"
