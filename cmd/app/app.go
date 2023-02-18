@@ -92,7 +92,7 @@ func (a *App) SetupClient() error {
 	}else{
 		perm := info.Mode().Perm()
 		if perm&0b010000000 != 0b010000000 {
-			return errors.New(fmt.Sprintf("incorrect database permission: %s", perm))
+			return errors.New(fmt.Sprintf("incorrect database permission, have: %s", perm))
 		}
 	}
 
