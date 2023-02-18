@@ -7,6 +7,7 @@
   * ``maxopenconns: 0 # Max open connections``
   * ``connmaxlifetime: "" # Max lifetime of connections.``
 * Rate limiting by IP instead.
+* Permission check for database file; make sure the database file has read-write permissions.
 
 ### Changed
 * Changed the router to chi instead of gorilla/mux
