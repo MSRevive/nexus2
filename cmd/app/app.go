@@ -80,7 +80,12 @@ func (a *App) SetupClient() error {
 	}
 
 	// if file doesn't exists then no migration is needed.
-	if _, ferr := os.Stat(dbFileName); errors.Is(ferr, os.ErrNotExist) {
+	if info, ferr := os.Stat(dbFileName); errors.Is(ferr, os.ErrNotExist) {
+		perm := info.Mode().Perm()
+		if perm&0b110000000 != 0b110000000 {
+			return errors.New(fmt.Sprintf("incorrect database permission: %s", perm))
+		}
+
 		drv, err := entd.Open("sqlite3", dbstring)
 		if err != nil {
 			return err
