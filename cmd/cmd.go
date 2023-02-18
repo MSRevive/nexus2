@@ -106,39 +106,43 @@ func Run(args []string) error {
 		fmt.Println("Finished migration, starting server...")
 	}
 
+	if config.Core.Debug {
+		fmt.Warnln("Running in debug! Do not use in production!")
+	}
+
 	//Initiate logging
-	initLoggers("server.log", apps.Config.Log.Dir, apps.Config.Log.Level, apps.Config.Log.ExpireTime)
+	initLoggers("server.log", config.Log.Dir, config.Log.Level, config.Log.ExpireTime)
 	apps.SetupLoggers(logCore, logAPI)
 
 	//Max threads allowed.
-	if apps.Config.Core.MaxThreads != 0 {
-		runtime.GOMAXPROCS(apps.Config.Core.MaxThreads)
+	if config.Core.MaxThreads != 0 {
+		runtime.GOMAXPROCS(config.Core.MaxThreads)
 	}
 
 	//Load json files.
-	if apps.Config.ApiAuth.EnforceIP {
-		logCore.Printf("Loading IP list from %s", apps.Config.ApiAuth.IPListFile)
-		if err := apps.LoadIPList(apps.Config.ApiAuth.IPListFile); err != nil {
+	if config.ApiAuth.EnforceIP {
+		logCore.Printf("Loading IP list from %s", config.ApiAuth.IPListFile)
+		if err := apps.LoadIPList(config.ApiAuth.IPListFile); err != nil {
 			logCore.Warnln("Failed to load IP list.")
 		}
 	}
 
-	if apps.Config.Verify.EnforceMap {
-		logCore.Printf("Loading Map list from %s", apps.Config.Verify.MapListFile)
-		if err := apps.LoadMapList(apps.Config.Verify.MapListFile); err != nil {
+	if config.Verify.EnforceMap {
+		logCore.Printf("Loading Map list from %s", config.Verify.MapListFile)
+		if err := apps.LoadMapList(config.Verify.MapListFile); err != nil {
 			logCore.Warnln("Failed to load Map list.")
 		}
 	}
 
-	if apps.Config.Verify.EnforceBan {
-		logCore.Printf("Loading Ban list from %s", apps.Config.Verify.BanListFile)
-		if err := apps.LoadBanList(apps.Config.Verify.BanListFile); err != nil {
+	if config.Verify.EnforceBan {
+		logCore.Printf("Loading Ban list from %s", config.Verify.BanListFile)
+		if err := apps.LoadBanList(config.Verify.BanListFile); err != nil {
 			logCore.Warnln("Failed to load Ban list.")
 		}
 	}
 
-	logCore.Printf("Loading Admin list from %s", apps.Config.Verify.AdminListFile)
-	if err := apps.LoadAdminList(apps.Config.Verify.AdminListFile); err != nil {
+	logCore.Printf("Loading Admin list from %s", config.Verify.AdminListFile)
+	if err := apps.LoadAdminList(config.Verify.AdminListFile); err != nil {
 		logCore.Warnln("Failed to load Admin list.")
 	}
 
@@ -154,7 +158,7 @@ func Run(args []string) error {
 	router := chi.NewRouter()
 	srv = &http.Server{
 		Handler:      router,
-		Addr:         apps.Config.Core.Address + ":" + strconv.Itoa(apps.Config.Core.Port),
+		Addr:         config.Core.Address + ":" + strconv.Itoa(config.Core.Port),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -188,14 +192,17 @@ func Run(args []string) error {
 	router.Use(mw.PanicRecovery)
 
 	con := controller.New(apps)
-	router.Route(apps.Config.Core.RootPath, func(r chi.Router) {
+	router.Route(config.Core.RootPath, func(r chi.Router) {
 		r.Get("/ping", mw.Lv2Auth(con.GetPing))
 		r.Get("/map/{name}/{hash}", mw.Lv1Auth(con.GetMapVerify))
 		r.Get("/ban/{steamid:[0-9]+}", mw.Lv1Auth(con.GetBanVerify))
 		r.Get("/sc/{hash}", mw.Lv1Auth(con.GetSCVerify))
+		if config.Core.Debug {
+			r.Mount("/debug", cmw.Profiler())
+		}
 	})
 
-	router.Route(apps.Config.Core.RootPath+"/character", func(r chi.Router) {
+	router.Route(config.Core.RootPath+"/character", func(r chi.Router) {
 		r.Get("/", mw.Lv1Auth(con.GetAllCharacters))
 		r.Get("/id/{uid}", mw.Lv1Auth(con.GetCharacterByID))
 		r.Get("/{steamid:[0-9]+}", mw.Lv1Auth(con.GetCharacters))
@@ -209,16 +216,16 @@ func Run(args []string) error {
 		r.Get("/{steamid:[0-9]+}/{slot:[0-9]}/versions", mw.Lv1Auth(con.CharacterVersions))
 	})
 
-	router.Route(apps.Config.Core.RootPath+"/character/rollback", func(r chi.Router) {
+	router.Route(config.Core.RootPath+"/character/rollback", func(r chi.Router) {
 		r.Patch("/{steamid:[0-9]+}/{slot:[0-9]}/{version:[0-9]+}", mw.Lv1Auth(con.RollbackCharacter))
 		r.Patch("/{steamid:[0-9]+}/{slot:[0-9]}/latest", mw.Lv1Auth(con.RollbackLatestCharacter))
 		r.Delete("/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.DeleteRollbacksCharacter))
 	})
 
-	if apps.Config.Cert.Enable {
+	if config.Cert.Enable {
 		cm := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(apps.Config.Cert.Domain),
+			HostPolicy: autocert.HostWhitelist(config.Cert.Domain),
 			Cache:      autocert.DirCache("./runtime/certs"),
 		}
 

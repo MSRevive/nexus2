@@ -18,7 +18,7 @@ type Config struct {
 		MaxThreads int
 		Graceful time.Duration
 		RootPath string
-		DBString string
+		Debug bool
 	}
 	Database struct {
 		Conn string
