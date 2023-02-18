@@ -11,6 +11,11 @@ import (
 )
 
 func GetIP(r *http.Request) string {
+	ip,_,_ := net.SplitHostPort(r.RemoteAddr)
+	return ip
+}
+
+func GetRealIP(r *http.Request) string {
 	ip := r.Header.Get("X_Real_IP")
 	if ip == "" {
 		ips := strings.Split(r.Header.Get("X_Forwarded_For"), ", ")
@@ -18,7 +23,7 @@ func GetIP(r *http.Request) string {
 			return ips[0]
 		}
 
-		ip,_,_ = net.SplitHostPort(r.RemoteAddr)
+		ip,_,_ = net.SplitHostPort(ip)
 		return ip
 	}
 

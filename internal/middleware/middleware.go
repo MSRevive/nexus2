@@ -7,6 +7,7 @@ import (
 
 	"github.com/msrevive/nexus2/cmd/app"
 	"github.com/msrevive/nexus2/pkg/rate"
+	"github.com/msrevive/nexus2/pkg/helper"
 )
 
 type Middleware struct {
@@ -76,7 +77,7 @@ func (mw *Middleware) NoAuth(next http.HandlerFunc) http.HandlerFunc {
 ---*/
 func (mw *Middleware) Lv1Auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ip := r.RemoteAddr
+		ip := helper.GetIP(r)
 		key := r.Header.Get("Authorization")
 		
 		//IP Auth
@@ -104,7 +105,7 @@ func (mw *Middleware) Lv1Auth(next http.HandlerFunc) http.HandlerFunc {
 ---*/
 func (mw *Middleware) Lv2Auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ip := r.RemoteAddr
+		ip := helper.GetIP(r)
 		key := r.Header.Get("Authorization")
 		
 		//IP Auth
