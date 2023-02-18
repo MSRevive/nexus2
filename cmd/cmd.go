@@ -107,7 +107,7 @@ func Run(args []string) error {
 	}
 
 	if config.Core.Debug {
-		fmt.Warnln("Running in debug! Do not use in production!")
+		fmt.Println("!!! Running in debug, do not use in production !!!")
 	}
 
 	//Initiate logging
