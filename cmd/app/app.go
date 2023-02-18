@@ -75,6 +75,10 @@ func (a *App) SetupClient() error {
 	dbBakFileName := dbFileName + ".bak"
 	dbBakConnStr := "file:" + oldDbFileName + "?cache=shared&mode=rwc&_fk=1"
 
+	if (dbstring == "") {
+		return errors.New(fmt.Sprintf("Failed to get database string, have '%s'. Is your config out of date?", dbstring))
+	}
+
 	// if file doesn't exists then no migration is needed.
 	if _, ferr := os.Stat(dbFileName); errors.Is(ferr, os.ErrNotExist) {
 		drv, err := entd.Open("sqlite3", dbstring)
