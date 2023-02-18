@@ -17,16 +17,12 @@ import (
 	"github.com/msrevive/nexus2/cmd/app"
 	"github.com/msrevive/nexus2/internal/controller"
 	"github.com/msrevive/nexus2/internal/middleware"
-	"github.com/msrevive/nexus2/ent"
-	"github.com/msrevive/nexus2/ent/player"
 
 	"github.com/saintwish/auralog"
-	entd "entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/schema"
 	"github.com/gorilla/mux"
-	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
@@ -91,208 +87,6 @@ func initLoggers(filename string, dir string, level string, expire string) {
 	})
 }
 
-func tmpMigration(apps *app.App) {
-	ctx := context.Background()
-	dbstring := apps.Config.Core.DBString
-	dbFileName := "./runtime/chars.db"
-	oldDbFileName := "./runtime/old_chars.db"
-	dbBakFileName := dbFileName + ".bak"
-	dbBakConnStr := "file:" + oldDbFileName + "?cache=shared&mode=rwc&_fk=1"
-	
-	//if file doesn't exists then no migration is needed.
-	if _, ferr := os.Stat(dbFileName); errors.Is(ferr, os.ErrNotExist) {
-		client, err := ent.Open("sqlite3", dbstring)
-		if err != nil {
-			logCore.Fatalf("failed to open connection to sqlite3: %v", err)
-		}
-		if err := client.Schema.Create(ctx, schema.WithAtlas(true)); err != nil {
-			logCore.Fatalf("failed to create schema resources: %v", err)
-		}
-		apps.Client = client
-	} else {
-		err := func() error {
-			/////////////////////////////////////////////////
-			/////////// Check if migration is required
-			// 1. Check if the 'players' table exists
-			sqlClient, err := entd.Open("sqlite3", dbFileName)
-			if err != nil {
-				logCore.Errorf("failed to open connection to sqlite3: %v", err)
-				return err
-			}
-	
-			rows, err := sqlClient.DB().Query("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='players';")
-			if err != nil {
-				logCore.Errorf("failed to get table: %v", err)
-				return err
-			}
-	
-			var count int64
-			for rows.Next() {
-				rows.Scan(&count)
-			}
-			if count > 0 {
-				logCore.Println("DB already migrated")
-				rows.Close()
-	
-				// Set the connection as normal
-				client, err := ent.Open("sqlite3", dbstring)
-				if err != nil {
-					logCore.Errorf("failed to open connection to sqlite3: %v", err)
-					return err
-				}
-				if err := client.Schema.Create(ctx, schema.WithAtlas(true)); err != nil {
-					logCore.Errorf("failed to create schema resources: %v", err)
-					return err
-				}
-				apps.Client = client
-	
-				return nil
-			}
-			sqlClient.Close()
-	
-			logCore.Println("DB not migrated")
-	
-			/////////////////////////////////////////////////
-			/////////// Prepare DB files
-			// 1. Copy current DB file (prevents irreversible changes)
-			// 2. Rename current DB file (prevents conflicts with new DB)
-			currentDbFile, err := os.Open(dbFileName)
-			if err != nil {
-				logCore.Errorf("failed to open current DB file: %v", err)
-				return err
-			}
-	
-			backupDbFile, err := os.Create(dbBakFileName)
-			if err != nil {
-				logCore.Errorf("failed to create backup DB file: %v", err)
-				return err
-			}
-	
-			_, err = io.Copy(backupDbFile, currentDbFile)
-			if err != nil {
-				logCore.Errorf("failed to backup DB file: %v", err)
-				return err
-			}
-			currentDbFile.Close()
-			backupDbFile.Close()
-	
-			if err := os.Rename(dbFileName, oldDbFileName); err != nil {
-				logCore.Errorf("failed to rename original DB file: %v", err)
-				return err
-			}
-			logCore.Println("Backed up DB file")
-	
-			/////////////////////////////////////////////////
-			/////////// Prepare DB schema
-			// 1. Rename 'characters' table (allows the use of ORM)
-			sqlClient, err = entd.Open("sqlite3", dbBakConnStr)
-			if err != nil {
-				logCore.Errorf("failed to open connection to old sqlite3: %v", err)
-				return err
-			}
-			logCore.Println("Connected to old DB")
-	
-			_, err = sqlClient.DB().Exec("ALTER TABLE characters RENAME TO old_characters;")
-			if err != nil {
-				logCore.Errorf("failed to rename old table: %v", err)
-				return err
-			}
-			sqlClient.Close()
-			logCore.Println("Renamed table")
-	
-			/////////////////////////////////////////////////
-			/////////// Collect old data
-			// 1. Load all characters into memory using ORM
-			client, err := ent.Open("sqlite3", dbBakConnStr)
-			if err != nil {
-				logCore.Errorf("failed to open connection to old sqlite3: %v", err)
-				return err
-			}
-			logCore.Println("Connected to old db")
-	
-			oldCharacters, err := client.DeprecatedCharacter.Query().All(ctx)
-			if err != nil {
-				logCore.Errorf("failed to get all old characters: %v", err)
-				return err
-			}
-			client.Close()
-			logCore.Println("Loaded all characters")
-	
-			/////////////////////////////////////////////////
-			/////////// Migrate characters to new DB
-			// 1. Connect to new DB (creating file in the process)
-			// 2. Loop through old characters
-			// 3. Convert old character to new Player + Versioned Character
-			// 4. Log any conversion errors
-			client, err = ent.Open("sqlite3", dbstring)
-			if err != nil {
-				logCore.Errorf("failed to open connection to sqlite3: %v", err)
-				return err
-			}
-			if err := client.Schema.Create(ctx, schema.WithAtlas(true)); err != nil {
-				logCore.Errorf("failed to create schema resources: %v", err)
-				return err
-			}
-			apps.Client = client
-			logCore.Println("connected to new db")
-	
-			errLog, err := os.Create("./runtime/logs/migration_errors.log")
-			if err != nil {
-				logCore.Errorf("failed to create migration error log: %v", err)
-				return err
-			}
-	
-			cLen := len(oldCharacters)
-			var failed int
-			for i, c := range oldCharacters {
-				fmt.Printf("\033[1A\033[Kmigrating %d of %d; steamId='%s'\n", i+1, cLen, c.Steamid)
-				player, err := client.Player.Query().Where(player.Steamid(c.Steamid)).Only(ctx)
-				if ent.IsNotFound(err) {
-					player, err = client.Player.Create().
-						SetSteamid(c.Steamid).
-						Save(ctx)
-					if err != nil {
-						logCore.Errorf("failed to save Player: %v", err)
-						return err
-					}
-				}
-				_, err = client.Character.Create().
-					SetID(c.ID).
-					SetPlayer(player).
-					SetVersion(1).
-					SetSlot(c.Slot).
-					SetSize(c.Size).
-					SetData(c.Data).
-					Save(ctx)
-				if err != nil {
-					failed++
-					errLog.WriteString(fmt.Sprintf("failed to save character! %v\n\t%+v\n", err, c))
-				}
-			}
-			errLog.Close()
-			if failed > 0 {
-				logCore.Printf("completed migration with %d errors!\n", failed)
-			}
-			logCore.Println("Migrated all characters")
-	
-			return nil
-		}()
-		
-		if err != nil {
-			// Error detected, revert db changes if possible
-			if _, err := os.Stat(dbBakFileName); err == nil {
-				os.Remove(dbFileName)
-				os.Remove(oldDbFileName)
-				os.Rename(dbBakFileName, dbFileName)
-			}
-			logCore.Fatalln("failed to migrate DB")
-		}
-		
-		// happy path cleanup, we don't want to delete old one incase we need to revert suddenly.
-		os.Remove(dbBakFileName)
-	}
-}
-
 func Run(args []string) error {
 	flgs := doFlags(args)
 
@@ -349,7 +143,9 @@ func Run(args []string) error {
 
 	//Connect database.
 	logCore.Println("Connecting to database")
-	tmpMigration(apps)
+	if err := apps.SetupClient(); err != nil {
+		return err
+	}
 	defer apps.Client.Close()
 
 	//variables for web server

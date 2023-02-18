@@ -19,6 +19,12 @@ type Config struct {
 		RootPath string
 		DBString string
 	}
+	Database struct {
+		Conn string
+		MaxIdleConns int
+		MaxOpenConns int
+		ConnMaxLifetime string
+	}
 	RateLimit struct {
 		Enable bool
 		MaxRequests int
