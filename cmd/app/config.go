@@ -69,10 +69,6 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	switch filepath.Ext(path) {
-	case ".toml", ".ini":
-		if err := ini.MapTo(&cfg, path); err != nil {
-			return nil, err
-		}
 	case ".yaml", ".json", ".yml":
 		data,err := os.ReadFile(path)
 		if data != nil {
@@ -82,11 +78,17 @@ func LoadConfig(path string) (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
+		return &cfg, nil
+	case ".toml", ".ini":
+		if err := ini.MapTo(&cfg, path); err != nil {
+			return nil, err
+		}
+		return &cfg, nil
 	default:
 		return nil, errors.New("unsupported config type")
 	}
 
-	return &cfg, nil
+	return nil, errors.New(fmt.Sprintf("Failed to read config file: %s", path))
 }
 
 func (a *App) MigrateConfig() error {
