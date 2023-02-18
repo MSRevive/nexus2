@@ -191,7 +191,7 @@ func Run(args []string) error {
 
 	con := controller.New(apps)
 	router.Route(apps.Config.Core.RootPath, func(r chi.Router) {
-		r.Get("/ping/", mw.Lv2Auth(con.GetPing))
+		r.Get("/ping", mw.Lv2Auth(con.GetPing))
 		r.Get("/map/{name}/{hash}", mw.Lv1Auth(con.GetMapVerify))
 		r.Get("/ban/{steamid:[0-9]+}", mw.Lv1Auth(con.GetBanVerify))
 		r.Get("/sc/{hash}", mw.Lv1Auth(con.GetSCVerify))
