@@ -11,7 +11,6 @@
 * Changed the router to chi instead of gorilla/mux
   * RiP gorilla/mux since it's no longer maintained.
 * Better error handling for database opening.
-* Switched back to ``encoding/json`` instead of ``go-json``, it didn't offer us any meaningful performance benefit.
 * ``/character/rollback`` endpoints are now in their own routing group. This will break any automated rollback systems.
 
 ### Fixed

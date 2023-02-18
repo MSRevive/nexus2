@@ -183,11 +183,9 @@ func Run(args []string) error {
 	//middleware
 	mw := middleware.New(apps)
 	router.Use(cmw.RealIP)
-	router.Use(mw.PanicRecovery)
+	router.Use(cmw.NoCache)
 	router.Use(mw.Log)
-	if apps.Config.RateLimit.Enable {
-		router.Use(mw.RateLimit)
-	}
+	router.Use(mw.PanicRecovery)
 
 	con := controller.New(apps)
 	router.Route(apps.Config.Core.RootPath, func(r chi.Router) {
