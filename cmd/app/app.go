@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"io"
 	"time"
+	"encoding/json"
 	
 	"github.com/msrevive/nexus2/ent"
 	"github.com/msrevive/nexus2/ent/player"
 
 	"github.com/saintwish/auralog"
-	"github.com/goccy/go-json"
 	entd "entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/schema"
 )
