@@ -4,9 +4,8 @@ go 1.19
 
 require (
 	entgo.io/ent v0.10.1
-	github.com/goccy/go-json v0.10.0
+	github.com/go-chi/chi/v5 v5.0.8
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/mux v1.8.0
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/saintwish/auralog v1.0.5
 	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942
@@ -20,7 +19,6 @@ require (
 	github.com/agext/levenshtein v1.2.1 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/go-chi/chi/v5 v5.0.8 // indirect
 	github.com/go-openapi/inflect v0.19.0 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/hashicorp/hcl/v2 v2.10.0 // indirect
