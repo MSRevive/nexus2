@@ -132,6 +132,7 @@ func tmpMigration(apps *app.App) {
 			}
 			if count > 0 {
 				logCore.Println("DB already migrated")
+				rows.Close()
 	
 				// Set the connection as normal
 				client, err := ent.Open("sqlite3", dbstring)

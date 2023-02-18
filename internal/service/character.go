@@ -191,13 +191,20 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 		}
 		timeCheck := latest.UpdatedAt.Add(backupTime)
 		if (current.UpdatedAt.After(timeCheck) || latest.Version == 1) {
-			_, err = s.client.Character.Create().
-				SetPlayerID(current.PlayerID).
-				SetVersion(latest.Version + 1).
-				SetSlot(current.Slot).
-				SetSize(current.Size).
-				SetData(current.Data).
-				Save(s.ctx)
+			go func() error {
+				_, err = s.client.Character.Create().
+					SetPlayerID(current.PlayerID).
+					SetVersion(latest.Version + 1).
+					SetSlot(current.Slot).
+					SetSize(current.Size).
+					SetData(current.Data).
+					Save(s.ctx)
+				if err != nil {
+					return err
+				}
+				return nil
+			}()
+
 			if err != nil {
 				return err
 			}
