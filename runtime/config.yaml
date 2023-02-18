@@ -4,11 +4,6 @@ core:
   maxthreads: 0
   graceful: 15 # Request timeout in minutes
   rootpath: /api/v1
-database:
-  conn: file:./runtime/chars.db?cache=shared&mode=rwc&_fk=1&_busy_timeout=5000 # file:ent?cache=shared&mode=memory&_fk=1
-  maxidleconns: 0 # Max idle connections
-  maxopenconns: 0 # Max open connections
-  connmaxlifetime: "" # Max lifetime of connections.
 ratelimit:
   enable: false
   maxrequests: 500 # Max amount of requests in time range of MaxAge
