@@ -187,6 +187,7 @@ func Run(args []string) error {
 	//middleware
 	mw := middleware.New(apps)
 	router.Use(cmw.RealIP)
+	router.Use(mw.Headers)
 	router.Use(cmw.NoCache)
 	router.Use(mw.Log)
 	router.Use(mw.PanicRecovery)

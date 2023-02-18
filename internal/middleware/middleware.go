@@ -18,9 +18,20 @@ func New(a *app.App) *Middleware {
 	}
 }
 
+func (m *Middleware) Headers(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
+		// Maximum age allowable under Chromium v76 is 2 hours, so just use that since
+		// anything higher will be ignored (even if other browsers do allow higher values).
+		//
+		// @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age#Directives
+		w.Header().Set("Access-Control-Max-Age", "7200")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (m *Middleware) Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		setControlHeaders(w) //best place to set control headers?
 		start := time.Now()
 		next.ServeHTTP(w, r)
 		m.app.LogAPI.Printf("%s %s from %s (%v)", r.Method, r.RequestURI, r.RemoteAddr, time.Since(start))
