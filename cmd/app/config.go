@@ -2,7 +2,6 @@ package app
 
 import (
 	"os"
-	"time"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -16,7 +15,6 @@ type Config struct {
 		Address string
 		Port int
 		MaxThreads int
-		Graceful time.Duration
 		RootPath string
 		Debug bool
 	}
@@ -27,9 +25,8 @@ type Config struct {
 		ConnMaxLifetime string
 	}
 	RateLimit struct {
-		Enable bool
 		MaxRequests int
-		MaxAge time.Duration
+		MaxAge string
 	}
 	Cert struct {
 		Enable bool

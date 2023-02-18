@@ -22,6 +22,17 @@ func (r *Response) SendJson() {
 	json.NewEncoder(r.w).Encode(r)
 }
 
+func TooManyRequests(w http.ResponseWriter) {
+	resp := Response{
+		Status: false,
+		Code: http.StatusTooManyRequests,
+		Error: "Too many requests",
+		Data: nil,
+		w: w,
+	}
+	resp.SendJson()
+}
+
 func OK(w http.ResponseWriter, data interface{}) {
 	resp := Response{
 		Status: true,

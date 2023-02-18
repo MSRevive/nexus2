@@ -17,6 +17,7 @@ import (
 	"github.com/msrevive/nexus2/cmd/app"
 	"github.com/msrevive/nexus2/internal/controller"
 	"github.com/msrevive/nexus2/internal/middleware"
+	"github.com/msrevive/nexus2/pkg/response"
 
 	"github.com/saintwish/auralog"
 	"github.com/go-chi/chi/v5"
@@ -24,6 +25,7 @@ import (
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/go-chi/httprate"
 )
 
 var (
@@ -189,6 +191,18 @@ func Run(args []string) error {
 	router.Use(cmw.RealIP)
 	router.Use(mw.Headers)
 	router.Use(cmw.NoCache)
+	if config.RateLimit.MaxRequests > 0 {
+		if dur,err := time.ParseDuration(config.RateLimit.MaxAge); err != nil {
+			router.Use(httprate.Limit(
+				config.RateLimit.MaxRequests,
+				dur,
+				httprate.WithKeyFuncs(httprate.KeyByIP),
+				httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
+					response.TooManyRequests(w)
+				})),
+			)
+		}
+	}
 	router.Use(mw.Log)
 	router.Use(mw.PanicRecovery)
 
