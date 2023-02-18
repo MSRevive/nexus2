@@ -5,7 +5,6 @@ import (
 	"net/http"
 	
 	"github.com/msrevive/nexus2/pkg/response"
-	"github.com/msrevive/nexus2/pkg/helper"
 	
 	"github.com/go-chi/chi/v5"
 )
@@ -29,7 +28,7 @@ func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	c.App.LogAPI.Warnf("%s failed map (%s) verfication.", helper.GetIP(r), name)
+	c.App.LogAPI.Warnf("%s failed map (%s) verfication.", r.RemoteAddr, name)
 	response.Result(w, false)
 	return
 }
@@ -49,7 +48,7 @@ func (c *controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	c.App.LogAPI.Warnf("%s: player (%s) is banned!", helper.GetIP(r), steamid)
+	c.App.LogAPI.Warnf("%s: player (%s) is banned!", r.RemoteAddr, steamid)
 	response.Result(w, false)
 	return
 }
@@ -72,7 +71,7 @@ func (c *controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	c.App.LogAPI.Warnf("%s failed SC check!", helper.GetIP(r))
+	c.App.LogAPI.Warnf("%s failed SC check!", r.RemoteAddr)
 	response.Result(w, false)
 }
 

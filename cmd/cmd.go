@@ -20,6 +20,7 @@ import (
 
 	"github.com/saintwish/auralog"
 	"github.com/go-chi/chi/v5"
+	cmw "github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	_ "github.com/mattn/go-sqlite3"
@@ -181,6 +182,7 @@ func Run(args []string) error {
 
 	//middleware
 	mw := middleware.New(apps)
+	router.Use(cmw.RealIP)
 	router.Use(mw.PanicRecovery)
 	router.Use(mw.Log)
 	if apps.Config.RateLimit.Enable {

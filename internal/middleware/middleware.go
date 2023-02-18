@@ -7,7 +7,6 @@ import (
 
 	"github.com/msrevive/nexus2/cmd/app"
 	"github.com/msrevive/nexus2/pkg/rate"
-	"github.com/msrevive/nexus2/pkg/helper"
 )
 
 type Middleware struct {
@@ -26,7 +25,7 @@ func (m *Middleware) Log(next http.Handler) http.Handler {
 		setControlHeaders(w) //best place to set control headers?
 		start := time.Now()
 		next.ServeHTTP(w, r)
-		m.app.LogAPI.Printf("%s %s from %s (%v)", r.Method, r.RequestURI, helper.GetIP(r), time.Since(start))
+		m.app.LogAPI.Printf("%s %s from %s (%v)", r.Method, r.RequestURI, r.RemoteAddr, time.Since(start))
 	})
 }
 
@@ -77,7 +76,7 @@ func (mw *Middleware) NoAuth(next http.HandlerFunc) http.HandlerFunc {
 ---*/
 func (mw *Middleware) Lv1Auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ip := helper.GetIP(r)
+		ip := r.RemoteAddr
 		key := r.Header.Get("Authorization")
 		
 		//IP Auth
@@ -105,7 +104,7 @@ func (mw *Middleware) Lv1Auth(next http.HandlerFunc) http.HandlerFunc {
 ---*/
 func (mw *Middleware) Lv2Auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ip := helper.GetIP(r)
+		ip := r.RemoteAddr
 		key := r.Header.Get("Authorization")
 		
 		//IP Auth
