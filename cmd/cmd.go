@@ -190,7 +190,6 @@ func Run(args []string) error {
 	mw := middleware.New(apps)
 	router.Use(cmw.RealIP)
 	router.Use(mw.Headers)
-	router.Use(cmw.NoCache)
 	if config.RateLimit.MaxRequests > 0 {
 		if dur,err := time.ParseDuration(config.RateLimit.MaxAge); err != nil {
 			router.Use(httprate.Limit(
