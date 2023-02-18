@@ -1,19 +1,19 @@
 package controller
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 
-	"github.com/goccy/go-json"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/msrevive/nexus2/ent"
 	"github.com/msrevive/nexus2/pkg/helper"
 	"github.com/msrevive/nexus2/pkg/response"
 	"github.com/msrevive/nexus2/internal/service"
+
+	"github.com/goccy/go-json"
+	"github.com/google/uuid"
+	"github.com/go-chi/chi/v5"
 )
 
 //GET /character/
@@ -30,8 +30,7 @@ func (c *controller) GetAllCharacters(w http.ResponseWriter, r *http.Request) {
 
 //GET /character/{steamid}
 func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	steamid := vars["steamid"]
+	steamid := chi.URLParam(r, "steamid")
 	var isBanned bool = false
 	var isAdmin bool = false
 
@@ -55,9 +54,8 @@ func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 
 //GET /character/{steamid}/{slot}
 func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	steamid := vars["steamid"]
-	slot, err := strconv.Atoi(vars["slot"])
+	steamid := chi.URLParam(r, "steamid")
+	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
 		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
@@ -86,9 +84,8 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 
 //GET /character/export/{steamid}/{slot}
 func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	steamid := vars["steamid"]
-	slot, err := strconv.Atoi(vars["slot"])
+	steamid := chi.URLParam(r, "steamid")
+	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
 		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
@@ -116,8 +113,7 @@ func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
 
 //GET /character/id/{uid}
 func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	uid, err := uuid.Parse(vars["uid"])
+	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
 		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
@@ -166,8 +162,7 @@ func (c *controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 
 //PUT /character/{uid}
 func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	uid, err := uuid.Parse(vars["uid"])
+	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
 		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
@@ -195,8 +190,7 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 
 //DELETE /character/{uid}
 func (c *controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	uid, err := uuid.Parse(vars["uid"])
+	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
 		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
@@ -215,8 +209,7 @@ func (c *controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 
 //PATCH /character/{uid}/restore
 func (c *controller) RestoreCharacter(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	uid, err := uuid.Parse(vars["uid"])
+	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
 		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
@@ -235,16 +228,9 @@ func (c *controller) RestoreCharacter(w http.ResponseWriter, r *http.Request) {
 
 //GET /character/{steamid}/{slot}/versions
 func (c *controller) CharacterVersions(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	sid, ok := vars["steamid"]
-	if !ok {
-		err := errors.New("steamid not found")
-		c.App.LogAPI.Errorln(err)
-		response.BadRequest(w, err)
-		return
-	}
+	sid := chi.URLParam(r, "steamid")
 
-	slot, err := strconv.Atoi(vars["slot"])
+	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
 		c.App.LogAPI.Errorln(err)
 		response.BadRequest(w, err)
@@ -259,95 +245,4 @@ func (c *controller) CharacterVersions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.OK(w, char)
-}
-
-//PATCH /character/{steamid}/{slot}/rollback/{version}
-func (c *controller) RollbackCharacter(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	sid, ok := vars["steamid"]
-	if !ok {
-		err := errors.New("steamid not found")
-		c.App.LogAPI.Errorln(err)
-		response.BadRequest(w, err)
-		return
-	}
-
-	slot, err := strconv.Atoi(vars["slot"])
-	if err != nil {
-		c.App.LogAPI.Errorln(err)
-		response.BadRequest(w, err)
-		return
-	}
-
-	version, err := strconv.Atoi(vars["version"])
-	if err != nil {
-		c.App.LogAPI.Errorln(err)
-		response.BadRequest(w, err)
-		return
-	}
-
-	char, err := service.New(r.Context(), c.App).CharacterRollback(sid, slot, version)
-	if err != nil {
-		c.App.LogAPI.Errorln(err)
-		response.Error(w, err)
-		return
-	}
-
-	response.OK(w, char)
-}
-
-//PATCH /character/{steamid}/{slot}/rollback/latest
-func (c *controller) RollbackLatestCharacter(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	sid, ok := vars["steamid"]
-	if !ok {
-		err := errors.New("steamid not found")
-		c.App.LogAPI.Errorln(err)
-		response.BadRequest(w, err)
-		return
-	}
-
-	slot, err := strconv.Atoi(vars["slot"])
-	if err != nil {
-		c.App.LogAPI.Errorln(err)
-		response.BadRequest(w, err)
-		return
-	}
-
-	char, err := service.New(r.Context(), c.App).CharacterRollbackLatest(sid, slot)
-	if err != nil {
-		c.App.LogAPI.Errorln(err)
-		response.Error(w, err)
-		return
-	}
-
-	response.OK(w, char)
-}
-
-//DELETE /character/{steamid}/{slot}
-func (c *controller) DeleteRollbacksCharacter(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	sid, ok := vars["steamid"]
-	if !ok {
-		err := errors.New("steamid not found")
-		c.App.LogAPI.Errorln(err)
-		response.BadRequest(w, err)
-		return
-	}
-
-	slot, err := strconv.Atoi(vars["slot"])
-	if err != nil {
-		c.App.LogAPI.Errorln(err)
-		response.BadRequest(w, err)
-		return
-	}
-
-	err = service.New(r.Context(), c.App).CharacterDeleteRollbacks(sid, slot)
-	if err != nil {
-		c.App.LogAPI.Errorln(err)
-		response.Error(w, err)
-		return
-	}
-
-	response.OK(w, sid)
 }

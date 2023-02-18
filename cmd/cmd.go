@@ -19,7 +19,7 @@ import (
 	"github.com/msrevive/nexus2/internal/middleware"
 
 	"github.com/saintwish/auralog"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	_ "github.com/mattn/go-sqlite3"
@@ -150,7 +150,7 @@ func Run(args []string) error {
 
 	//variables for web server
 	var srv *http.Server
-	router := mux.NewRouter()
+	router := chi.NewRouter()
 	srv = &http.Server{
 		Handler:      router,
 		Addr:         apps.Config.Core.Address + ":" + strconv.Itoa(apps.Config.Core.Port),
@@ -181,35 +181,39 @@ func Run(args []string) error {
 
 	//middleware
 	mw := middleware.New(apps)
-
 	router.Use(mw.PanicRecovery)
 	router.Use(mw.Log)
 	if apps.Config.RateLimit.Enable {
 		router.Use(mw.RateLimit)
 	}
 
-	//api routes
-	apic := controller.New(router.PathPrefix(apps.Config.Core.RootPath).Subrouter(), apps)
-	apic.R.HandleFunc("/ping", mw.Lv2Auth(apic.GetPing)).Methods(http.MethodGet)
-	apic.R.HandleFunc("/map/{name}/{hash}", mw.Lv1Auth(apic.GetMapVerify)).Methods(http.MethodGet)
-	apic.R.HandleFunc("/ban/{steamid:[0-9]+}", mw.Lv1Auth(apic.GetBanVerify)).Methods(http.MethodGet)
-	apic.R.HandleFunc("/sc/{hash}", mw.Lv1Auth(apic.GetSCVerify)).Methods(http.MethodGet)
+	con := controller.New(apps)
+	router.Route(apps.Config.Core.RootPath, func(r chi.Router) {
+		r.Get("/ping/", mw.Lv2Auth(con.GetPing))
+		r.Get("/map/{name}/{hash}", mw.Lv1Auth(con.GetMapVerify))
+		r.Get("/ban/{steamid:[0-9]+}", mw.Lv1Auth(con.GetBanVerify))
+		r.Get("/sc/{hash}", mw.Lv1Auth(con.GetSCVerify))
+	})
 
-	//character routes
-	charc := controller.New(router.PathPrefix(apps.Config.Core.RootPath + "/character").Subrouter(), apps)
-	charc.R.HandleFunc("/", mw.Lv1Auth(charc.GetAllCharacters)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/id/{uid}", mw.Lv1Auth(charc.GetCharacterByID)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/{steamid:[0-9]+}", mw.Lv1Auth(charc.GetCharacters)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(charc.GetCharacter)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/export/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(charc.ExportCharacter)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/", mw.Lv2Auth(charc.PostCharacter)).Methods(http.MethodPost)
-	charc.R.HandleFunc("/{uid}", mw.Lv2Auth(charc.PutCharacter)).Methods(http.MethodPut)
-	charc.R.HandleFunc("/{uid}", mw.Lv2Auth(charc.DeleteCharacter)).Methods(http.MethodDelete)
-	charc.R.HandleFunc("/{uid}/restore", mw.Lv1Auth(charc.RestoreCharacter)).Methods(http.MethodPatch)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/versions", mw.Lv1Auth(charc.CharacterVersions)).Methods(http.MethodGet)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/{version:[0-9]+}", mw.Lv1Auth(charc.RollbackCharacter)).Methods(http.MethodPatch)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback/latest", mw.Lv1Auth(charc.RollbackLatestCharacter)).Methods(http.MethodPatch)
-	charc.R.HandleFunc("/{steamid:[0-9]+}/{slot:[0-9]}/rollback", mw.Lv1Auth(charc.DeleteRollbacksCharacter)).Methods(http.MethodDelete)
+	router.Route(apps.Config.Core.RootPath+"/character", func(r chi.Router) {
+		r.Get("/", mw.Lv1Auth(con.GetAllCharacters))
+		r.Get("/id/{uid}", mw.Lv1Auth(con.GetCharacterByID))
+		r.Get("/{steamid:[0-9]+}", mw.Lv1Auth(con.GetCharacters))
+		r.Get("/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.GetCharacter))
+		r.Get("/export/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.ExportCharacter))
+
+		r.Post("/", mw.Lv2Auth(con.PostCharacter))
+		r.Put("/{uid}", mw.Lv2Auth(con.PutCharacter))
+		r.Delete("/{uid}", mw.Lv2Auth(con.DeleteCharacter))
+		r.Patch("/{uid}/restore", mw.Lv1Auth(con.RestoreCharacter))
+		r.Get("/{steamid:[0-9]+}/{slot:[0-9]}/versions", mw.Lv1Auth(con.CharacterVersions))
+	})
+
+	router.Route(apps.Config.Core.RootPath+"/character/rollback", func(r chi.Router) {
+		r.Patch("/{steamid:[0-9]+}/{slot:[0-9]}/{version:[0-9]+}", mw.Lv1Auth(con.RollbackCharacter))
+		r.Patch("/{steamid:[0-9]+}/{slot:[0-9]}/latest", mw.Lv1Auth(con.RollbackLatestCharacter))
+		r.Delete("/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.DeleteRollbacksCharacter))
+	})
 
 	if apps.Config.Cert.Enable {
 		cm := autocert.Manager{

@@ -7,7 +7,7 @@ import (
 	"github.com/msrevive/nexus2/pkg/response"
 	"github.com/msrevive/nexus2/pkg/helper"
 	
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 )
 
 //GET map/{name}/{hash}
@@ -17,9 +17,8 @@ func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	vars := mux.Vars(r)
-	name := vars["name"]
-	hash, err := strconv.ParseUint(vars["hash"], 10, 32)
+	name := chi.URLParam(r, "name")
+	hash, err := strconv.ParseUint(chi.URLParam(r, "hash"), 10, 32)
 	if err != nil {
 		response.BadRequest(w, err)
 		return
@@ -43,8 +42,7 @@ func (c *controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	vars := mux.Vars(r)
-	steamid := vars["steamid"]
+	steamid := chi.URLParam(r, "steamid")
 	
 	if _,ok := c.App.BanList[steamid]; ok {
 		response.Result(w, true)
@@ -63,8 +61,7 @@ func (c *controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	vars := mux.Vars(r)
-	hash, err := strconv.ParseUint(vars["hash"], 10, 32)
+	hash, err := strconv.ParseUint(chi.URLParam(r, "hash"), 10, 32)
 	if err != nil {
 		response.BadRequest(w, err)
 		return
