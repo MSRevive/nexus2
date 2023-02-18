@@ -3,16 +3,13 @@ package middleware
 import (
 	"time"
 	"net/http"
-	"runtime/debug"
 
 	"github.com/msrevive/nexus2/cmd/app"
-	"github.com/msrevive/nexus2/pkg/rate"
 	"github.com/msrevive/nexus2/pkg/helper"
 )
 
 type Middleware struct {
 	app *app.App
-	limiter *rate.Limiter
 }
 
 func New(a *app.App) *Middleware {
@@ -33,33 +30,32 @@ func (m *Middleware) Log(next http.Handler) http.Handler {
 func (m *Middleware) PanicRecovery(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
-		if panic := recover(); panic != nil {
-			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-			m.app.LogAPI.Errorf("Fatal Error: %s", panic.(error).Error())
-			m.app.LogAPI.Errorf(string(debug.Stack()))
-		}
+			if p := recover(); p != nil {
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				m.app.LogAPI.Tracef("Fatal Error: %+v", p)
+			}
 		}()
 		
 		next.ServeHTTP(w, r)
 	})
 }
 
-func (m *Middleware) RateLimit(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if m.limiter == nil {
-		m.limiter = rate.NewLimiter(1, m.app.Config.RateLimit.MaxRequests, m.app.Config.RateLimit.MaxAge, 0)
-		}
+// func (m *Middleware) RateLimit(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		if m.limiter == nil {
+// 		m.limiter = rate.NewLimiter(1, m.app.Config.RateLimit.MaxRequests, m.app.Config.RateLimit.MaxAge, 0)
+// 		}
 
-		m.limiter.CheckTime()
-		if m.limiter.IsAllowed() == false {
-			m.app.LogAPI.Println("Received too many requests.")
-			http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
-			return
-		}
+// 		m.limiter.CheckTime()
+// 		if m.limiter.IsAllowed() == false {
+// 			m.app.LogAPI.Println("Received too many requests.")
+// 			http.Error(w, http.StatusText(429), http.StatusTooManyRequests)
+// 			return
+// 		}
 		
-		next.ServeHTTP(w, r)
-	})
-}
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
 
 /* no authentication 
   Does not do any authentication
