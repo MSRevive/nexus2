@@ -8,15 +8,18 @@
   * ``connmaxlifetime: "" # Max lifetime of connections.``
 * Rate limiting by IP instead.
 * Permission check for database file; make sure the database file has read-write permissions.
+* New endpoint to restore by SteamID instead of character UID.
 
 ### Changed
 * Changed the router to chi instead of gorilla/mux
   * RiP gorilla/mux since it's no longer maintained.
 * Better error handling for database opening.
 * ``/character/rollback`` endpoints are now in their own routing group. This will break any automated rollback systems.
+* Moved versions and restore endpoints to be under via ``/character/rollback`` routing group.
 
 ### Fixed
 * Fixed SQL connection not being closed.
+* Fixed slot being wrong for generated character file.
 
 ## v1.2.1
 ### Added
