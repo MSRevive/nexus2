@@ -308,7 +308,7 @@ func (s *service) CharacterRestoreBySteamID(steamid string, slot int) (*ent.Depr
 	target, err := s.client.Character.Query().
 		Where(
 			character.And(
-				character.HasPlayerWith(player.Steamid(sid)),
+				character.HasPlayerWith(player.Steamid(steamid)),
 				character.Slot(slot),
 				character.Version(1),
 			),
