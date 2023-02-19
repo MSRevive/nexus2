@@ -226,6 +226,27 @@ func (c *controller) RestoreCharacter(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, char)
 }
 
+//PATCH /character/{steamid}/{slot}/restore
+func (c *controller) RestoreCharacterBySteamID(w http.ResponseWriter, r *http.Request) {
+	sid := chi.URLParam(r, "steamid")
+
+	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
+	if err != nil {
+		c.App.LogAPI.Errorln(err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	char, err := service.New(r.Context(), c.App).CharacterRestoreBySteamID(sid, slot)
+	if err != nil {
+		c.App.LogAPI.Errorln(err)
+		response.Error(w, err)
+		return
+	}
+
+	response.OK(w, char)
+}
+
 //GET /character/{steamid}/{slot}/versions
 func (c *controller) CharacterVersions(w http.ResponseWriter, r *http.Request) {
 	sid := chi.URLParam(r, "steamid")

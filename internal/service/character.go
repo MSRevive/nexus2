@@ -303,6 +303,24 @@ func (s *service) CharacterRestore(uid uuid.UUID) (*ent.DeprecatedCharacter, err
 	return charToDepChar(player.Steamid, char), nil
 }
 
+// Shortcut to restore a deleted character by SteamID and slot.
+func (s *service) CharacterRestoreBySteamID(steamid string, slot int) (*ent.DeprecatedCharacter, error) {
+	target, err := s.client.Character.Query().
+		Where(
+			character.And(
+				character.HasPlayerWith(player.Steamid(sid)),
+				character.Slot(slot),
+				character.Version(1),
+			),
+		).
+		Only(s.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.CharacterRestore(target.ID)
+}
+
 // CharacterVersions returns the latest Character version, and all of its backups,
 // ordered by the updated_at timestamp in descending order (current version -> oldest version)
 func (s *service) CharacterVersions(sid string, slot int) ([]*ent.Character, error) {
