@@ -226,11 +226,14 @@ func Run(args []string) error {
 		r.Post("/", mw.Lv2Auth(con.PostCharacter))
 		r.Put("/{uid}", mw.Lv2Auth(con.PutCharacter))
 		r.Delete("/{uid}", mw.Lv2Auth(con.DeleteCharacter))
-		r.Patch("/{uid}/restore", mw.Lv1Auth(con.RestoreCharacter))
-		r.Get("/{steamid:[0-9]+}/{slot:[0-9]}/versions", mw.Lv1Auth(con.CharacterVersions))
 	})
 
 	router.Route(app.APIPrefix+"/character/rollback", func(r chi.Router) {
+		r.Patch("/{uid}/restore", mw.Lv1Auth(con.RestoreCharacter))
+		r.Patch("/{steamid:[0-9]+}/{slot:[0-9]}/restore", mw.Lv1Auth(con.RestoreCharacterBySteamID))
+
+		r.Get("/{steamid:[0-9]+}/{slot:[0-9]}/versions", mw.Lv1Auth(con.CharacterVersions))
+		
 		r.Patch("/{steamid:[0-9]+}/{slot:[0-9]}/{version:[0-9]+}", mw.Lv1Auth(con.RollbackCharacter))
 		r.Patch("/{steamid:[0-9]+}/{slot:[0-9]}/latest", mw.Lv1Auth(con.RollbackLatestCharacter))
 		r.Delete("/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.DeleteRollbacksCharacter))
