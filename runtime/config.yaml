@@ -2,18 +2,15 @@ core:
   address: 127.0.0.1
   port: 1337
   maxthreads: 0
-  graceful: 15 # Request timeout in minutes
-  rootpath: /api/v1
   debug: false
 database:
-  conn: file:./runtime/chars.db?cache=shared&mode=rwc&_fk=1&_busy_timeout=5000 # file:ent?cache=shared&mode=memory&_fk=1
+  conn: file:./runtime/chars.db?cache=private&mode=rwc&_fk=1& # Cache should be be set to private!
   maxidleconns: 0 # Max idle connections
   maxopenconns: 0 # Max open connections
   connmaxlifetime: "" # Max lifetime of connections.
 ratelimit:
-  enable: false
-  maxrequests: 500 # Max amount of requests in time range of MaxAge
-  maxage: 1 # Max age of ratelimiter bucket in minutes
+  maxrequests: 0 # Max amount of requests in time range of MaxAge
+  maxage: "" # Max age of ratelimiter bucket in minutes
 cert:
   enable: false
   domain: ""

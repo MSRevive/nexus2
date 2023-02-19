@@ -206,7 +206,7 @@ func Run(args []string) error {
 	router.Use(mw.PanicRecovery)
 
 	con := controller.New(apps)
-	router.Route(config.Core.RootPath, func(r chi.Router) {
+	router.Route(app.APIPrefix, func(r chi.Router) {
 		r.Get("/ping", mw.Lv2Auth(con.GetPing))
 		r.Get("/map/{name}/{hash}", mw.Lv1Auth(con.GetMapVerify))
 		r.Get("/ban/{steamid:[0-9]+}", mw.Lv1Auth(con.GetBanVerify))
@@ -216,7 +216,7 @@ func Run(args []string) error {
 		}
 	})
 
-	router.Route(config.Core.RootPath+"/character", func(r chi.Router) {
+	router.Route(app.APIPrefix+"/character", func(r chi.Router) {
 		r.Get("/", mw.Lv1Auth(con.GetAllCharacters))
 		r.Get("/id/{uid}", mw.Lv1Auth(con.GetCharacterByID))
 		r.Get("/{steamid:[0-9]+}", mw.Lv1Auth(con.GetCharacters))
@@ -230,7 +230,7 @@ func Run(args []string) error {
 		r.Get("/{steamid:[0-9]+}/{slot:[0-9]}/versions", mw.Lv1Auth(con.CharacterVersions))
 	})
 
-	router.Route(config.Core.RootPath+"/character/rollback", func(r chi.Router) {
+	router.Route(app.APIPrefix+"/character/rollback", func(r chi.Router) {
 		r.Patch("/{steamid:[0-9]+}/{slot:[0-9]}/{version:[0-9]+}", mw.Lv1Auth(con.RollbackCharacter))
 		r.Patch("/{steamid:[0-9]+}/{slot:[0-9]}/latest", mw.Lv1Auth(con.RollbackLatestCharacter))
 		r.Delete("/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.DeleteRollbacksCharacter))

@@ -15,7 +15,6 @@ type Config struct {
 		Address string
 		Port int
 		MaxThreads int
-		RootPath string
 		Debug bool
 	}
 	Database struct {

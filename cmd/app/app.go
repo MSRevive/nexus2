@@ -20,6 +20,7 @@ import (
 
 var (
 	Version = "canary"
+	APIPrefix = "/api/v1"
 
 	iPListMutex = new(sync.RWMutex)
 	banListMutex = new(sync.RWMutex)
