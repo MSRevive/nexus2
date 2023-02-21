@@ -178,6 +178,7 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 
 		// Get all backup characters
 		all, err := s.client.Character.Query().
+			Select(character.FieldUpdatedAt, character.FieldVersion, character.FieldID)
 			Where(
 				character.And(
 					character.PlayerID(current.PlayerID),
@@ -200,9 +201,6 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 		}
 		timeCheck := latest.UpdatedAt.Add(backupTime)
 		if (current.UpdatedAt.After(timeCheck) || latest.Version == 0) {
-			//fmt.Println(earliest.Version)
-			//fmt.Println(latest.Version)
-
 			if len(all) > s.apps.Config.Char.MaxBackups-1 {
 				if err := s.client.Character.DeleteOneID(earliest.ID).Exec(s.ctx); err != nil {
 					return err
