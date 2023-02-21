@@ -30,7 +30,7 @@ verify:
   useragent: ""
 char:
   maxbackups: 10
-  backuptime: 1s
+  backuptime: 1h
 log:
   level: debug
   dir: ./runtime/logs/ # Where should we keep the bot log file.

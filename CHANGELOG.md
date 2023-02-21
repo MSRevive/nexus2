@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.3.1
+### Changed
+* Drasticly imporved the response speed and RAM usage when updating characters.
+  * With character data the size of 5001 bytes, was ``~100ms`` now it's ``~30ms``
+
 ## v1.3.0
 ### Added
 * Config options to modify the driver for SQLite.

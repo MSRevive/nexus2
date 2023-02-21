@@ -192,6 +192,7 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 			return err
 		}
 
+		// now we just use the original slice so we don't need to make uneeded queries
 		latest := all[0]
 		earliest := all[len(all)-1]
 
@@ -220,6 +221,7 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 			}
 		}
 		
+		// Clean up any excess character backups
 		if len(all) > s.apps.Config.Char.MaxBackups {
 			for _, old := range all[s.apps.Config.Char.MaxBackups:] {
 				if err := s.client.Character.DeleteOneID(old.ID).Exec(s.ctx); err != nil {
