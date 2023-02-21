@@ -2,12 +2,12 @@ package service
 
 import (
 	"time"
-	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/msrevive/nexus2/ent"
 	"github.com/msrevive/nexus2/ent/character"
 	"github.com/msrevive/nexus2/ent/player"
+
+	"github.com/google/uuid"
 )
 
 // CharactersGetAll returns all latest, active Characters
@@ -178,7 +178,7 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 
 		// Get all backup characters
 		all, err := s.client.Character.Query().
-			Select(character.FieldUpdatedAt, character.FieldVersion, character.FieldID)
+			Select(character.FieldUpdatedAt, character.FieldVersion, character.FieldID).
 			Where(
 				character.And(
 					character.PlayerID(current.PlayerID),
@@ -192,9 +192,10 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 			return err
 		}
 
-		// Backup the current version
 		latest := all[0]
 		earliest := all[len(all)-1]
+
+		// Backup the current version
 		backupTime,err := time.ParseDuration(s.apps.Config.Char.BackupTime)
 		if err != nil {
 			return err
@@ -216,6 +217,14 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 				Save(s.ctx)
 			if err != nil {
 				return err
+			}
+		}
+		
+		if len(all) > s.apps.Config.Char.MaxBackups {
+			for _, old := range all[s.apps.Config.Char.MaxBackups:] {
+				if err := s.client.Character.DeleteOneID(old.ID).Exec(s.ctx); err != nil {
+					return err
+				}
 			}
 		}
 
