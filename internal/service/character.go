@@ -2,6 +2,7 @@ package service
 
 import (
 	"time"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/msrevive/nexus2/ent"
@@ -174,26 +175,43 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 		if err != nil {
 			return err
 		}
-		
-		// Get the latest backup version
-		latest, err := s.client.Character.Query().
-			Where(character.Slot(current.Slot)).
+
+		// Get all backup characters
+		all, err := s.client.Character.Query().
+			Where(
+				character.And(
+					character.PlayerID(current.PlayerID),
+					character.Slot(current.Slot),
+					character.VersionNEQ(1),
+				),
+			).
 			Order(ent.Desc(character.FieldVersion)).
-			First(s.ctx)
+			All(s.ctx)
 		if err != nil {
 			return err
 		}
 
 		// Backup the current version
+		latest := all[0]
+		earliest := all[len(all)-1]
 		backupTime,err := time.ParseDuration(s.apps.Config.Char.BackupTime)
 		if err != nil {
 			return err
 		}
 		timeCheck := latest.UpdatedAt.Add(backupTime)
-		if (current.UpdatedAt.After(timeCheck) || latest.Version == 1) {
+		if (current.UpdatedAt.After(timeCheck) || latest.Version == 0) {
+			//fmt.Println(earliest.Version)
+			//fmt.Println(latest.Version)
+
+			if len(all) > s.apps.Config.Char.MaxBackups-1 {
+				if err := s.client.Character.DeleteOneID(earliest.ID).Exec(s.ctx); err != nil {
+					return err
+				}
+			}
+
 			_, err = s.client.Character.Create().
 				SetPlayerID(current.PlayerID).
-				SetVersion(latest.Version + 1).
+				SetVersion(latest.Version+1).
 				SetSlot(current.Slot).
 				SetSize(current.Size).
 				SetData(current.Data).
@@ -210,31 +228,6 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 			Save(s.ctx)
 		if err != nil {
 			return err
-		}
-
-		// Get all backup characters
-		all, err := s.client.Character.Query().
-			Where(
-				character.And(
-					character.PlayerID(c.PlayerID),
-					character.Slot(c.Slot),
-					character.VersionNEQ(1),
-				),
-			).
-			Order(ent.Desc(character.FieldCreatedAt)).
-			All(s.ctx)
-		if err != nil {
-			return err
-		}
-
-		// Delete all characters beyond 10 backups (version "1" not in current slice)
-		maxBackups := s.apps.Config.Char.MaxBackups-1
-		if len(all) > maxBackups {
-			for _, old := range all[maxBackups:] {
-				if err := s.client.Character.DeleteOneID(old.ID).Exec(s.ctx); err != nil {
-					return err
-				}
-			}
 		}
 
 		char = c
@@ -306,6 +299,7 @@ func (s *service) CharacterRestore(uid uuid.UUID) (*ent.DeprecatedCharacter, err
 // Shortcut to restore a deleted character by SteamID and slot.
 func (s *service) CharacterRestoreBySteamID(steamid string, slot int) (*ent.DeprecatedCharacter, error) {
 	target, err := s.client.Character.Query().
+		Select(character.FieldID).
 		Where(
 			character.And(
 				character.HasPlayerWith(player.Steamid(steamid)),
@@ -331,7 +325,7 @@ func (s *service) CharacterVersions(sid string, slot int) ([]*ent.Character, err
 				character.Slot(slot),
 			),
 		).
-		Order(ent.Desc(character.FieldUpdatedAt)).
+		Order(ent.Asc(character.FieldVersion)).
 		All(s.ctx)
 	if err != nil {
 		return nil, err
@@ -507,6 +501,7 @@ func (s *service) CharacterRollbackLatest(sid string, slot int) (*ent.Deprecated
 func (s *service) CharacterDeleteRollbacks(sid string, slot int) error {
 	return txn(s.ctx, s.client, func(tx *ent.Tx) error {
 		char, err := s.client.Character.Query().
+			Select(character.FieldPlayerID, character.FieldVersion).
 			Where(
 				character.And(
 					character.HasPlayerWith(player.Steamid(sid)),
