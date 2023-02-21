@@ -21,20 +21,6 @@ func New(ctx context.Context, apps *app.App) *service {
 	}
 }
 
-func (s *service) Debug() error {
-	_, err := s.CharacterCreate(ent.DeprecatedCharacter{
-		Steamid: "76561198092541763",
-		Slot:    1,
-		Size:    0,
-		Data:    "data",
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func txn(ctx context.Context, client *ent.Client, fn func(tx *ent.Tx) error) error {
 	tx, err := client.BeginTx(ctx, nil)
 	if err != nil {

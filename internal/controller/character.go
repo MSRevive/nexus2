@@ -5,13 +5,13 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"github.com/goccy/go-json"
 
 	"github.com/msrevive/nexus2/ent"
 	"github.com/msrevive/nexus2/pkg/helper"
 	"github.com/msrevive/nexus2/pkg/response"
 	"github.com/msrevive/nexus2/internal/service"
 
+	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/go-chi/chi/v5"
 )
@@ -179,8 +179,8 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 
 	char, err := service.New(r.Context(), c.App).CharacterUpdate(uid, updateChar)
 	if err != nil {
-		//c.App.LogAPI.Errorln(err)
-		c.App.LogAPI.Traceln(err)
+		c.App.LogAPI.Errorln(err)
+		//c.App.LogAPI.Traceln(err)
 		response.Error(w, err)
 		return
 	}

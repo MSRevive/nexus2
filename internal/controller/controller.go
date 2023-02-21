@@ -3,9 +3,6 @@ package controller
 import (
 	"net/http"
 
-	//"github.com/gorilla/mux"
-	//"github.com/msrevive/nexus2/pkg/response"
-	//"github.com/msrevive/nexus2/internal/service"
 	"github.com/msrevive/nexus2/cmd/app"
 )
 
