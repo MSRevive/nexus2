@@ -192,26 +192,41 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 			return err
 		}
 
-		// now we just use the original slice so we don't need to make uneeded queries
-		latest := all[0]
-		earliest := all[len(all)-1]
+		allLen := len(all)
+		if (allLen > 0) {
+			// now we just use the original slice so we don't need to make uneeded queries
+			latest := all[0]
+			earliest := all[allLen-1]
 
-		// Backup the current version
-		backupTime,err := time.ParseDuration(s.apps.Config.Char.BackupTime)
-		if err != nil {
-			return err
-		}
-		timeCheck := latest.UpdatedAt.Add(backupTime)
-		if (current.UpdatedAt.After(timeCheck) || latest.Version == 0) {
-			if len(all) > s.apps.Config.Char.MaxBackups-1 {
-				if err := s.client.Character.DeleteOneID(earliest.ID).Exec(s.ctx); err != nil {
+			backupTime,err := time.ParseDuration(s.apps.Config.Char.BackupTime)
+			if err != nil {
+				return err
+			}
+			timeCheck := latest.UpdatedAt.Add(backupTime)
+			if (current.UpdatedAt.After(timeCheck)) {
+				if len(all) > s.apps.Config.Char.MaxBackups-1 {
+					if err := s.client.Character.DeleteOneID(earliest.ID).Exec(s.ctx); err != nil {
+						return err
+					}
+				}
+				
+				// backup the current character
+				_, err = s.client.Character.Create().
+					SetPlayerID(current.PlayerID).
+					SetVersion(latest.Version+1).
+					SetSlot(current.Slot).
+					SetSize(current.Size).
+					SetData(current.Data).
+					Save(s.ctx)
+				if err != nil {
 					return err
 				}
 			}
-
+		} else {
+			// first backup created.
 			_, err = s.client.Character.Create().
 				SetPlayerID(current.PlayerID).
-				SetVersion(latest.Version+1).
+				SetVersion(2).
 				SetSlot(current.Slot).
 				SetSize(current.Size).
 				SetData(current.Data).
@@ -222,7 +237,7 @@ func (s *service) CharacterUpdate(uid uuid.UUID, updateChar ent.DeprecatedCharac
 		}
 		
 		// Clean up any excess character backups
-		if len(all) > s.apps.Config.Char.MaxBackups {
+		if allLen > s.apps.Config.Char.MaxBackups {
 			for _, old := range all[s.apps.Config.Char.MaxBackups:] {
 				if err := s.client.Character.DeleteOneID(old.ID).Exec(s.ctx); err != nil {
 					return err
