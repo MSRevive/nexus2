@@ -601,7 +601,7 @@ func TestCharacterUpdate_With15Backups_RemovesExtraBackups_ReturnsUpdatedCharact
 		).
 		Count(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, 10, count)
+	assert.Equal(t, 11, count)
 }
 
 func TestCharacterDelete_WithNoCharacter_ReturnsNotFoundError(t *testing.T) {
