@@ -34,7 +34,6 @@ type Config struct {
 	ApiAuth struct {
 		EnforceKey bool
 		EnforceIP bool
-		Key string
 		IPListFile string
 	}
 	Verify struct {

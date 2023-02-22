@@ -17,7 +17,6 @@ cert:
 apiauth:
   enforcekey: false
   enforceip: false
-  key: "" # API key
   iplistfile: ./runtime/ipwhitelist.json
 verify:
   enforceban: false

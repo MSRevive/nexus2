@@ -34,7 +34,7 @@ type App struct {
 	LogCore *auralog.Logger
 	LogAPI *auralog.Logger
 
-	IPList map[string]bool
+	IPList map[string]string
 	BanList map[string]bool
 	MapList map[string]uint32
 	AdminList map[string]bool
