@@ -45,8 +45,8 @@ github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 h1:DpOJ2HYzC
 github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7/go.mod h1:ZXFpozHsX6DPmq2I0TCekCxypsnAUbP2oI0UX1GXzOo=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/saintwish/auralog v1.0.5 h1:VpP2zNeIwidWIjWO/uVpNYWILQRQ5Kin6R1yCRtVp0M=
-github.com/saintwish/auralog v1.0.5/go.mod h1:5GSGzCizWT5qenUpVl1Yp6439L4QLTvB5WfhC6j6S8k=
+github.com/saintwish/auralog v1.0.7-0.20230427032150-b2bf77a1cb23 h1:x/CLbClLE2Y+tdndFo607XTR9sq9BfGIikIQcVNdshs=
+github.com/saintwish/auralog v1.0.7-0.20230427032150-b2bf77a1cb23/go.mod h1:5GSGzCizWT5qenUpVl1Yp6439L4QLTvB5WfhC6j6S8k=
 github.com/sergi/go-diff v1.0.0 h1:Kpca3qRNrduNnOQeazBd0ysaKrUJiIuISHxogkT9RPQ=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/spf13/pflag v1.0.2/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=

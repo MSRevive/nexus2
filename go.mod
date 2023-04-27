@@ -8,7 +8,7 @@ require (
 	github.com/go-chi/httprate v0.7.1
 	github.com/google/uuid v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.16
-	github.com/saintwish/auralog v1.0.5
+	github.com/saintwish/auralog v1.0.7-0.20230427032150-b2bf77a1cb23
 	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942
 	github.com/sugawarayuuta/sonnet v0.0.0-20230425054915-e28ba49e3d17
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292

@@ -20,6 +20,7 @@ import (
 	"github.com/msrevive/nexus2/pkg/response"
 
 	"github.com/saintwish/auralog"
+	rwriter "github.com/saintwish/auralog/rw"
 	"github.com/go-chi/chi/v5"
 	cmw "github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/crypto/acme"
@@ -62,11 +63,11 @@ func initLoggers(filename string, dir string, level string, expire string) {
 	flagsError := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
 	flagsDebug := auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
 
-	file := &auralog.RotateWriter{
+	file := &rwriter.RotateWriter{
 		Dir: dir,
 		Filename: filename,
-		ExTime: ex,
-		MaxSize: 5 * auralog.Megabyte,
+		ExpireTime: ex,
+		MaxSize: 5 * rwriter.Megabyte,
 	}
 
 	logCore = auralog.New(auralog.Config{
