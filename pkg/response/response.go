@@ -2,7 +2,7 @@ package response
 
 import (
 	"net/http"
-	"github.com/goccy/go-json"
+	json "github.com/sugawarayuuta/sonnet"
 )
 
 //make public so other packages can create custom responses.
