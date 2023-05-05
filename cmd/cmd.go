@@ -218,7 +218,7 @@ func Run(args []string) error {
 	})
 
 	router.Route(app.APIPrefix+"/character", func(r chi.Router) {
-		r.Get("/", mw.Lv1Auth(con.GetAllCharacters))
+		//r.Get("/", mw.Lv1Auth(con.GetAllCharacters))
 		r.Get("/id/{uid}", mw.Lv1Auth(con.GetCharacterByID))
 		r.Get("/{steamid:[0-9]+}", mw.Lv1Auth(con.GetCharacters))
 		r.Get("/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.GetCharacter))
@@ -227,6 +227,9 @@ func Run(args []string) error {
 		r.Post("/", mw.Lv2Auth(con.PostCharacter))
 		r.Put("/{uid}", mw.Lv2Auth(con.PutCharacter))
 		r.Delete("/{uid}", mw.Lv2Auth(con.DeleteCharacter))
+
+		r.Patch("/transfer/{uid}/to/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.CharacterTransfer))
+		r.Patch("/copy/{uid}/to/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.CharacterCopy))
 	})
 
 	router.Route(app.APIPrefix+"/character/rollback", func(r chi.Router) {

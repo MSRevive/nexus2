@@ -556,6 +556,43 @@ func (s *service) CharacterDeleteRollbacks(sid string, slot int) error {
 	})
 }
 
+func (s *service) CharacterTransfer(uid uuid.UUID, sid string, slot int) error {
+	return txn(s.ctx, s.client, func(tx *ent.Tx) error {
+		// Get Current version
+		oldChar, err := s.client.Character.Get(s.ctx, uid)
+		if err != nil {
+			return err
+		}
+
+		oldChar.Slot = slot
+
+		if _,err := s.CharacterCreate(*charToDepChar(sid, oldChar)); err != nil {
+			return err
+		}
+
+		s.CharacterDelete(uid) //delete the old character data, to save up space.
+		return nil
+	})
+}
+
+func (s *service) CharacterCopy(uid uuid.UUID, sid string, slot int) error {
+	return txn(s.ctx, s.client, func(tx *ent.Tx) error {
+		// Get Current version
+		oldChar, err := s.client.Character.Get(s.ctx, uid)
+		if err != nil {
+			return err
+		}
+
+		oldChar.Slot = slot
+
+		if _,err := s.CharacterCreate(*charToDepChar(sid, oldChar)); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
 func charToDepChar(s string, c *ent.Character) *ent.DeprecatedCharacter {
 	return &ent.DeprecatedCharacter{
 		ID:      c.ID,

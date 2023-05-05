@@ -267,3 +267,53 @@ func (c *controller) CharacterVersions(w http.ResponseWriter, r *http.Request) {
 
 	response.OK(w, char)
 }
+
+//PATCH /character/transfer/{uid}/to/{steamid}/{slot}
+func (c *controller) CharacterTransfer(w http.ResponseWriter, r *http.Request) {
+	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
+	if err != nil {
+		c.App.LogAPI.Errorln(err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	sid := chi.URLParam(r, "steamid")
+
+	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
+	if err != nil {
+		c.App.LogAPI.Errorln(err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	if err := service.New(r.Context(), c.App).CharacterTransfer(uid, sid, slot); err != nil {
+		c.App.LogAPI.Errorln(err)
+		response.Error(w, err)
+		return
+	}
+}
+
+//PATCH /character/copy/{uid}/to/{steamid}/{slot}
+func (c *controller) CharacterCopy(w http.ResponseWriter, r *http.Request) {
+	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
+	if err != nil {
+		c.App.LogAPI.Errorln(err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	sid := chi.URLParam(r, "steamid")
+
+	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
+	if err != nil {
+		c.App.LogAPI.Errorln(err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	if err := service.New(r.Context(), c.App).CharacterCopy(uid, sid, slot); err != nil {
+		c.App.LogAPI.Errorln(err)
+		response.Error(w, err)
+		return
+	}
+}

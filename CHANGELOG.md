@@ -1,9 +1,15 @@
 # Changelog
 
 ## v1.3.1
+### Added
+* New API endpoint to transfer characters and copy characters to another account.
+
 ### Changed
 * Drasticly imporved the response speed and RAM usage when updating characters.
   * With character data the size of 5001 bytes, was ``~100ms`` now it's ``~30ms``
+
+### Removed
+* Removed API endpoint to get all characters in via database, since it could be used to DoS the server.
 
 ## v1.3.0
 ### Added
