@@ -54,8 +54,8 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942 h1:t0lM6y/M5IiUZyvbBTcngso8SZEZICH7is9B6g/obVU=
 github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/sugawarayuuta/sonnet v0.0.0-20230425054915-e28ba49e3d17 h1:zw151l6H597sX2FHd3VJ1+aBE+JU6Zxn7WU8mxreWVY=
-github.com/sugawarayuuta/sonnet v0.0.0-20230425054915-e28ba49e3d17/go.mod h1:+5rEyXJmv3DAa2QdVoltVW2BrLYxbpnxr9nk6Tube/4=
+github.com/sugawarayuuta/sonnet v0.0.0-20230429041906-2875531a6c75 h1:OYxYXNpZygVJ591U0O+3Q3Q7DEakQokLjA/KeLY1/Tc=
+github.com/sugawarayuuta/sonnet v0.0.0-20230429041906-2875531a6c75/go.mod h1:+5rEyXJmv3DAa2QdVoltVW2BrLYxbpnxr9nk6Tube/4=
 github.com/vmihailenco/msgpack v3.3.3+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
 github.com/vmihailenco/msgpack/v4 v4.3.12/go.mod h1:gborTTJjAo/GWTqqRjrLCn9pgNN+NXzzngzBKDPIqw4=
 github.com/vmihailenco/tagparser v0.1.1/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
