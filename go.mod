@@ -6,11 +6,11 @@ require (
 	entgo.io/ent v0.10.1
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/httprate v0.7.1
+	github.com/goccy/go-json v0.10.2
 	github.com/google/uuid v1.3.0
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/saintwish/auralog v1.0.7-0.20230427032150-b2bf77a1cb23
 	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942
-	github.com/sugawarayuuta/sonnet v0.0.0-20230429041906-2875531a6c75
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
 	gopkg.in/ini.v1 v1.66.2
 	gopkg.in/yaml.v2 v2.4.0

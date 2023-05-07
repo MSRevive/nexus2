@@ -11,7 +11,7 @@ import (
 	"github.com/msrevive/nexus2/pkg/response"
 	"github.com/msrevive/nexus2/internal/service"
 
-	json "github.com/sugawarayuuta/sonnet"
+	json "github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/go-chi/chi/v5"
 )

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"time"
-	json "github.com/sugawarayuuta/sonnet"
+	json "github.com/goccy/go-json"
 	
 	"github.com/msrevive/nexus2/ent"
 	"github.com/msrevive/nexus2/ent/player"
