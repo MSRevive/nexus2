@@ -170,11 +170,11 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var updateChar ent.DeprecatedCharacter
+	c.App.LogAPI.Debugln(r.Body)
+	
 	err = json.NewDecoder(r.Body).Decode(&updateChar)
 	if err != nil {
-		c.App.LogAPI.Warnln(r.Body)
 		c.App.LogAPI.Errorln(err)
-		c.App.LogAPI.Traceln()
 		response.BadRequest(w, err)
 		return
 	}
