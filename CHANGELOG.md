@@ -3,6 +3,7 @@
 ## v1.3.1
 ### Added
 * New API endpoint to transfer characters and copy characters to another account.
+* More detailed error responses for JSON errors.
 
 ### Changed
 * Drasticly imporved the response speed and RAM usage when updating characters.
