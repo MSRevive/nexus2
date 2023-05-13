@@ -33,6 +33,17 @@ func TooManyRequests(w http.ResponseWriter) {
 	resp.SendJson()
 }
 
+func InternalServerError(w http.ResponseWriter) {
+	resp := Response{
+		Status: false,
+		Code: http.StatusInternalServerError,
+		Error: "Internal server error!",
+		Data: nil,
+		w: w,
+	}
+	resp.SendJson()
+}
+
 func OK(w http.ResponseWriter, data interface{}) {
 	resp := Response{
 		Status: true,
