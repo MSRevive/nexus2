@@ -162,8 +162,8 @@ func Run(args []string) error {
 	srv = &http.Server{
 		Handler:      router,
 		Addr:         config.Core.Address + ":" + strconv.Itoa(config.Core.Port),
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		ReadTimeout:  30 * time.Second,
 		IdleTimeout:  60 * time.Second,
 		// DefaultTLSConfig sets sane defaults to use when configuring the internal
 		// webserver to listen for public connections.
