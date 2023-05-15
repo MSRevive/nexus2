@@ -146,13 +146,6 @@ func (c *controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 
 	var newChar ent.DeprecatedCharacter
 	if err := json.NewDecoder(r.Body).Decode(&newChar); err != nil {
-		data, err := io.ReadAll(r.Body);
-		if err != nil {
-			c.App.LogAPI.Errorln(err)
-			response.BadRequest(w, err)
-			return
-		}
-
 		c.App.LogAPI.Debugln(data)
 		var errln error
 		if jsonErr, ok := err.(*json.SyntaxError); ok {
@@ -161,10 +154,13 @@ func (c *controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 		}
 
 		c.App.LogAPI.Errorln(errln)
+
 		if errln == nil {
-			response.InternalServerError(w)
+			c.App.LogAPI.Errorln(err)
+			response.BadRequest(w, err)
 			return
 		}
+
 		response.BadRequest(w, errln)
 		return
 	}
@@ -192,13 +188,6 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 
 	var updateChar ent.DeprecatedCharacter
 	if err := json.NewDecoder(r.Body).Decode(&updateChar); err != nil {
-		data, err := io.ReadAll(r.Body);
-		if err != nil {
-			c.App.LogAPI.Errorln(err)
-			response.BadRequest(w, err)
-			return
-		}
-
 		c.App.LogAPI.Debugln(data)
 		var errln error
 		if jsonErr, ok := err.(*json.SyntaxError); ok {
@@ -207,10 +196,13 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 		}
 
 		c.App.LogAPI.Errorln(errln)
+
 		if errln == nil {
-			response.InternalServerError(w)
+			c.App.LogAPI.Errorln(err)
+			response.BadRequest(w, err)
 			return
 		}
+
 		response.BadRequest(w, errln)
 		return
 	}
