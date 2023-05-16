@@ -34,7 +34,7 @@ func (m *Middleware) Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-		m.app.LogAPI.Printf("%s %s from %s (%v)", r.Method, r.RequestURI, r.RemoteAddr, time.Since(start))
+		m.app.LogAPI.Printf("%s %s from %s (%v) size (%d)", r.Method, r.RequestURI, r.RemoteAddr, time.Since(start), r.ContentLength)
 	})
 }
 
