@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"io"
+	"bytes"
 	"net/http"
 	"strconv"
 
@@ -146,13 +147,15 @@ func (c *controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 
 	var newChar ent.DeprecatedCharacter
 	if err := json.NewDecoder(r.Body).Decode(&newChar); err != nil {
-		data, err := io.ReadAll(r.Body);
-		if err != nil {
-			c.App.LogAPI.Errorln(err)
+		var buf bytes.Buffer
+		if size, err := io.Copy(&buf, r.Body); err != nil {
+			c.App.LogAPI.Errorf("failed to copy body: %w copied (%d) expected (%d)", err, size, r.ContentLength)
 			response.BadRequest(w, err)
 			return
 		}
 
+		data := buf.Bytes()
+		
 		c.App.LogAPI.Debugln(data)
 		var errln error
 		if jsonErr, ok := err.(*json.SyntaxError); ok {
@@ -192,12 +195,14 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 
 	var updateChar ent.DeprecatedCharacter
 	if err := json.NewDecoder(r.Body).Decode(&updateChar); err != nil {
-		data, err := io.ReadAll(r.Body);
-		if err != nil {
-			c.App.LogAPI.Errorln(err)
+		var buf bytes.Buffer
+		if size, err := io.Copy(&buf, r.Body); err != nil {
+			c.App.LogAPI.Errorf("failed to copy body: %w copied (%d) expected (%d)", err, size, r.ContentLength)
 			response.BadRequest(w, err)
 			return
 		}
+
+		data := buf.Bytes()
 
 		c.App.LogAPI.Debugln(data)
 		var errln error
