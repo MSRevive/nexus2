@@ -242,17 +242,16 @@ func Run(args []string) (error) {
 		a.Logger.Core.Error(err)
 		return err
 	}
-	defer func() {
-		if err := a.Close(); err != nil {
-			a.Logger.Core.Error(err)
-			return err
-		}
-	}
 
 	fmt.Println("\nNexus2 is now running. Press CTRL-C to exit.\n")
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, syscall.SIGINT, syscall.SIGTERM)
 	<-s
+
+	if err := a.Close(); err != nil {
+		a.Logger.Core.Error(err)
+		return err
+	}
 
 	return nil
 }
