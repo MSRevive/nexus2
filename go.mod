@@ -1,6 +1,6 @@
 module github.com/msrevive/nexus2
 
-go 1.20
+go 1.21.0
 
 require (
 	entgo.io/ent v0.10.1
@@ -27,6 +27,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.10.0 // indirect
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/saintwish/kv v1.0.1-0.20231005191430-97f70ba34094 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.9.0 // indirect

@@ -51,6 +51,10 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/saintwish/auralog v1.0.7-0.20230427032150-b2bf77a1cb23 h1:x/CLbClLE2Y+tdndFo607XTR9sq9BfGIikIQcVNdshs=
 github.com/saintwish/auralog v1.0.7-0.20230427032150-b2bf77a1cb23/go.mod h1:5GSGzCizWT5qenUpVl1Yp6439L4QLTvB5WfhC6j6S8k=
+github.com/saintwish/kv v1.0.0 h1:ukuMe45H4dqYogNtuatH5NHww/Ok6j9QkmhtJy3RoC0=
+github.com/saintwish/kv v1.0.0/go.mod h1:w+RRuL88spjOma9LlGhaRvFHfZMfNgLJTCEwb9L2KyM=
+github.com/saintwish/kv v1.0.1-0.20231005191430-97f70ba34094 h1:JpH5vHzv2yR9oVuXu5RClm3mw0/rrDkWnju6Ls8kjVk=
+github.com/saintwish/kv v1.0.1-0.20231005191430-97f70ba34094/go.mod h1:w+RRuL88spjOma9LlGhaRvFHfZMfNgLJTCEwb9L2KyM=
 github.com/sergi/go-diff v1.0.0 h1:Kpca3qRNrduNnOQeazBd0ysaKrUJiIuISHxogkT9RPQ=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/spf13/pflag v1.0.2/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=

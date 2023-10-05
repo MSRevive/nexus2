@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"runtime"
 	"strconv"
@@ -17,16 +16,16 @@ import (
 	"github.com/msrevive/nexus2/cmd/app"
 	"github.com/msrevive/nexus2/internal/controller"
 	"github.com/msrevive/nexus2/internal/middleware"
+	"github.com/msrevive/nexus2/internal/database/mongodb"
+	"github.com/msrevive/nexus2/internal/config"
 	"github.com/msrevive/nexus2/pkg/response"
 
 	"github.com/saintwish/auralog"
-	rwriter "github.com/saintwish/auralog/rw"
+	"github.com/saintwish/auralog/rw"
 	"github.com/go-chi/chi/v5"
 	cmw "github.com/go-chi/chi/v5/middleware"
-	"golang.org/x/crypto/acme"
-	"golang.org/x/crypto/acme/autocert"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/go-chi/httprate"
+	flag "github.com/spf13/pflag"
 )
 
 var (
@@ -35,22 +34,18 @@ var (
 )
 
 type flags struct {
-	address string
-	port int
-	configFile string
-	migrateConfig bool
+	cfgFile string
 	debug bool
+	threads int
 }
 
 func doFlags(args []string) *flags {
 	flgs := &flags{}
 
-	flagSet := flag.NewFlagSet(args[0], flag.ContinueOnError)
-	flagSet.StringVar(&flgs.address, "addr", "127.0.0.1", "The address of the server.")
-	flagSet.IntVar(&flgs.port, "port", 1337, "The port this should run on.")
-	flagSet.StringVar(&flgs.configFile, "cfile", "./runtime/config.yaml", "Location of via config file")
-	flagSet.BoolVar(&flgs.debug, "d", false, "Run with debug mode.")
-	flagSet.BoolVar(&flgs.migrateConfig, "m", false, "Migrate the ini/toml config to YAML")
+	flagSet := flag.NewFlagSet(args[0], flag.ExitOnError)
+	flagSet.StringVarP(&flgs.cfgFile, "config", "c", "./runtime/config.yaml", "Location of via config file")
+	flagSet.BoolVarP(&flgs.debug, "debug", "d", false, "Run with debug mode.")
+	flagSet.IntVarP(&flgs.threads, "t", "threads", 0, "The maximum number of threads the app is allowed to use.")
 	flagSet.Parse(args[1:])
 
 	return flgs
@@ -63,7 +58,7 @@ func initLoggers(filename string, dir string, level string, expire string) {
 	flagsError := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
 	flagsDebug := auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
 
-	file := &rwriter.RotateWriter{
+	file := &rw.RotateWriter{
 		Dir: dir,
 		Filename: filename,
 		ExpireTime: ex,
@@ -91,75 +86,70 @@ func initLoggers(filename string, dir string, level string, expire string) {
 	})
 }
 
-func Run(args []string) error {
+func Run(args []string) (error) {
 	flgs := doFlags(args)
 
-	config, err := app.LoadConfig(flgs.configFile)
+	if flgs.debug {
+		fmt.Println("!!! Running in Debug mode, do not use in production! !!!")
+	}
+
+	//Max threads allowed.
+	if flgs.threads != 0 {
+		runtime.GOMAXPROCS(flgs.threads)
+	}
+
+	/////////////////////////
+	//Config and database dependencies.
+	/////////////////////////
+	config, err := config.LoadConfig(flgs.cfgFile)
 	if err != nil {
 		return err
 	}
 
-	apps := app.New(config);
+	db := mongodb.New()
+	a := app.New(config, db);
+	a.Debug = flgs.debug
 
-	if flgs.migrateConfig {
-		fmt.Println("Running migration...")
-		if err := apps.MigrateConfig(); err != nil {
-			fmt.Printf("Migration error: %s", err)
-		}
-		fmt.Println("Finished migration, starting server...")
-	}
-
-	if config.Core.Debug {
-		fmt.Println("!!! Running in debug, do not use in production !!!")
-	}
-
-	//Initiate logging
+	/////////////////////////
+	//Logger Dependency
+	/////////////////////////
 	initLoggers("server.log", config.Log.Dir, config.Log.Level, config.Log.ExpireTime)
-	apps.SetupLoggers(logCore, logAPI)
+	a.SetupLoggers(logCore, logAPI)
 
-	//Max threads allowed.
-	if config.Core.MaxThreads != 0 {
-		runtime.GOMAXPROCS(config.Core.MaxThreads)
-	}
-
-	//Load json files.
+	/////////////////////////
+	//Load JSON files into lists
+	/////////////////////////
 	if config.ApiAuth.EnforceIP {
-		logCore.Printf("Loading IP list from %s", config.ApiAuth.IPListFile)
-		if err := apps.LoadIPList(config.ApiAuth.IPListFile); err != nil {
+		fmt.Printf("Loading IP list from %s\n", config.ApiAuth.IPListFile)
+		if err := a.LoadIPList(config.ApiAuth.IPListFile); err != nil {
 			logCore.Warnln("Failed to load IP list.")
 		}
 	}
 
 	if config.Verify.EnforceMap {
-		logCore.Printf("Loading Map list from %s", config.Verify.MapListFile)
-		if err := apps.LoadMapList(config.Verify.MapListFile); err != nil {
+		fmt.Printf("Loading Map list from %s\n", config.Verify.MapListFile)
+		if err := a.LoadMapList(config.Verify.MapListFile); err != nil {
 			logCore.Warnln("Failed to load Map list.")
 		}
 	}
 
 	if config.Verify.EnforceBan {
-		logCore.Printf("Loading Ban list from %s", config.Verify.BanListFile)
-		if err := apps.LoadBanList(config.Verify.BanListFile); err != nil {
+		fmt.Printf("Loading Ban list from %s\n", config.Verify.BanListFile)
+		if err := a.LoadBanList(config.Verify.BanListFile); err != nil {
 			logCore.Warnln("Failed to load Ban list.")
 		}
 	}
 
-	logCore.Printf("Loading Admin list from %s", config.Verify.AdminListFile)
-	if err := apps.LoadAdminList(config.Verify.AdminListFile); err != nil {
+	fmt.Printf("Loading Admin list from %s", config.Verify.AdminListFile)
+	if err := a.LoadAdminList(config.Verify.AdminListFile); err != nil {
 		logCore.Warnln("Failed to load Admin list.")
 	}
 
-	//Connect database.
-	logCore.Println("Connecting to database")
-	if err := apps.SetupClient(); err != nil {
-		return err
-	}
-	defer apps.Client.Close()
-
-	//variables for web server
-	var srv *http.Server
+	/////////////////////////
+	//Setup HTTP Server
+	/////////////////////////
 	router := chi.NewRouter()
-	srv = &http.Server{
+	a.SetHTTPServer(&http.Server{
 		Handler:      router,
 		Addr:         config.Core.Address + ":" + strconv.Itoa(config.Core.Port),
 		WriteTimeout: 30 * time.Second,
@@ -185,9 +175,11 @@ func Run(args []string) error {
 			MaxVersion:               tls.VersionTLS13,
 			CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
 		},
-	}
+	})
 
-	//middleware
+	/////////////////////////
+	//Middleware
+	/////////////////////////
 	mw := middleware.New(apps)
 	router.Use(cmw.RealIP)
 	router.Use(mw.Headers)
@@ -205,7 +197,7 @@ func Run(args []string) error {
 	}
 	router.Use(mw.Log)
 	router.Use(mw.PanicRecovery)
-
+	
 	con := controller.New(apps)
 	router.Route(app.APIPrefix, func(r chi.Router) {
 		r.Get("/ping", mw.Lv2Auth(con.GetPing))
@@ -243,51 +235,24 @@ func Run(args []string) error {
 		r.Delete("/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.DeleteRollbacksCharacter))
 	})
 
-	if config.Cert.Enable {
-		cm := autocert.Manager{
-			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(config.Cert.Domain),
-			Cache:      autocert.DirCache("./runtime/certs"),
+	/////////////////////////
+	//Auto certificate
+	/////////////////////////
+	if err := a.Start(); err != nil {
+		a.Logger.Core.Error(err)
+		return err
+	}
+	defer func() {
+		if err := a.Close(); err != nil {
+			a.Logger.Core.Error(err)
+			return err
 		}
-
-		srv.TLSConfig = &tls.Config{
-			GetCertificate: cm.GetCertificate,
-			NextProtos:     append(srv.TLSConfig.NextProtos, acme.ALPNProto), // enable tls-alpn ACME challenges
-		}
-
-		go func() {
-			if err := http.ListenAndServe(":http", cm.HTTPHandler(nil)); err != nil {
-				logCore.Errorf("failed to serve autocert server: %v", err)
-			}
-		}()
-		
-		go func() {
-			logCore.Printf("Listening on: %s TLS", srv.Addr)
-			if err := srv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-				errMsg := errors.New(fmt.Sprintf("failed to serve over HTTPS: %v", err))
-				panic(errMsg)
-			}
-		}()
-	} else {
-		go func() {
-			logCore.Printf("Listening on: %s", srv.Addr)
-			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				errMsg := errors.New(fmt.Sprintf("failed to serve over HTTP: %v", err))
-				panic(errMsg)
-			}
-		}()
 	}
 
+	fmt.Println("\nNexus2 is now running. Press CTRL-C to exit.\n")
 	s := make(chan os.Signal, 1)
-	signal.Notify(s, os.Interrupt)
+	signal.Notify(s, syscall.SIGINT, syscall.SIGTERM)
 	<-s
-
-	//wait 5 seconds before timing out
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		return err // failure/timeout shutting down the server gracefully
-	}
 
 	return nil
 }

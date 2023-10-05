@@ -1,8 +1,7 @@
-package app
+package config
 
 import (
 	"os"
-	"errors"
 	"fmt"
 	"path/filepath"
   
@@ -14,8 +13,6 @@ type Config struct {
 	Core struct {
 		Address string
 		Port int
-		MaxThreads int
-		Debug bool
 	}
 	Database struct {
 		Conn string
@@ -57,7 +54,7 @@ type Config struct {
 	}
 }
   
-func LoadConfig(path string) (*Config, error) {
+func LoadConfig(path string) (Config, error) {
 	var cfg Config
 
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
@@ -74,28 +71,17 @@ func LoadConfig(path string) (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &cfg, nil
+		return cfg, nil
+
 	case ".toml", ".ini":
 		if err := ini.MapTo(&cfg, path); err != nil {
 			return nil, err
 		}
-		return &cfg, nil
+		return cfg, nil
+		
 	default:
-		return nil, errors.New("unsupported config type")
+		return nil, fmt.Errorf("%s", "unsupported config type")
 	}
 
-	return nil, errors.New(fmt.Sprintf("Failed to read config file: %s", path))
-}
-
-func (a *App) MigrateConfig() error {
-	data,err := yaml.Marshal(a.Config)
-	if err != nil {
-		return err
-	}
-
-	if err := os.WriteFile("./runtime/config.yaml", data, 0655); err != nil {
-		return err
-	}
-
-	return nil
+	return nil, fmt.Errorf("Failed to read config file: %s", path)
 }

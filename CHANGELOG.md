@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.0.0
+### Changed
+* The database is now MongoDB instead of SQLite.
+
 ## v1.3.1
 ### Added
 * New API endpoint to transfer characters and copy characters to another account.

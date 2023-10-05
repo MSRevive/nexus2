@@ -1,8 +1,6 @@
 core:
   address: 127.0.0.1
   port: 1337
-  maxthreads: 0
-  debug: false
 database:
   conn: file:./runtime/chars.db?cache=private&mode=rwc&_fk=1& # Cache should be be set to private!
   maxidleconns: 0 # Max idle connections

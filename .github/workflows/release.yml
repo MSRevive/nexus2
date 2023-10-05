@@ -23,7 +23,7 @@ jobs:
       - name: build
         env:
           REF: ${{ github.ref }}
-        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X github.com/msrevive/nexus2/cmd/app.Version=${REF:11}" -o build/msnexus2_linux_amd64 -v .
+        run: CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X github.com/msrevive/nexus2/internal/static.Version=${REF:11}" -o build/msnexus2_linux_amd64 -v .
 
       - name: compress binary
         run: upx build/msnexus2_linux_amd64 && chmod +x build/msnexus2_linux_amd64
