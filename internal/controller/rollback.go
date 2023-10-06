@@ -16,21 +16,21 @@ func (c *controller) RollbackCharacter(w http.ResponseWriter, r *http.Request) {
 
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	version, err := strconv.Atoi(chi.URLParam(r, "version"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	char, err := service.New(r.Context(), c.App).CharacterRollback(sid, slot, version)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -44,14 +44,14 @@ func (c *controller) RollbackLatestCharacter(w http.ResponseWriter, r *http.Requ
 
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	char, err := service.New(r.Context(), c.App).CharacterRollbackLatest(sid, slot)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -65,14 +65,14 @@ func (c *controller) DeleteRollbacksCharacter(w http.ResponseWriter, r *http.Req
 
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	err = service.New(r.Context(), c.App).CharacterDeleteRollbacks(sid, slot)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.Error(w, err)
 		return
 	}

@@ -204,7 +204,7 @@ func Run(args []string) (error) {
 		r.Get("/map/{name}/{hash}", mw.Lv1Auth(con.GetMapVerify))
 		r.Get("/ban/{steamid:[0-9]+}", mw.Lv1Auth(con.GetBanVerify))
 		r.Get("/sc/{hash}", mw.Lv1Auth(con.GetSCVerify))
-		if config.Core.Debug {
+		if flgs.debug {
 			r.Mount("/debug", cmw.Profiler())
 		}
 	})

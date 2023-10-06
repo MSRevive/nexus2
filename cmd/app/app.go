@@ -11,6 +11,7 @@ import (
 	"net/http"
 	
 	"github.com/msrevive/nexus2/internal/database"
+	"github.com/msrevive/nexus2/internal/config"
 
 	"github.com/saintwish/auralog"
 	"github.com/saintwish/kv/ccmap"
@@ -25,14 +26,14 @@ type App struct {
 		API *auralog.Logger
 	}
 	List struct {
-		IPList ccmap.Cache[string, string]
-		BanList ccmap.Cache[string, bool]
-		MapList ccmap.Cache[string, uint32]
-		AdminList ccmap.Cache[string, bool]
+		IP ccmap.Cache[string, string]
+		Ban ccmap.Cache[string, bool]
+		Map ccmap.Cache[string, uint32]
+		Admin ccmap.Cache[string, bool]
 	}
 }
 
-func New(cfg Config) (app *App, db database.Database) {
+func New(cfg config.Config, db database.Database) (app *App) {
 	app = &App{}
 	app.Config = cfg
 	app.DB = db
@@ -59,7 +60,7 @@ func (a *App) LoadIPList(path string) (err error) {
 		return err
 	}
 
-	err = a.List.IPList.LoadFromJSON(file)
+	err = a.List.IP.LoadFromJSON(file)
 
 	return
 }
@@ -70,7 +71,7 @@ func (a *App) LoadMapList(path string) (err error) {
 		return err
 	}
 
-	err = a.List.MapList.LoadFromJSON(file)
+	err = a.List.Map.LoadFromJSON(file)
 
 	return
 }
@@ -81,7 +82,7 @@ func (a *App) LoadBanList(path string) (err error) {
 		return err
 	}
 
-	err = a.List.BanList.LoadFromJSON(file)
+	err = a.List.Ban.LoadFromJSON(file)
 
 	return
 }
@@ -92,7 +93,7 @@ func (a *App) LoadAdminList(path string) (err error) {
 		return err
 	}
 
-	err = a.List.AdminList.LoadFromJSON(file)
+	err = a.List.Admin.LoadFromJSON(file)
 
 	return
 }

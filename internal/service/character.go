@@ -3,10 +3,6 @@ package service
 import (
 	"time"
 
-	"github.com/msrevive/nexus2/ent"
-	"github.com/msrevive/nexus2/ent/character"
-	"github.com/msrevive/nexus2/ent/player"
-
 	"github.com/google/uuid"
 )
 

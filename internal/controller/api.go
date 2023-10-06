@@ -23,12 +23,13 @@ func (c *controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if res,_ := c.App.MapList[name]; res == uint32(hash) {
+	if v,ok := c.App.List.Map.GetHas(name); ok && v == hash {
+		c.App.Logger.API.Infof("%s passed map (%s) verfication.", r.RemoteAddr, name)
 		response.Result(w, true)
 		return
 	}
 	
-	c.App.LogAPI.Warnf("%s failed map (%s) verfication.", r.RemoteAddr, name)
+	c.App.Logger.API.Warnf("%s failed map (%s) verfication.", r.RemoteAddr, name)
 	response.Result(w, false)
 	return
 }
@@ -43,12 +44,12 @@ func (c *controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
 	
 	steamid := chi.URLParam(r, "steamid")
 	
-	if _,ok := c.App.BanList[steamid]; ok {
+	if ok := c.App.List.Ban.Has(steamid); ok {
+		c.App.Logger.API.Warnf("%s: player (%s) is banned!", r.RemoteAddr, steamid)
 		response.Result(w, true)
 		return
 	}
 	
-	c.App.LogAPI.Warnf("%s: player (%s) is banned!", r.RemoteAddr, steamid)
 	response.Result(w, false)
 	return
 }
@@ -66,12 +67,12 @@ func (c *controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if c.App.Config.Verify.SCHash == uint32(hash) {
+	if c.App.Config.Verify.SCHash == hash {
 		response.Result(w, true)
 		return
 	}
 	
-	c.App.LogAPI.Warnf("%s failed SC check!", r.RemoteAddr)
+	c.App.Logger.API.Warnf("%s failed SC check!", r.RemoteAddr)
 	response.Result(w, false)
 }
 

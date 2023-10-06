@@ -21,7 +21,7 @@ import (
 func (c *controller) GetAllCharacters(w http.ResponseWriter, r *http.Request) {
 	chars, err := service.New(r.Context(), c.App).CharactersGetAll()
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -37,16 +37,16 @@ func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 
 	chars, err := service.New(r.Context(), c.App).CharactersGetBySteamid(steamid)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	if _, ok := c.App.BanList[steamid]; ok && c.App.Config.Verify.EnforceBan {
+	if ok := c.App.List.Ban.Has(steamid); ok && c.App.Config.Verify.EnforceBan {
 		isBanned = true
 	}
 
-	if _, ok := c.App.AdminList[steamid]; ok {
+	if ok := c.App.List.Admin.Has(steamid); ok {
 		isAdmin = true
 	}
 
@@ -58,7 +58,7 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -67,16 +67,16 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 
 	char, err := service.New(r.Context(), c.App).CharacterGetBySteamidSlot(steamid, slot)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	if _, ok := c.App.BanList[steamid]; ok && c.App.Config.Verify.EnforceBan {
+	if ok := c.App.List.Ban.Has(steamid); ok && c.App.Config.Verify.EnforceBan {
 		isBanned = true
 	}
 
-	if _, ok := c.App.AdminList[steamid]; ok {
+	if ok := c.App.List.Admin.Has(steamid); ok {
 		isAdmin = true
 	}
 
@@ -88,21 +88,21 @@ func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	char, err := service.New(r.Context(), c.App).CharacterGetBySteamidSlot(steamid, slot)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	file, path, err := helper.GenerateCharFile(steamid, slot, char.Data)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -116,7 +116,7 @@ func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
 func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -125,16 +125,16 @@ func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 
 	char, err := service.New(r.Context(), c.App).CharacterGetByID(uid)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	if _, ok := c.App.BanList[char.Steamid]; ok && c.App.Config.Verify.EnforceBan {
+	if ok := c.App.List.Ban.Has(char.SteamID); ok && c.App.Config.Verify.EnforceBan {
 		isBanned = true
 	}
 
-	if _, ok := c.App.AdminList[char.Steamid]; ok {
+	if ok := c.App.List.Admin.Has(char.SteamID); ok {
 		isAdmin = true
 	}
 
@@ -149,21 +149,21 @@ func (c *controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&newChar); err != nil {
 		var buf bytes.Buffer
 		if size, err := io.Copy(&buf, r.Body); err != nil {
-			c.App.LogAPI.Errorf("failed to copy body: %s copied (%d) expected (%d)", err, size, r.ContentLength)
+			c.App.Logger.API.Errorf("failed to copy body: %s copied (%d) expected (%d)", err, size, r.ContentLength)
 			response.BadRequest(w, err)
 			return
 		}
 
 		data := buf.Bytes()
 		
-		c.App.LogAPI.Debugln(data)
+		c.App.Logger.API.Debugln(data)
 		var errln error
 		if jsonErr, ok := err.(*json.SyntaxError); ok {
 			problemPart := data[jsonErr.Offset-10 : jsonErr.Offset+10]
 			errln = fmt.Errorf("%w ~ error near '%s' (offset %d)", err, problemPart, jsonErr.Offset)
 		}
 
-		c.App.LogAPI.Errorln(errln)
+		c.App.Logger.API.Errorln(errln)
 		if errln == nil {
 			response.InternalServerError(w)
 			return
@@ -174,7 +174,7 @@ func (c *controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 
 	char, err := service.New(r.Context(), c.App).CharacterCreate(newChar)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -188,7 +188,7 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 
 	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -197,21 +197,21 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&updateChar); err != nil {
 		var buf bytes.Buffer
 		if size, err := io.Copy(&buf, r.Body); err != nil {
-			c.App.LogAPI.Errorf("failed to copy body: %s copied (%d) expected (%d)", err, size, r.ContentLength)
+			c.App.Logger.API.Errorf("failed to copy body: %s copied (%d) expected (%d)", err, size, r.ContentLength)
 			response.BadRequest(w, err)
 			return
 		}
 
 		data := buf.Bytes()
 
-		c.App.LogAPI.Debugln(data)
+		c.App.Logger.API.Debugln(data)
 		var errln error
 		if jsonErr, ok := err.(*json.SyntaxError); ok {
 			problemPart := data[jsonErr.Offset-10 : jsonErr.Offset+10]
 			errln = fmt.Errorf("%w ~ error near '%s' (offset %d)", err, problemPart, jsonErr.Offset)
 		}
 
-		c.App.LogAPI.Errorln(errln)
+		c.App.Logger.API.Errorln(errln)
 		if errln == nil {
 			response.InternalServerError(w)
 			return
@@ -222,7 +222,7 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 
 	char, err := service.New(r.Context(), c.App).CharacterUpdate(uid, updateChar)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -234,14 +234,14 @@ func (c *controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 func (c *controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	err = service.New(r.Context(), c.App).CharacterDelete(uid)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -253,14 +253,14 @@ func (c *controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 func (c *controller) RestoreCharacter(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	char, err := service.New(r.Context(), c.App).CharacterRestore(uid)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -274,14 +274,14 @@ func (c *controller) RestoreCharacterBySteamID(w http.ResponseWriter, r *http.Re
 
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	char, err := service.New(r.Context(), c.App).CharacterRestoreBySteamID(sid, slot)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -295,14 +295,14 @@ func (c *controller) CharacterVersions(w http.ResponseWriter, r *http.Request) {
 
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	char, err := service.New(r.Context(), c.App).CharacterVersions(sid, slot)
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -314,7 +314,7 @@ func (c *controller) CharacterVersions(w http.ResponseWriter, r *http.Request) {
 func (c *controller) CharacterTransfer(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -323,13 +323,13 @@ func (c *controller) CharacterTransfer(w http.ResponseWriter, r *http.Request) {
 
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	if err := service.New(r.Context(), c.App).CharacterTransfer(uid, sid, slot); err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.Error(w, err)
 		return
 	}
@@ -339,7 +339,7 @@ func (c *controller) CharacterTransfer(w http.ResponseWriter, r *http.Request) {
 func (c *controller) CharacterCopy(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -348,13 +348,13 @@ func (c *controller) CharacterCopy(w http.ResponseWriter, r *http.Request) {
 
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	if err := service.New(r.Context(), c.App).CharacterCopy(uid, sid, slot); err != nil {
-		c.App.LogAPI.Errorln(err)
+		c.App.Logger.API.Errorln(err)
 		response.Error(w, err)
 		return
 	}
