@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/msrevive/nexus2/cmd"
-	"github.com/msrevive/nexus2/cmd/app"
+	"github.com/msrevive/nexus2/internal/static"
 )
 
 var spMsg string = `
@@ -22,7 +22,7 @@ License: GPL-3.0 https://github.com/MSRevive/nexus2/blob/main/LICENSE %s
 `
 
 func main() {
-	fmt.Printf(spMsg, time.Now().Year(), app.Version, "\n")
+	fmt.Printf(spMsg, time.Now().Year(), static.Version, "\n")
 
 	if err := cmd.Run(os.Args); err != nil {
 		panic(err)

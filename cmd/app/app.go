@@ -2,16 +2,13 @@ package app
 
 import (
 	"os"
-	"sync"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"time"
 	"net/http"
 	"log/slog"
 
-	
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/config"
 
@@ -20,7 +17,7 @@ import (
 )
 
 type App struct {
-	Config Config
+	Config config.Config
 	DB database.Database
 	HTTPServer *http.Server
 	Logger struct {
@@ -28,10 +25,10 @@ type App struct {
 		API *slog.Logger
 	}
 	List struct {
-		IP ccmap.Cache[string, string]
-		Ban ccmap.Cache[string, bool]
-		Map ccmap.Cache[string, uint32]
-		Admin ccmap.Cache[string, bool]
+		IP *ccmap.Cache[string, string]
+		Ban *ccmap.Cache[string, bool]
+		Map *ccmap.Cache[string, uint32]
+		Admin *ccmap.Cache[string, bool]
 	}
 }
 
@@ -39,15 +36,15 @@ func New(cfg config.Config, db database.Database) (app *App) {
 	app = &App{}
 	app.Config = cfg
 	app.DB = db
-	app.List.IPList = ccmap.New[string, string]()
-	app.List.BanList = ccmap.New[string, bool]()
-	app.List.MapList = ccmap.New[string, uint32]()
-	app.List.AdminList = ccmap.New[string, bool]()
+	app.List.IP = ccmap.New[string, string]()
+	app.List.Ban = ccmap.New[string, bool]()
+	app.List.Map = ccmap.New[string, uint32]()
+	app.List.Admin = ccmap.New[string, bool]()
 
 	return
 }
 
-func (a *App) InitializeLoggers() {
+func (a *App) InitializeLoggers() error {
 	expiration, err := time.ParseDuration(a.Config.Log.ExpireTime)
 	if err != nil {
 		return err
@@ -80,6 +77,8 @@ func (a *App) InitializeLoggers() {
 		Level: slevel,
 		Domain: "API",
 	}))
+
+	return nil
 }
 
 func (a *App) SetHTTPServer(srv *http.Server) {
@@ -132,7 +131,7 @@ func (a *App) LoadAdminList(path string) (err error) {
 
 func (a *App) Start() error {
 	fmt.Println("Connecting to database.")
-	if err := a.DB.Connect(); err != nil {
+	if err := a.DB.Connect(a.Config.Database.Conn); err != nil {
 		return err
 	}
 

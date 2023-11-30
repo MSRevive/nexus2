@@ -96,6 +96,12 @@ func (h *logHandler) Handle(ctx context.Context, r slog.Record) error {
 		buf = append(buf, ' ')
 	}
 
+	if h.opts.Domain != "" {
+		buf = append(buf, []byte("domain=")...)
+		buf = append(buf, h.opts.Domain...)
+		buf = append(buf, ' ')
+	}
+
 	buf = append(buf, []byte("level=")...)
 	buf = append(buf, r.Level.String()...)
 	buf = append(buf, ' ')
@@ -108,12 +114,6 @@ func (h *logHandler) Handle(ctx context.Context, r slog.Record) error {
 		buf = append(buf, f.File...)
 		buf = append(buf, ':')
 		buf = strconv.AppendInt(buf, int64(f.Line), 10)
-		buf = append(buf, ' ')
-	}
-
-	if h.opts.Domain != "" {
-		buf = append(buf, []byte("domain=")...)
-		buf = append(buf, h.opts.Domain...)
 		buf = append(buf, ' ')
 	}
 

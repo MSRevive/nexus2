@@ -1,23 +1,22 @@
 package cmd
 
 import (
-	"context"
-	"crypto/tls"
-	"flag"
 	"fmt"
-	"io"
 	"os"
 	"runtime"
 	"strconv"
 	"time"
-	"errors"
+	"syscall"
 	"os/signal"
+	"crypto/tls"
+	"net/http"
 
 	"github.com/msrevive/nexus2/cmd/app"
-	"github.com/msrevive/nexus2/internal/controller"
+	//"github.com/msrevive/nexus2/internal/controller"
 	"github.com/msrevive/nexus2/internal/middleware"
 	"github.com/msrevive/nexus2/internal/database/mongodb"
 	"github.com/msrevive/nexus2/internal/config"
+	"github.com/msrevive/nexus2/internal/static"
 	"github.com/msrevive/nexus2/pkg/response"
 
 	"github.com/go-chi/chi/v5"
@@ -38,7 +37,7 @@ func doFlags(args []string) *flags {
 	flagSet := flag.NewFlagSet(args[0], flag.ExitOnError)
 	flagSet.StringVarP(&flgs.cfgFile, "config", "c", "./runtime/config.yaml", "Location of via config file")
 	flagSet.BoolVarP(&flgs.debug, "debug", "d", false, "Run with debug mode.")
-	flagSet.IntVarP(&flgs.threads, "t", "threads", 0, "The maximum number of threads the app is allowed to use.")
+	flagSet.IntVarP(&flgs.threads, "threads", "t", 0, "The maximum number of threads the app is allowed to use.")
 	flagSet.Parse(args[1:])
 
 	return flgs
@@ -57,16 +56,22 @@ func Run(args []string) (error) {
 	}
 
 	/////////////////////////
-	//Config and database dependencies.
+	//Config
 	/////////////////////////
 	config, err := config.LoadConfig(flgs.cfgFile)
 	if err != nil {
 		return err
 	}
 
+	/////////////////////////
+	//Database
+	/////////////////////////
 	db := mongodb.New()
+
+	/////////////////////////
+	//Application
+	/////////////////////////
 	a := app.New(config, db);
-	a.Debug = flgs.debug
 
 	/////////////////////////
 	//Logger Dependency
@@ -97,7 +102,7 @@ func Run(args []string) (error) {
 		}
 	}
 
-	fmt.Printf("Loading Admin list from %s", config.Verify.AdminListFile)
+	fmt.Printf("Loading Admin list from %s\n", config.Verify.AdminListFile)
 	if err := a.LoadAdminList(config.Verify.AdminListFile); err != nil {
 		a.Logger.Core.Warn("Failed to load Admin list.")
 	}
@@ -137,7 +142,11 @@ func Run(args []string) (error) {
 	/////////////////////////
 	//Middleware
 	/////////////////////////
-	mw := middleware.New(apps)
+	mw := middleware.New(a)
+
+	/////////////////////////
+	//Routing
+	/////////////////////////
 	router.Use(cmw.RealIP)
 	router.Use(mw.Headers)
 	if config.RateLimit.MaxRequests > 0 {
@@ -154,49 +163,25 @@ func Run(args []string) (error) {
 	}
 	router.Use(mw.Log)
 	router.Use(mw.PanicRecovery)
-	
-	con := controller.New(apps)
-	router.Route(app.APIPrefix, func(r chi.Router) {
-		r.Get("/ping", mw.Lv2Auth(con.GetPing))
-		r.Get("/map/{name}/{hash}", mw.Lv1Auth(con.GetMapVerify))
-		r.Get("/ban/{steamid:[0-9]+}", mw.Lv1Auth(con.GetBanVerify))
-		r.Get("/sc/{hash}", mw.Lv1Auth(con.GetSCVerify))
-		if flgs.debug {
-			r.Mount("/debug", cmw.Profiler())
-		}
-	})
 
-	router.Route(app.APIPrefix+"/character", func(r chi.Router) {
-		//r.Get("/", mw.Lv1Auth(con.GetAllCharacters))
-		r.Get("/id/{uid}", mw.Lv1Auth(con.GetCharacterByID))
-		r.Get("/{steamid:[0-9]+}", mw.Lv1Auth(con.GetCharacters))
-		r.Get("/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.GetCharacter))
-		r.Get("/export/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.ExportCharacter))
+	router.Route(static.APIVersion, func(r chi.Router) {
+		r.Route("/internal", func(r chi.Router) {
+			r.Use(mw.Tier2Auth)
+			r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte("welcome"))
+			})
+		})
 
-		r.Post("/", mw.Lv2Auth(con.PostCharacter))
-		r.Put("/{uid}", mw.Lv2Auth(con.PutCharacter))
-		r.Delete("/{uid}", mw.Lv2Auth(con.DeleteCharacter))
-
-		r.Patch("/transfer/{uid}/to/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.CharacterTransfer))
-		r.Patch("/copy/{uid}/to/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.CharacterCopy))
-	})
-
-	router.Route(app.APIPrefix+"/character/rollback", func(r chi.Router) {
-		r.Patch("/{uid}/restore", mw.Lv1Auth(con.RestoreCharacter))
-		r.Patch("/{steamid:[0-9]+}/{slot:[0-9]}/restore", mw.Lv1Auth(con.RestoreCharacterBySteamID))
-
-		r.Get("/{steamid:[0-9]+}/{slot:[0-9]}/versions", mw.Lv1Auth(con.CharacterVersions))
-		
-		r.Patch("/{steamid:[0-9]+}/{slot:[0-9]}/{version:[0-9]+}", mw.Lv1Auth(con.RollbackCharacter))
-		r.Patch("/{steamid:[0-9]+}/{slot:[0-9]}/latest", mw.Lv1Auth(con.RollbackLatestCharacter))
-		r.Delete("/{steamid:[0-9]+}/{slot:[0-9]}", mw.Lv1Auth(con.DeleteRollbacksCharacter))
+		r.Get("/test2", func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("welcome2"))
+		})
 	})
 
 	/////////////////////////
 	//Auto certificate
 	/////////////////////////
 	if err := a.Start(); err != nil {
-		a.Logger.Core.Error(err)
+		a.Logger.Core.Error("Fatal error", "error", err)
 		return err
 	}
 
@@ -206,7 +191,7 @@ func Run(args []string) (error) {
 	<-s
 
 	if err := a.Close(); err != nil {
-		a.Logger.Core.Error(err)
+		a.Logger.Core.Error("Fatal error", "error", err)
 		return err
 	}
 

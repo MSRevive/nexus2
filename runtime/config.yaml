@@ -2,7 +2,8 @@ core:
   address: 127.0.0.1
   port: 1337
 database:
-  conn: file:./runtime/chars.db?cache=private&mode=rwc&_fk=1& # Cache should be be set to private!
+  #conn: file:./runtime/chars.db?cache=private&mode=rwc&_fk=1& # Cache should be be set to private!
+  conn: mongodb://admin:abigdog1337@freyja.neunwelt.net:27504/msr?authSource=admin
   maxidleconns: 0 # Max idle connections
   maxopenconns: 0 # Max open connections
   connmaxlifetime: "" # Max lifetime of connections.
@@ -13,7 +14,7 @@ cert:
   enable: false
   domain: ""
 apiauth:
-  enforcekey: false
+  enforcekey: true
   enforceip: false
   iplistfile: ./runtime/ipwhitelist.json
 verify:
