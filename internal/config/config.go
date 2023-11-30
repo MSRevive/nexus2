@@ -4,6 +4,7 @@ import (
 	"os"
 	"fmt"
 	"errors"
+	"time"
 	"path/filepath"
   
 	"gopkg.in/ini.v1"
@@ -14,12 +15,10 @@ type Config struct {
 	Core struct {
 		Address string
 		Port int
+		Timeout time.Duration
 	}
 	Database struct {
-		Conn string
-		MaxIdleConns int
-		MaxOpenConns int
-		ConnMaxLifetime string
+		Connection string
 	}
 	RateLimit struct {
 		MaxRequests int

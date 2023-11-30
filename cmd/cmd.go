@@ -163,6 +163,7 @@ func Run(args []string) (error) {
 	}
 	router.Use(mw.Log)
 	router.Use(mw.PanicRecovery)
+	router.Use(cmw.Timeout(a.Config.Core.Timeout * time.Second))
 
 	router.Route(static.APIVersion, func(r chi.Router) {
 		r.Route("/internal", func(r chi.Router) {

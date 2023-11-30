@@ -131,7 +131,7 @@ func (a *App) LoadAdminList(path string) (err error) {
 
 func (a *App) Start() error {
 	fmt.Println("Connecting to database.")
-	if err := a.DB.Connect(a.Config.Database.Conn); err != nil {
+	if err := a.DB.Connect(a.Config.Database.Connection); err != nil {
 		return err
 	}
 
