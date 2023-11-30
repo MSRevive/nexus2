@@ -12,7 +12,7 @@ import (
 	"net/http"
 
 	"github.com/msrevive/nexus2/cmd/app"
-	//"github.com/msrevive/nexus2/internal/controller"
+	"github.com/msrevive/nexus2/internal/controller"
 	"github.com/msrevive/nexus2/internal/middleware"
 	"github.com/msrevive/nexus2/internal/database/mongodb"
 	"github.com/msrevive/nexus2/internal/config"
@@ -165,17 +165,17 @@ func Run(args []string) (error) {
 	router.Use(mw.PanicRecovery)
 	router.Use(cmw.Timeout(a.Config.Core.Timeout * time.Second))
 
+	con := controller.New(a)
 	router.Route(static.APIVersion, func(r chi.Router) {
 		r.Route("/internal", func(r chi.Router) {
 			r.Use(mw.Tier2Auth)
-			r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("welcome"))
-			})
+
+			r.Get("/map/{name}/{hash}", con.GetMapVerify)
+			r.Get("/ban/{steamid:[0-9]+}", con.GetBanVerify)
+			r.Get("/sc/{hash}", con.GetSCVerify)
 		})
 
-		r.Get("/test2", func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("welcome2"))
-		})
+		r.Get("/ping", con.GetPing)
 	})
 
 	/////////////////////////
