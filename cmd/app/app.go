@@ -84,48 +84,40 @@ func (a *App) SetHTTPServer(srv *http.Server) {
 	a.HTTPServer = srv
 }
 
-func (a *App) LoadIPList(path string) (err error) {
+func (a *App) LoadIPList(path string) error {
 	file,err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
-	err = a.List.IP.LoadFromJSON(file)
-
-	return
+	return a.List.IP.LoadFromJSON(file)
 }
 
-func (a *App) LoadMapList(path string) (err error) {
+func (a *App) LoadMapList(path string) error {
 	file,err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
-	err = a.List.Map.LoadFromJSON(file)
-
-	return
+	return a.List.Map.LoadFromJSON(file)
 }
 
-func (a *App) LoadBanList(path string) (err error) {
+func (a *App) LoadBanList(path string) error {
 	file,err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
-	err = a.List.Ban.LoadFromJSON(file)
-
-	return
+	return a.List.Ban.LoadFromJSON(file)
 }
 
-func (a *App) LoadAdminList(path string) (err error) {
+func (a *App) LoadAdminList(path string) error {
 	file,err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
-	err = a.List.Admin.LoadFromJSON(file)
-
-	return
+	return a.List.Admin.LoadFromJSON(file)
 }
 
 func (a *App) Start() error {
