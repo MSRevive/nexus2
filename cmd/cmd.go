@@ -176,6 +176,9 @@ func Run(args []string) (error) {
 		})
 
 		r.Get("/ping", con.GetPing)
+		if flgs.debug {
+			r.Mount("/debug", cmw.Profiler())
+		}
 	})
 
 	/////////////////////////
