@@ -3,6 +3,7 @@ package mongodb
 import (
 	"fmt"
 	"context"
+	"log/slog"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -28,7 +29,6 @@ func (d *mongoDB) Connect(conn string) error {
 	}
 
 	fmt.Println("Connected to MongoDB!")
-
 	return nil
 }
 
