@@ -3,7 +3,6 @@ package mongodb
 import (
 	"fmt"
 	"context"
-	"log/slog"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
