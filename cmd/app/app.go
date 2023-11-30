@@ -3,7 +3,6 @@ package app
 import (
 	"os"
 	"context"
-	"fmt"
 	"io"
 	"time"
 	"net/http"
@@ -130,14 +129,16 @@ func (a *App) LoadAdminList(path string) (err error) {
 }
 
 func (a *App) Start() error {
-	fmt.Println("Connecting to database.")
+	a.Logger.Core.Info("Connecting to database")
 	if err := a.DB.Connect(a.Config.Database.Connection); err != nil {
 		return err
 	}
 
 	if a.Config.Cert.Enable {
+		a.Logger.Core.Info("Starting HTTPS server with cert")
 		return a.StartHTTPWithCert()
 	}else{
+		a.Logger.Core.Info("Starting HTTP server")
 		return a.StartHTTP()
 	}
 
@@ -146,13 +147,14 @@ func (a *App) Start() error {
 
 func (a *App) Close() error {
 	//close database connection
-	fmt.Println("Disconnecting from database.")
+	a.Logger.Core.Info("Closing database connection")
 	if err := a.DB.Disconnect(); err != nil {
 		return err
 	}
 
 	//try to gracefully shutdown http server with 5 second timeout.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+	a.Logger.Core.Info("Shutting down HTTP server gracefully")
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
 	defer cancel()
 	if err := a.HTTPServer.Shutdown(ctx); err != nil {
 		return err // failure/timeout shutting down the server gracefully
