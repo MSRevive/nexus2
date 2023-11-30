@@ -7,12 +7,12 @@ import (
 )
 
 type controller struct {
-	App *app.App
+	A *app.App
 }
 
 func New(a *app.App) *controller {
 	return &controller{
-		App: a,
+		A: a,
 	}
 }
 

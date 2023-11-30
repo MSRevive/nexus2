@@ -9,12 +9,12 @@ import (
 )
 
 type Middleware struct {
-	app *app.App
+	a *app.App
 }
 
 func New(a *app.App) *Middleware {
 	return &Middleware{
-		app: a,
+		a: a,
 	}
 }
 
@@ -34,7 +34,7 @@ func (m *Middleware) Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-		m.app.LogAPI.Printf("%s %s from %s (%v) size (%d)", r.Method, r.RequestURI, r.RemoteAddr, time.Since(start), r.ContentLength)
+		m.a.Logger.API.Info("Received request", "method", r.Method, "URI", r.RequestURI, "IP", r.RemoteAddr, "size", r.ContentLength, "ping", time.Since(start))
 	})
 }
 
@@ -43,7 +43,7 @@ func (m *Middleware) PanicRecovery(next http.Handler) http.Handler {
 		defer func() {
 			if p := recover(); p != nil {
 				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-				m.app.LogAPI.Tracef("Fatal Error: %+v", p)
+				m.a.Logger.API.Error("Recovered from fatal error", "error", p)
 			}
 		}()
 		
@@ -70,18 +70,18 @@ func (mw *Middleware) Lv1Auth(next http.HandlerFunc) http.HandlerFunc {
 		ip := helper.GetIP(r)
 		key := r.Header.Get("Authorization")
 		
-		val,ok := mw.app.IPList[ip]
-		if mw.app.Config.ApiAuth.EnforceIP {
+		val,ok := mw.a.IPList[ip]
+		if mw.a.Config.ApiAuth.EnforceIP {
 			if !ok {
-				mw.app.LogAPI.Printf("%s is not authorized.", ip)
+				mw.a.Logger.API.Info("IP is not authorized!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}
 		}
 
-		if mw.app.Config.ApiAuth.EnforceKey {
+		if mw.a.Config.ApiAuth.EnforceKey {
 			if !ok || val != key {
-				mw.app.LogAPI.Printf("%s failed API key check.", ip)
+				mw.a.Logger.API.Info("API key is not authorized!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}
@@ -101,27 +101,27 @@ func (mw *Middleware) Lv2Auth(next http.HandlerFunc) http.HandlerFunc {
 		ip := helper.GetIP(r)
 		key := r.Header.Get("Authorization")
 		
-		val,ok := mw.app.IPList[ip]
-		if mw.app.Config.ApiAuth.EnforceIP {
+		val,ok := mw.a.IPList[ip]
+		if mw.a.Config.ApiAuth.EnforceIP {
 			if !ok {
-				mw.app.LogAPI.Printf("%s is not authorized.", ip)
+				mw.a.Logger.API.Info("IP is not authorized!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}
 		}
 
-		if mw.app.Config.ApiAuth.EnforceKey {
+		if mw.a.Config.ApiAuth.EnforceKey {
 			if !ok || val != key {
-				mw.app.LogAPI.Printf("%s failed API key check.", ip)
+				mw.a.Logger.API.Info("API key is not authorized!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}
 		}
 		
 		//if useragent in config is empty then just skip.
-		if mw.app.Config.Verify.Useragent != "" {
-			if r.UserAgent() != mw.app.Config.Verify.Useragent {
-				mw.app.LogAPI.Printf("%s incorrect user agent!", ip)
+		if mw.a.Config.Verify.Useragent != "" {
+			if r.UserAgent() != mw.a.Config.Verify.Useragent {
+				mw.a.Logger.API.Info("Incorrect user agent!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}

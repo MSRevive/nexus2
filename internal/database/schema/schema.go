@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type CharData struct {
+type CharacterData struct {
 	Version int `bson:"version"`
 	CreatedAt time.Time `bson:"created_at"`
 	Size int `bson:"size"`
@@ -15,7 +15,7 @@ type Character struct {
 	Slot int `bson:"slot`
 	UpdatedAt time.Time `bson:"updated_at"`
 	DeletedAt time.Time `bson:"deleted_at"`
-	Versions map[int]CharData `bson:"data"` //Version => character data
+	Versions map[int]CharacterData `bson:"data"` //Version => character data
 }
 
 type User struct {

@@ -9,12 +9,14 @@ import (
 	"io"
 	"time"
 	"net/http"
+	"log/slog"
+
 	
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/config"
 
-	"github.com/saintwish/auralog"
 	"github.com/saintwish/kv/ccmap"
+	rw "github.com/saintwish/rotatewriter"
 )
 
 type App struct {
@@ -22,8 +24,8 @@ type App struct {
 	DB database.Database
 	HTTPServer *http.Server
 	Logger struct {
-		Core *auralog.Logger
-		API *auralog.Logger
+		Core *slog.Logger
+		API *slog.Logger
 	}
 	List struct {
 		IP ccmap.Cache[string, string]
@@ -45,9 +47,39 @@ func New(cfg config.Config, db database.Database) (app *App) {
 	return
 }
 
-func (a *App) SetupLoggers(logcore *auralog.Logger, logapi *auralog.Logger) {
-	a.Logger.Core = logcore
-	a.Logger.API = logapi
+func (a *App) InitializeLoggers() {
+	expiration, err := time.ParseDuration(a.Config.Log.ExpireTime)
+	if err != nil {
+		return err
+	}
+
+	iow := io.MultiWriter(os.Stdout, &rw.RotateWriter{
+		Dir: a.Config.Log.Dir,
+		Filename: "server.log",
+		ExpireTime: expiration,
+		MaxSize: 5 * rw.Megabyte,
+	})
+
+	slevel := slog.LevelInfo
+	switch(a.Config.Log.Level) {
+	case "info":
+		slevel = slog.LevelInfo
+	case "warn":
+		slevel = slog.LevelWarn
+	case "error": 
+		slevel = slog.LevelError
+	case "debug":
+		slevel = slog.LevelDebug
+	}
+
+	a.Logger.Core = slog.New(NewLogHandler(iow, &LogOptions{
+		Level: slevel,
+		Domain: "CORE",
+	}))
+	a.Logger.API = slog.New(NewLogHandler(iow, &LogOptions{
+		Level: slevel,
+		Domain: "API",
+	}))
 }
 
 func (a *App) SetHTTPServer(srv *http.Server) {

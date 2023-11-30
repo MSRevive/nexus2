@@ -20,17 +20,10 @@ import (
 	"github.com/msrevive/nexus2/internal/config"
 	"github.com/msrevive/nexus2/pkg/response"
 
-	"github.com/saintwish/auralog"
-	"github.com/saintwish/auralog/rw"
 	"github.com/go-chi/chi/v5"
 	cmw "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
 	flag "github.com/spf13/pflag"
-)
-
-var (
-	logCore *auralog.Logger // Logs for core/server
-	logAPI *auralog.Logger // Logs for endpoints/middleware
 )
 
 type flags struct {
@@ -49,41 +42,6 @@ func doFlags(args []string) *flags {
 	flagSet.Parse(args[1:])
 
 	return flgs
-}
-
-func initLoggers(filename string, dir string, level string, expire string) {
-	ex, _ := time.ParseDuration(expire)
-	flags := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds
-	flagsWarn := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds
-	flagsError := auralog.Ldate | auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
-	flagsDebug := auralog.Ltime | auralog.Lmicroseconds | auralog.Lshortfile
-
-	file := &rw.RotateWriter{
-		Dir: dir,
-		Filename: filename,
-		ExpireTime: ex,
-		MaxSize: 5 * rwriter.Megabyte,
-	}
-
-	logCore = auralog.New(auralog.Config{
-		Output: io.MultiWriter(os.Stdout, file),
-		Prefix: "[CORE] ",
-		Level: auralog.ToLogLevel(level),
-		Flag: flags,
-		WarnFlag: flagsWarn,
-		ErrorFlag: flagsError,
-		DebugFlag: flagsDebug,
-	})
-
-	logAPI = auralog.New(auralog.Config{
-		Output: io.MultiWriter(os.Stdout, file),
-		Prefix: "[API] ",
-		Level: auralog.ToLogLevel(level),
-		Flag: flags,
-		WarnFlag: flagsWarn,
-		ErrorFlag: flagsError,
-		DebugFlag: flagsDebug,
-	})
 }
 
 func Run(args []string) (error) {
@@ -113,8 +71,7 @@ func Run(args []string) (error) {
 	/////////////////////////
 	//Logger Dependency
 	/////////////////////////
-	initLoggers("server.log", config.Log.Dir, config.Log.Level, config.Log.ExpireTime)
-	a.SetupLoggers(logCore, logAPI)
+	a.InitializeLoggers()
 
 	/////////////////////////
 	//Load JSON files into lists
@@ -122,27 +79,27 @@ func Run(args []string) (error) {
 	if config.ApiAuth.EnforceIP {
 		fmt.Printf("Loading IP list from %s\n", config.ApiAuth.IPListFile)
 		if err := a.LoadIPList(config.ApiAuth.IPListFile); err != nil {
-			logCore.Warnln("Failed to load IP list.")
+			a.Logger.Core.Warn("Failed to load IP list.")
 		}
 	}
 
 	if config.Verify.EnforceMap {
 		fmt.Printf("Loading Map list from %s\n", config.Verify.MapListFile)
 		if err := a.LoadMapList(config.Verify.MapListFile); err != nil {
-			logCore.Warnln("Failed to load Map list.")
+			a.Logger.Core.Warn("Failed to load Map list.")
 		}
 	}
 
 	if config.Verify.EnforceBan {
 		fmt.Printf("Loading Ban list from %s\n", config.Verify.BanListFile)
 		if err := a.LoadBanList(config.Verify.BanListFile); err != nil {
-			logCore.Warnln("Failed to load Ban list.")
+			a.Logger.Core.Warn("Failed to load Ban list.")
 		}
 	}
 
 	fmt.Printf("Loading Admin list from %s", config.Verify.AdminListFile)
 	if err := a.LoadAdminList(config.Verify.AdminListFile); err != nil {
-		logCore.Warnln("Failed to load Admin list.")
+		a.Logger.Core.Warn("Failed to load Admin list.")
 	}
 
 	/////////////////////////

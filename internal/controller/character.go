@@ -19,9 +19,9 @@ import (
 
 //GET /character/
 func (c *controller) GetAllCharacters(w http.ResponseWriter, r *http.Request) {
-	chars, err := service.New(r.Context(), c.App).CharactersGetAll()
+	chars, err := service.New(r.Context(), c.A).CharactersGetAll()
 	if err != nil {
-		c.App.Logger.API.Errorln(err)
+		c.A.Logger.API.Error("HTTP: failed to GetAllCharacters", "error", err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -35,18 +35,18 @@ func (c *controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 	var isBanned bool = false
 	var isAdmin bool = false
 
-	chars, err := service.New(r.Context(), c.App).CharactersGetBySteamid(steamid)
+	chars, err := service.New(r.Context(), c.A).CharactersGetBySteamid(steamid)
 	if err != nil {
-		c.App.Logger.API.Errorln(err)
+		c.A.Logger.Core.Error("CharactersGetBySteamid service failed", "error", err, "steamid", steamid)
 		response.BadRequest(w, err)
 		return
 	}
 
-	if ok := c.App.List.Ban.Has(steamid); ok && c.App.Config.Verify.EnforceBan {
+	if ok := c.A.List.Ban.Has(steamid); ok && c.App.Config.Verify.EnforceBan {
 		isBanned = true
 	}
 
-	if ok := c.App.List.Admin.Has(steamid); ok {
+	if ok := c.A.List.Admin.Has(steamid); ok {
 		isAdmin = true
 	}
 
@@ -58,25 +58,25 @@ func (c *controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
-		c.App.Logger.API.Errorln(err)
+		c.A.Logger.API.Error("HTTP: failed to GetCharacter", "error", err)
 		response.BadRequest(w, err)
 		return
 	}
 	var isBanned bool = false
 	var isAdmin bool = false
 
-	char, err := service.New(r.Context(), c.App).CharacterGetBySteamidSlot(steamid, slot)
+	char, err := service.New(r.Context(), c.).CharacterGetBySteamidSlot(steamid, slot)
 	if err != nil {
-		c.App.Logger.API.Errorln(err)
+		c.A.Logger.Core.Error("CharacterGetBySteamidSlot service failed", "error", err, "steamid", steamid, "slot", slot)
 		response.BadRequest(w, err)
 		return
 	}
 
-	if ok := c.App.List.Ban.Has(steamid); ok && c.App.Config.Verify.EnforceBan {
+	if ok := c.A.List.Ban.Has(steamid); ok && c.A.Config.Verify.EnforceBan {
 		isBanned = true
 	}
 
-	if ok := c.App.List.Admin.Has(steamid); ok {
+	if ok := c.A.List.Admin.Has(steamid); ok {
 		isAdmin = true
 	}
 
@@ -88,21 +88,21 @@ func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
 	if err != nil {
-		c.App.Logger.API.Errorln(err)
+		c.A.Logger.API.Error("HTTP: failed to ExportCharacter", "error", err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	char, err := service.New(r.Context(), c.App).CharacterGetBySteamidSlot(steamid, slot)
+	char, err := service.New(r.Context(), c.A).CharacterGetBySteamidSlot(steamid, slot)
 	if err != nil {
-		c.App.Logger.API.Errorln(err)
+		c.A.Logger.Core.Error("CharacterGetBySteamidSlot service failed", "error", err, "steamid", steamid, "slot", slot)
 		response.BadRequest(w, err)
 		return
 	}
 
 	file, path, err := helper.GenerateCharFile(steamid, slot, char.Data)
 	if err != nil {
-		c.App.Logger.API.Errorln(err)
+		c.A.Logger.Core.Error("Failed to generate character file", "error", err, "steamid", steamid, "slot", slot)
 		response.BadRequest(w, err)
 		return
 	}
@@ -116,25 +116,25 @@ func (c *controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
 func (c *controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
-		c.App.Logger.API.Errorln(err)
+		c.A.Logger.API.Error("HTTP: failed to GetCharacterByID", "error", err)
 		response.BadRequest(w, err)
 		return
 	}
 	var isBanned bool = false
 	var isAdmin bool = false
 
-	char, err := service.New(r.Context(), c.App).CharacterGetByID(uid)
+	char, err := service.New(r.Context(), c.A).CharacterGetByID(uid)
 	if err != nil {
-		c.App.Logger.API.Errorln(err)
+		c.A.Logger.API.Error("Failed to Character service", "error", err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	if ok := c.App.List.Ban.Has(char.SteamID); ok && c.App.Config.Verify.EnforceBan {
+	if ok := c.A.List.Ban.Has(char.SteamID); ok && c.A.Config.Verify.EnforceBan {
 		isBanned = true
 	}
 
-	if ok := c.App.List.Admin.Has(char.SteamID); ok {
+	if ok := c.A.List.Admin.Has(char.SteamID); ok {
 		isAdmin = true
 	}
 

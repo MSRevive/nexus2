@@ -3,6 +3,7 @@
 ## v2.0.0
 ### Changed
 * The database is now MongoDB instead of SQLite.
+* Switched to slog instead of using auralog, no more thirdparty dependency for logging!
 
 ## v1.3.1
 ### Added

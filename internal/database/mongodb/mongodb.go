@@ -10,8 +10,6 @@ import (
 
 type mongoDB struct {
 	Client *mongo.Client
-	serverQueue []mongo.WriteModel
-	userQueue []mongo.WriteModel
 }
 
 func New() *mongoDB {
@@ -35,11 +33,6 @@ func (d *mongoDB) Connect(conn string) error {
 }
 
 func (d *mongoDB) Disconnect() error {
-	//finish off the queue before we disconnect
-	if err := d.ProcessQueue(); err != nil {
-		return err
-	}
-	
 	if err := d.Client.Disconnect(context.Background()); err != nil {
 		return err
 	}
