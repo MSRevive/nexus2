@@ -173,6 +173,12 @@ func Run(args []string) (error) {
 			r.Get("/map/{name}/{hash}", con.GetMapVerify)
 			r.Get("/ban/{steamid:[0-9]+}", con.GetBanVerify)
 			r.Get("/sc/{hash}", con.GetSCVerify)
+
+			r.Route("/character", func(r chi.Router) {
+				r.Post("/", con.PostCharacter)
+				r.Put("/{uid}", con.PutCharacter)
+				r.Delete("/{uid}", con.DeleteCharacter)
+			})
 		})
 
 		r.Get("/ping", con.GetPing)
