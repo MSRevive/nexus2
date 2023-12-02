@@ -1,7 +1,7 @@
 // Taken from 
 // https://github.com/jba/slog/blob/main/handlers/loghandler/log_handler.go
 // because Go doesn't give us access to via default handler, thanks Go.
-package app
+package loghandler
 
 import (
 	"context"
@@ -17,8 +17,8 @@ import (
 const logBufSize = 1024 // the log buffer size, the larger it is, means more memory usage.
 // might need larger for the massive discord debug logs.
 
-type logHandler struct {
-	opts      LogOptions
+type LogHandler struct {
+	opts      Options
 	prefix    string // preformatted group names followed by a dot
 	preformat string // preformatted Attrs, with an initial space
 
@@ -27,15 +27,14 @@ type logHandler struct {
 }
 
 //apparently can't embed the slog.HandlerOptions for whatever reason.
-type LogOptions struct {
+type Options struct {
 	AddSource bool
 	Level slog.Leveler
 	ReplaceAttr func(groups []string, a slog.Attr) slog.Attr
-	Domain string
 }
 
-func NewLogHandler(w io.Writer, opts *LogOptions) *logHandler {
-	h := &logHandler{w: w}
+func New(w io.Writer, opts *Options) *LogHandler {
+	h := &LogHandler{w: w}
 	if opts != nil {
 		h.opts = *opts
 	}
@@ -45,7 +44,7 @@ func NewLogHandler(w io.Writer, opts *LogOptions) *logHandler {
 	return h
 }
 
-func (h *logHandler) Enabled(ctx context.Context, level slog.Level) bool {
+func (h *LogHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	minLevel := slog.LevelInfo
 	if h.opts.Level != nil {
 		minLevel = h.opts.Level.Level()
@@ -53,8 +52,8 @@ func (h *logHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return level >= minLevel
 }
 
-func (h *logHandler) WithGroup(name string) slog.Handler {
-	return &logHandler{
+func (h *LogHandler) WithGroup(name string) slog.Handler {
+	return &LogHandler{
 		w:         h.w,
 		opts:      h.opts,
 		preformat: h.preformat,
@@ -62,7 +61,7 @@ func (h *logHandler) WithGroup(name string) slog.Handler {
 	}
 }
 
-func (h *logHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+func (h *LogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	bufp := allocLogBuf()
 	buf := *bufp
 	defer func() {
@@ -74,7 +73,7 @@ func (h *logHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		buf = h.appendAttr(buf, h.prefix, a)
 	}
 
-	return &logHandler{
+	return &LogHandler{
 		w:         h.w,
 		opts:      h.opts,
 		prefix:    h.prefix,
@@ -82,7 +81,7 @@ func (h *logHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	}
 }
 
-func (h *logHandler) Handle(ctx context.Context, r slog.Record) error {
+func (h *LogHandler) Handle(ctx context.Context, r slog.Record) error {
 	bufp := allocLogBuf()
 	buf := *bufp
 	defer func() {
@@ -93,12 +92,6 @@ func (h *logHandler) Handle(ctx context.Context, r slog.Record) error {
 	if !r.Time.IsZero() {
 		buf = append(buf, []byte("time=")...)
 		buf = r.Time.AppendFormat(buf, time.RFC3339)
-		buf = append(buf, ' ')
-	}
-
-	if h.opts.Domain != "" {
-		buf = append(buf, []byte("domain=")...)
-		buf = append(buf, h.opts.Domain...)
 		buf = append(buf, ' ')
 	}
 
@@ -135,7 +128,7 @@ func (h *logHandler) Handle(ctx context.Context, r slog.Record) error {
 	return err
 }
 
-func (h *logHandler) appendAttr(buf []byte, prefix string, a slog.Attr) []byte {
+func (h *LogHandler) appendAttr(buf []byte, prefix string, a slog.Attr) []byte {
 	if a.Equal(slog.Attr{}) {
 		return buf
 	}

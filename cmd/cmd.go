@@ -14,9 +14,10 @@ import (
 	"github.com/msrevive/nexus2/cmd/app"
 	"github.com/msrevive/nexus2/internal/controller"
 	"github.com/msrevive/nexus2/internal/middleware"
-	"github.com/msrevive/nexus2/internal/database/mongodb"
 	"github.com/msrevive/nexus2/internal/config"
+	"github.com/msrevive/nexus2/internal/service"
 	"github.com/msrevive/nexus2/internal/static"
+	"github.com/msrevive/nexus2/internal/database/mongodb"
 	"github.com/msrevive/nexus2/pkg/response"
 
 	"github.com/go-chi/chi/v5"
@@ -84,27 +85,27 @@ func Run(args []string) (error) {
 	if config.ApiAuth.EnforceIP {
 		fmt.Printf("Loading IP list from %s\n", config.ApiAuth.IPListFile)
 		if err := a.LoadIPList(config.ApiAuth.IPListFile); err != nil {
-			a.Logger.Core.Warn("Failed to load IP list.")
+			a.Logger.Warn("Failed to load IP list.", "error", err)
 		}
 	}
 
 	if config.Verify.EnforceMap {
 		fmt.Printf("Loading Map list from %s\n", config.Verify.MapListFile)
 		if err := a.LoadMapList(config.Verify.MapListFile); err != nil {
-			a.Logger.Core.Warn("Failed to load Map list.")
+			a.Logger.Warn("Failed to load Map list.", "error", err)
 		}
 	}
 
 	if config.Verify.EnforceBan {
 		fmt.Printf("Loading Ban list from %s\n", config.Verify.BanListFile)
 		if err := a.LoadBanList(config.Verify.BanListFile); err != nil {
-			a.Logger.Core.Warn("Failed to load Ban list.")
+			a.Logger.Warn("Failed to load Ban list.", "error", err)
 		}
 	}
 
 	fmt.Printf("Loading Admin list from %s\n", config.Verify.AdminListFile)
 	if err := a.LoadAdminList(config.Verify.AdminListFile); err != nil {
-		a.Logger.Core.Warn("Failed to load Admin list.")
+		a.Logger.Warn("Failed to load Admin list.", "error", err)
 	}
 
 	/////////////////////////
@@ -142,7 +143,7 @@ func Run(args []string) (error) {
 	/////////////////////////
 	//Middleware
 	/////////////////////////
-	mw := middleware.New(a)
+	mw := middleware.New(a.Logger, a.Config, a.List.IP)
 
 	/////////////////////////
 	//Routing
@@ -165,7 +166,8 @@ func Run(args []string) (error) {
 	router.Use(mw.PanicRecovery)
 	router.Use(cmw.Timeout(a.Config.Core.Timeout * time.Second))
 
-	con := controller.New(a)
+	service := service.New(a.DB, a.Config)
+	con := controller.New(a.Logger, a.Config, service, a.List.Ban, a.List.Map, a.List.Admin)
 	router.Route(static.APIVersion, func(r chi.Router) {
 		r.Route("/internal", func(r chi.Router) {
 			r.Use(mw.Tier2Auth)
@@ -191,7 +193,7 @@ func Run(args []string) (error) {
 	//Auto certificate
 	/////////////////////////
 	if err := a.Start(); err != nil {
-		a.Logger.Core.Error("Fatal error", "error", err)
+		a.Logger.Error("Failed to start application", "error", err)
 		return err
 	}
 
@@ -201,7 +203,7 @@ func Run(args []string) (error) {
 	<-s
 
 	if err := a.Close(); err != nil {
-		a.Logger.Core.Error("Fatal error", "error", err)
+		a.Logger.Error("Failed to close application", "error", err)
 		return err
 	}
 

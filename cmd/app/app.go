@@ -10,6 +10,7 @@ import (
 
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/config"
+	"github.com/msrevive/nexus2/pkg/loghandler"
 
 	"github.com/saintwish/kv/ccmap"
 	rw "github.com/saintwish/rotatewriter"
@@ -19,10 +20,7 @@ type App struct {
 	Config config.Config
 	DB database.Database
 	HTTPServer *http.Server
-	Logger struct {
-		Core *slog.Logger
-		API *slog.Logger
-	}
+	Logger *slog.Logger
 	List struct {
 		IP *ccmap.Cache[string, string]
 		Ban *ccmap.Cache[string, bool]
@@ -68,13 +66,8 @@ func (a *App) InitializeLoggers() error {
 		slevel = slog.LevelDebug
 	}
 
-	a.Logger.Core = slog.New(NewLogHandler(iow, &LogOptions{
+	a.Logger = slog.New(loghandler.New(iow, &loghandler.Options{
 		Level: slevel,
-		Domain: "CORE",
-	}))
-	a.Logger.API = slog.New(NewLogHandler(iow, &LogOptions{
-		Level: slevel,
-		Domain: "API",
 	}))
 
 	return nil
@@ -121,16 +114,16 @@ func (a *App) LoadAdminList(path string) error {
 }
 
 func (a *App) Start() error {
-	a.Logger.Core.Info("Connecting to database")
+	a.Logger.Info("Connecting to database")
 	if err := a.DB.Connect(a.Config.Database.Connection); err != nil {
 		return err
 	}
 
 	if a.Config.Cert.Enable {
-		a.Logger.Core.Info("Starting HTTPS server with cert")
+		a.Logger.Info("Starting HTTPS server with cert")
 		return a.StartHTTPWithCert()
 	}else{
-		a.Logger.Core.Info("Starting HTTP server")
+		a.Logger.Info("Starting HTTP server")
 		return a.StartHTTP()
 	}
 
@@ -139,13 +132,13 @@ func (a *App) Start() error {
 
 func (a *App) Close() error {
 	//close database connection
-	a.Logger.Core.Info("Closing database connection")
+	a.Logger.Info("Closing database connection")
 	if err := a.DB.Disconnect(); err != nil {
 		return err
 	}
 
 	//try to gracefully shutdown http server with 5 second timeout.
-	a.Logger.Core.Info("Shutting down HTTP server gracefully")
+	a.Logger.Info("Shutting down HTTP server gracefully")
 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
 	defer cancel()
 	if err := a.HTTPServer.Shutdown(ctx); err != nil {

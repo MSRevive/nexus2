@@ -28,7 +28,7 @@ func (a *App) StartHTTPWithCert() (err error) {
 	}()
 	
 	go func() {
-		a.Logger.Core.Info("Listening with TLS on IP", "IP", a.HTTPServer.Addr)
+		a.Logger.Info("Listening with TLS on IP", "IP", a.HTTPServer.Addr)
 
 		if errr := a.HTTPServer.ListenAndServeTLS("", ""); errr != nil && errr != http.ErrServerClosed {
 			err = fmt.Errorf("failed to serve over HTTPS: %v", err)
@@ -40,7 +40,7 @@ func (a *App) StartHTTPWithCert() (err error) {
 
 func (a *App) StartHTTP() (err error) {
 	go func() {
-		a.Logger.Core.Info("Listening on IP", "IP", a.HTTPServer.Addr)
+		a.Logger.Info("Listening on IP", "IP", a.HTTPServer.Addr)
 
 		if errr := a.HTTPServer.ListenAndServe(); errr != nil && errr != http.ErrServerClosed {
 			err = fmt.Errorf("failed to serve over HTTP: %v", errr)

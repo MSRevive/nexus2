@@ -3,17 +3,24 @@ package middleware
 import (
 	"time"
 	"net/http"
+	"log/slog"
 
-	"github.com/msrevive/nexus2/cmd/app"
+	"github.com/msrevive/nexus2/internal/config"
+
+	"github.com/saintwish/kv/ccmap"
 )
 
 type Middleware struct {
-	a *app.App
+	logger *slog.Logger
+	config config.Config
+	ipList *ccmap.Cache[string, string]
 }
 
-func New(a *app.App) *Middleware {
+func New(log *slog.Logger, cfg config.Config, ipList *ccmap.Cache[string, string]) *Middleware {
 	return &Middleware{
-		a: a,
+		logger: log,
+		config: cfg,
+		ipList: ipList,
 	}
 }
 
@@ -33,7 +40,7 @@ func (m *Middleware) Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-		m.a.Logger.API.Info("HTTP", "method", r.Method, "URI", r.RequestURI, "IP", r.RemoteAddr, "size", r.ContentLength, "ping", time.Since(start))
+		m.logger.Info("HTTP", "method", r.Method, "URI", r.RequestURI, "IP", r.RemoteAddr, "size", r.ContentLength, "ping", time.Since(start))
 	})
 }
 
@@ -42,7 +49,7 @@ func (m *Middleware) PanicRecovery(next http.Handler) http.Handler {
 		defer func() {
 			if p := recover(); p != nil {
 				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-				m.a.Logger.API.Error("Recovered from fatal error", "error", p)
+				m.logger.Error("Recovered from fatal error", "error", p)
 			}
 		}()
 		

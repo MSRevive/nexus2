@@ -27,18 +27,18 @@ func (mw *Middleware) Tier1Auth(next http.Handler) http.Handler {
 		ip := helper.GetIP(r)
 		key := r.Header.Get("Authorization")
 		
-		val,ok := mw.a.List.IP.GetHas(ip)
-		if mw.a.Config.ApiAuth.EnforceIP {
+		val,ok := mw.ipList.GetHas(ip)
+		if mw.config.ApiAuth.EnforceIP {
 			if !ok {
-				mw.a.Logger.API.Info("IP is not authorized!", "ip", ip)
+				mw.logger.Info("IP is not authorized!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}
 		}
 
-		if mw.a.Config.ApiAuth.EnforceKey {
+		if mw.config.ApiAuth.EnforceKey {
 			if !ok || val != key {
-				mw.a.Logger.API.Info("API key is not authorized!", "ip", ip)
+				mw.logger.Info("API key is not authorized!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}
@@ -58,27 +58,27 @@ func (mw *Middleware) Tier2Auth(next http.Handler) http.Handler {
 		ip := helper.GetIP(r)
 		key := r.Header.Get("Authorization")
 		
-		val,ok := mw.a.List.IP.GetHas(ip)
-		if mw.a.Config.ApiAuth.EnforceIP {
+		val,ok := mw.ipList.GetHas(ip)
+		if mw.config.ApiAuth.EnforceIP {
 			if !ok {
-				mw.a.Logger.API.Info("IP is not authorized!", "ip", ip)
+				mw.logger.Info("IP is not authorized!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}
 		}
 
-		if mw.a.Config.ApiAuth.EnforceKey {
+		if mw.config.ApiAuth.EnforceKey {
 			if !ok || val != key {
-				mw.a.Logger.API.Info("API key is not authorized!", "ip", ip)
+				mw.logger.Info("API key is not authorized!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}
 		}
 		
 		//if useragent in config is empty then just skip.
-		if mw.a.Config.Verify.Useragent != "" {
-			if r.UserAgent() != mw.a.Config.Verify.Useragent {
-				mw.a.Logger.API.Info("Incorrect user agent!", "ip", ip)
+		if mw.config.Verify.Useragent != "" {
+			if r.UserAgent() != mw.config.Verify.Useragent {
+				mw.logger.Info("Incorrect user agent!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}

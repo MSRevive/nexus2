@@ -3,26 +3,39 @@ package controller
 import (
 	"strconv"
 	"net/http"
+	"log/slog"
 
-	"github.com/msrevive/nexus2/cmd/app"
+	"github.com/msrevive/nexus2/internal/config"
+	"github.com/msrevive/nexus2/internal/service"
 	"github.com/msrevive/nexus2/pkg/response"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/saintwish/kv/ccmap"
 )
 
 type Controller struct {
-	a *app.App
+	logger *slog.Logger
+	config config.Config
+	service *service.Service
+	banList *ccmap.Cache[string, bool]
+	mapList *ccmap.Cache[string, uint32]
+	adminList *ccmap.Cache[string, bool]
 }
 
-func New(a *app.App) *Controller {
+func New(log *slog.Logger, cfg config.Config, svr *service.Service, bans *ccmap.Cache[string, bool], maps *ccmap.Cache[string, uint32], admins *ccmap.Cache[string, bool]) *Controller {
 	return &Controller{
-		a: a,
+		logger: log,
+		config: cfg,
+		service: svr,
+		banList: bans,
+		mapList: maps,
+		adminList: admins,
 	}
 }
 
 //GET map/{name}/{hash}
 func (c *Controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
-	if !c.a.Config.Verify.EnforceMap {
+	if !c.config.Verify.EnforceMap {
 		response.Result(w, true)
 		return
 	}
@@ -30,17 +43,17 @@ func (c *Controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 	hash, err := strconv.ParseUint(chi.URLParam(r, "hash"), 10, 32)
 	if err != nil {
-		c.a.Logger.API.Error("HTTP: failed to GetMapVerify", "map", name)
+		c.logger.Error("HTTP: failed to GetMapVerify", "map", name)
 		response.BadRequest(w, err)
 		return
 	}
 	
-	if v,ok := c.a.List.Map.GetHas(name); ok && v == uint32(hash) {
+	if v,ok := c.mapList.GetHas(name); ok && v == uint32(hash) {
 		response.Result(w, true)
 		return
 	}
 	
-	c.a.Logger.API.Warn("Failed map verification", "IP", r.RemoteAddr, "map", name)
+	c.logger.Warn("Failed map verification", "IP", r.RemoteAddr, "map", name)
 	response.Result(w, false)
 	return
 }
@@ -48,15 +61,15 @@ func (c *Controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
 //GET ban/{steamid}
 //in this case false means player isn't banned
 func (c *Controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
-	if !c.a.Config.Verify.EnforceBan {
+	if !c.config.Verify.EnforceBan {
 		response.Result(w, false)
 		return
 	}
 	
 	steamid := chi.URLParam(r, "steamid")
 	
-	if ok := c.a.List.Ban.Has(steamid); ok {
-		c.a.Logger.API.Warn("SteamID is banned from FN", "IP", r.RemoteAddr, "SteamID", steamid)
+	if ok := c.banList.Has(steamid); ok {
+		c.logger.Warn("SteamID is banned from FN", "IP", r.RemoteAddr, "SteamID", steamid)
 		response.Result(w, true)
 		return
 	}
@@ -67,24 +80,24 @@ func (c *Controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
 
 //GET sc/{hash}
 func (c *Controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
-	if !c.a.Config.Verify.EnforceSC {
+	if !c.config.Verify.EnforceSC {
 		response.Result(w, true)
 		return
 	}
 	
 	hash, err := strconv.ParseUint(chi.URLParam(r, "hash"), 10, 32)
 	if err != nil {
-		c.a.Logger.API.Error("HTTP: failed to GetSCVerify")
+		c.logger.Error("HTTP: failed to GetSCVerify")
 		response.BadRequest(w, err)
 		return
 	}
 	
-	if c.a.Config.Verify.SCHash == uint32(hash) {
+	if c.config.Verify.SCHash == uint32(hash) {
 		response.Result(w, true)
 		return
 	}
 	
-	c.a.Logger.API.Warn("Failed SC verfication", "IP", r.RemoteAddr)
+	c.logger.Warn("Failed SC verfication", "IP", r.RemoteAddr)
 	response.Result(w, false)
 }
 

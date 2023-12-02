@@ -21,20 +21,20 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 		var buf bytes.Buffer
 
 		if size, err := io.Copy(&buf, r.Body); err != nil {
-			c.a.Logger.API.Error("failed to copy body", "error", err, "size", size, "expectedSize", r.ContentLength)
+			c.logger.Error("failed to copy body", "error", err, "size", size, "expectedSize", r.ContentLength)
 			response.BadRequest(w, err)
 			return
 		}
 
 		data := buf.Bytes()
-		c.a.Logger.API.Debug("character data sent", "data", data)
+		c.logger.Debug("character data sent", "data", data)
 		var errln error
 		if jsonErr, ok := err.(*json.SyntaxError); ok {
 			problemPart := data[jsonErr.Offset-10 : jsonErr.Offset+10]
 			errln = fmt.Errorf("%w ~ error near '%s' (offset %d)", err, problemPart, jsonErr.Offset)
 		}
 
-		c.a.Logger.API.Error("failed to parse data", "error", errln)
+		c.logger.Error("failed to parse data", "error", errln)
 		if errln == nil {
 			response.InternalServerError(w)
 			return
@@ -51,7 +51,7 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
-		c.a.Logger.API.Error("error parsing UUID", "error", err)
+		c.logger.Error("error parsing UUID", "error", err)
 		response.BadRequest(w, err)
 		return
 	}
@@ -61,20 +61,20 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 		var buf bytes.Buffer
 
 		if size, err := io.Copy(&buf, r.Body); err != nil {
-			c.a.Logger.API.Error("failed to copy body", "error", err, "size", size, "expectedSize", r.ContentLength)
+			c.logger.Error("failed to copy body", "error", err, "size", size, "expectedSize", r.ContentLength)
 			response.BadRequest(w, err)
 			return
 		}
 
 		data := buf.Bytes()
-		c.a.Logger.API.Debug("character data sent", "data", data)
+		c.logger.Debug("character data sent", "data", data)
 		var errln error
 		if jsonErr, ok := err.(*json.SyntaxError); ok {
 			problemPart := data[jsonErr.Offset-10 : jsonErr.Offset+10]
 			errln = fmt.Errorf("%w ~ error near '%s' (offset %d)", err, problemPart, jsonErr.Offset)
 		}
 
-		c.a.Logger.API.Error("failed to parse data", "error", errln)
+		c.logger.Error("failed to parse data", "error", errln)
 		if errln == nil {
 			response.InternalServerError(w)
 			return
@@ -90,7 +90,7 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
-		c.a.Logger.API.Error("error parsing UUID", "error", err)
+		c.logger.Error("error parsing UUID", "error", err)
 		response.BadRequest(w, err)
 		return
 	}
