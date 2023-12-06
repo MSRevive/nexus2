@@ -123,12 +123,10 @@ func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	plChar := payload.Character{
+	response.OKChar(w, isBanned, isAdmin, payload.Character{
 		SteamID: steamid,
 		Slot: slot,
 		Size: char.Size,
 		Data: char.Data,
-	}
-
-	response.OKChar(w, isBanned, isAdmin, plChar)
+	})
 }

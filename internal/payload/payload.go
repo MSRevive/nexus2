@@ -8,8 +8,8 @@ import (
 )
 
 type Character struct {
-	SteamID string
-	Slot int
-	Size int
-	Data string
+	SteamID string `json:"steamid"`
+	Slot int `json:"slot"`
+	Size int `json:"size"`
+	Data string `json:"data"`
 }
