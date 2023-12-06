@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-//POST /character/
+// POST /character/
 func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 	var char payload.Character
 	if err := json.NewDecoder(r.Body).Decode(&char); err != nil {
@@ -54,14 +54,14 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, 1)
 }
 
-//PUT /character/{uid}
+// PUT /character/{steamid:[0-9]+}/{slot:[0-9]}
 func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
-	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
-	if err != nil {
-		c.logger.Error("controller: bad request", "error", err)
-		response.BadRequest(w, err)
-		return
-	}
+	// uid, err := uuid.Parse(chi.URLParam(r, "uid"))
+	// if err != nil {
+	// 	c.logger.Error("controller: bad request", "error", err)
+	// 	response.BadRequest(w, err)
+	// 	return
+	// }
 
 	var char payload.Character
 	if err := json.NewDecoder(r.Body).Decode(&char); err != nil {
@@ -91,7 +91,13 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.OK(w, uid)
+	if err := c.service.UpdateCharacter(char); err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	response.OK(w, true)
 }
 
 func (c *Controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
@@ -105,6 +111,7 @@ func (c *Controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, uid)
 }
 
+// GET character/{steamid:[0-9]+}/{slot:[0-9]}
 func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))

@@ -1,7 +1,7 @@
 package service
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/msrevive/nexus2/internal/payload"
 	"github.com/msrevive/nexus2/internal/database/schema"
@@ -15,15 +15,28 @@ func (s *Service) NewCharacter(char payload.Character) error {
 	return nil
 }
 
+func (s *Service) UpdateCharacter(char payload.Character) error {
+	if err := s.db.UpdateCharacter(char.SteamID, char.Slot, char.Size, char.Data, s.config.Char.MaxBackups ,s.config.Char.BackupTime); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Service) GetCharacter(steamid string, slot int) (*schema.CharacterData, error) {
 	chars, err := s.db.GetCharacters(steamid); 
 	if err != nil {
 		return nil, err
 	}
 
-	charData, ok := chars[slot].Versions[0]
+	char, ok := chars[slot]
 	if !ok {
-		return nil, fmt.Errorf("no character data for version 0 for %s at slot %d", steamid, slot)
+		return nil, errors.New("character doesn't exists")
+	}
+
+	charData := char.Versions[0]
+	if len(char.Versions) == 0 {
+		return nil, errors.New("missing character data for 0")
 	}
 
 	return &charData, nil

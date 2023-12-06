@@ -60,9 +60,8 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 		Slot: slot,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-		Versions: map[int]schema.CharacterData{
-			0: schema.CharacterData{
-				Version: 0,
+		Versions: []schema.CharacterData{
+			schema.CharacterData{
 				CreatedAt: time.Now(),
 				Size: size,
 				Data: data,
@@ -102,6 +101,59 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 	// if err != nil {
 	// 	return err
 	// }
+	return nil
+}
+
+func (d *mongoDB) UpdateCharacter(steamid string, slot int, size int, data string, backupMax int, backupTime string) error {
+	filter := bson.D{{"_id", steamid}}
+	var user schema.User
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := d.UserCollection.FindOne(ctx, filter).Decode(&user); err == nil {
+		return err
+	}
+
+	newChar := schema.CharacterData{
+		CreatedAt: time.Now(),
+		Size: size,
+		Data: data,
+	}
+
+	updatedChar := user.Characters[slot]
+	updatedChar.UpdatedAt = time.Now()
+	verLen := len(updatedChar.Versions)
+	if verLen > 0 {
+		time, err := time.ParseDuration(backupTime)
+		if err != nil {
+			return err
+		}
+
+		if verLen > backupMax {
+			updatedChar.Versions = updatedChar.Versions[:verLen-1]
+		}
+
+		newest := updatedChar.Versions[0]
+		timeCheck := newest.CreatedAt.Add(time)
+		if (newest.CreatedAt.After(timeCheck)) {
+			updatedChar.Versions = append(updatedChar.Versions, newest)
+		}
+
+		updatedChar.Versions[0] = newChar
+	}else{
+		updatedChar.Versions = append(updatedChar.Versions, newChar)
+	}
+
+	user.Characters[slot] = updatedChar
+	opts := options.Update().SetUpsert(false)
+	update := bson.D{
+		{ "$set", bson.D{{ "characters", user.Characters }} },
+	}
+	_, err := d.UserCollection.UpdateByID(ctx, steamid, update, opts)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

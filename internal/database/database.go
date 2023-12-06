@@ -11,6 +11,7 @@ type Database interface {
 	Disconnect() error
 
 	NewCharacter(steamid string, slot int, size int, data string) error
+	UpdateCharacter(steamid string, slot int, size int, data string, backupMax int, backupTime string) error
 	GetCharacters(steamid string) (map[int]schema.Character, error)
 	GetUser(steamid string) (*schema.User, error)
 	//UpdateCharacter(steamid string, slot int)
