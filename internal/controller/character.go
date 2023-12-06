@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"io"
 	"bytes"
+	"strconv"
 
-	"github.com/msrevive/nexus2/internal/database/schema"
+	"github.com/msrevive/nexus2/internal/payload"
 	"github.com/msrevive/nexus2/pkg/response"
 
 	"github.com/go-chi/chi/v5"
@@ -16,8 +17,8 @@ import (
 
 //POST /character/
 func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
-	var newChar schema.CharacterData
-	if err := json.NewDecoder(r.Body).Decode(&newChar); err != nil {
+	var char payload.Character
+	if err := json.NewDecoder(r.Body).Decode(&char); err != nil {
 		var buf bytes.Buffer
 
 		if size, err := io.Copy(&buf, r.Body); err != nil {
@@ -44,20 +45,26 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.OK(w, newChar)
+	if err := c.service.NewCharacter(char); err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	response.OK(w, 1)
 }
 
 //PUT /character/{uid}
 func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
-		c.logger.Error("error parsing UUID", "error", err)
+		c.logger.Error("controller: bad request", "error", err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	var updatedChar schema.CharacterData
-	if err := json.NewDecoder(r.Body).Decode(&updatedChar); err != nil {
+	var char payload.Character
+	if err := json.NewDecoder(r.Body).Decode(&char); err != nil {
 		var buf bytes.Buffer
 
 		if size, err := io.Copy(&buf, r.Body); err != nil {
@@ -90,10 +97,38 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
 	if err != nil {
-		c.logger.Error("error parsing UUID", "error", err)
+		c.logger.Error("controller: bad request", "error", err)
 		response.BadRequest(w, err)
 		return
 	}
 
 	response.OK(w, uid)
+}
+
+func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
+	steamid := chi.URLParam(r, "steamid")
+	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
+	if err != nil {
+		c.logger.Error("controller: bad request", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+	isBanned := false;
+	isAdmin := false;
+
+	char, err := c.service.GetCharacter(steamid, slot)
+	if err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	plChar := payload.Character{
+		SteamID: steamid,
+		Slot: slot,
+		Size: char.Size,
+		Data: char.Data,
+	}
+
+	response.OKChar(w, isBanned, isAdmin, plChar)
 }
