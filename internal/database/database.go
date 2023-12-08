@@ -17,5 +17,4 @@ type Database interface {
 	GetCharacters(steamid string) (map[int]schema.Character, error)
 	SoftDeleteCharacter(id uuid.UUID) error
 	LookUpCharacterID(steamid string, slot int) (*uuid.UUID, error)
-	//UpdateCharacter(steamid string, slot int)
 }
