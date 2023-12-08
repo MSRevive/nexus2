@@ -68,6 +68,7 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 		user = schema.User{
 			ID: steamid,
 			Characters: make(map[int]uuid.UUID),
+			DeletedCharacters: make(map[int]schema.DeletedCharacter),
 		}
 		user.Characters[slot] = charID
 
@@ -97,6 +98,8 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 
 	char := schema.Character{
 		ID: charID,
+		SteamID: steamid,
+		Slot: slot,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Versions: []schema.CharacterData{
@@ -212,5 +215,38 @@ func (d *mongoDB) LookUpCharacterID(steamid string, slot int) (*uuid.UUID, error
 }
 
 func (d *mongoDB) SoftDeleteCharacter(id uuid.UUID) error {
+	char, err := d.GetCharacter(id)
+	if err != nil {
+		return err
+	}
+
+	user, err := d.GetUser(char.SteamID)
+	if err != nil {
+		return err
+	}
+
+	delete(user.Characters, char.Slot)
+	user.DeletedCharacters[char.Slot] = schema.DeletedCharacter{
+		CreatedAt: char.CreatedAt,
+		DeletedAt: time.Now(),
+		Data: char.Versions[0],
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	opts := options.Update().SetUpsert(false)
+	update := bson.D{
+		{ "$set", bson.D{{ "characters", user.Characters }} },
+		{ "$set", bson.D{{ "deleted_characters", user.DeletedCharacters }} },
+	}
+	if _, err := d.UserCollection.UpdateByID(ctx, char.SteamID, update, opts); err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", id}}
+	if _, err := d.CharCollection.DeleteOne(ctx, filter); err != nil {
+		return err
+	}
+
 	return nil
 }
