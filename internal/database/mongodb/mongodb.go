@@ -61,6 +61,20 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 	filter := bson.D{{"_id", steamid}}
 	var user schema.User
 	charID := uuid.New()
+	char := schema.Character{
+		ID: charID,
+		SteamID: steamid,
+		Slot: slot,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Versions: []schema.CharacterData{
+			schema.CharacterData{
+				CreatedAt: time.Now(),
+				Size: size,
+				Data: data,
+			},
+		},
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -73,6 +87,10 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 		user.Characters[slot] = charID
 
 		if _, err := d.UserCollection.InsertOne(ctx, &user); err != nil {
+			return uuid.Nil, err
+		}
+
+		if _, err := d.CharCollection.InsertOne(ctx, &char); err != nil {
 			return uuid.Nil, err
 		}
 
@@ -91,25 +109,6 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 		return uuid.Nil, err
 	}
 
-	// _,err := d.UserCollection.ReplaceOne(ctx, filter, user)
-	// if err != nil {
-	// 	return err
-	// }
-
-	char := schema.Character{
-		ID: charID,
-		SteamID: steamid,
-		Slot: slot,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Versions: []schema.CharacterData{
-			schema.CharacterData{
-				CreatedAt: time.Now(),
-				Size: size,
-				Data: data,
-			},
-		},
-	}
 	if _, err := d.CharCollection.InsertOne(ctx, &char); err != nil {
 		return uuid.Nil, err
 	}
@@ -123,7 +122,7 @@ func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := d.CharCollection.FindOne(ctx, filter).Decode(&char); err == nil {
+	if err := d.CharCollection.FindOne(ctx, filter).Decode(&char); err != nil {
 		return err
 	}
 
@@ -160,8 +159,7 @@ func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 		{ "$set", bson.D{{ "versions", char.Versions }} },
 		{ "$set", bson.D{{ "updated_at", time.Now() }} },
 	}
-	_, err := d.CharCollection.UpdateByID(ctx, id, update, opts)
-	if err != nil {
+	if _, err := d.CharCollection.UpdateByID(ctx, id, update, opts); err != nil {
 		return err
 	}
 
@@ -214,15 +212,15 @@ func (d *mongoDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error)
 	return uuid, nil
 }
 
-func (d *mongoDB) SoftDeleteCharacter(id uuid.UUID) error {
+func (d *mongoDB) SoftDeleteCharacter(id uuid.UUID) (uuid.UUID, error) {
 	char, err := d.GetCharacter(id)
 	if err != nil {
-		return err
+		return uuid.Nil, err
 	}
 
 	user, err := d.GetUser(char.SteamID)
 	if err != nil {
-		return err
+		return uuid.Nil, err
 	}
 
 	delete(user.Characters, char.Slot)
@@ -240,13 +238,14 @@ func (d *mongoDB) SoftDeleteCharacter(id uuid.UUID) error {
 		{ "$set", bson.D{{ "deleted_characters", user.DeletedCharacters }} },
 	}
 	if _, err := d.UserCollection.UpdateByID(ctx, char.SteamID, update, opts); err != nil {
-		return err
+		return uuid.Nil, err
 	}
 
 	filter := bson.D{{"_id", id}}
 	if _, err := d.CharCollection.DeleteOne(ctx, filter); err != nil {
-		return err
+		return uuid.Nil, err
 	}
 
-	return nil
+	return id, nil
 }
+

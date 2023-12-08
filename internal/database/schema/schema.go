@@ -25,7 +25,7 @@ type Character struct {
 	Slot int `bson:"slot"`
 	CreatedAt time.Time `bson:"created_at"`
 	UpdatedAt time.Time `bson:"updated_at"`
-	Versions []CharacterData `bson:"data"` //Version => character data
+	Versions []CharacterData `bson:"versions"` //Version => character data
 }
 
 type User struct {

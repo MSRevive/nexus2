@@ -59,8 +59,8 @@ func (s *Service) GetCharacter(steamid string, slot int) (*schema.CharacterData,
 	return &charData, nil
 }
 
-func (s *Service) DeleteCharacter(uuid uuid.UUID) error {
-	if err := s.db.SoftDeleteCharacter(uuid); err != nil {
+func (s *Service) DeleteCharacter(uid uuid.UUID) error {
+	if _,err := s.db.SoftDeleteCharacter(uid); err != nil {
 		return err
 	}
 
