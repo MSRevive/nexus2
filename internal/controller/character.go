@@ -45,23 +45,24 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := c.service.NewCharacter(char); err != nil {
+	uid, err := c.service.NewCharacter(char); 
+	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	response.OK(w, 1)
+	response.OK(w, uid.String())
 }
 
-// PUT /character/{steamid:[0-9]+}/{slot:[0-9]}
+// PUT /character/{uuid}
 func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
-	// uid, err := uuid.Parse(chi.URLParam(r, "uid"))
-	// if err != nil {
-	// 	c.logger.Error("controller: bad request", "error", err)
-	// 	response.BadRequest(w, err)
-	// 	return
-	// }
+	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		c.logger.Error("controller: bad request", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
 
 	var char payload.Character
 	if err := json.NewDecoder(r.Body).Decode(&char); err != nil {
@@ -91,24 +92,39 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := c.service.UpdateCharacter(char); err != nil {
+	if err := c.service.UpdateCharacter(uid, char); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.BadRequest(w, err)
 		return
 	}
 
-	response.OK(w, true)
+	response.OK(w, char.Size)
 }
 
-func (c *Controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
-	uid, err := uuid.Parse(chi.URLParam(r, "uid"))
+// GET character/{uuid}
+func (c *Controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
+	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		c.logger.Error("controller: bad request", "error", err)
 		response.BadRequest(w, err)
 		return
 	}
+	isBanned := false;
+	isAdmin := false;
 
-	response.OK(w, uid)
+	char, err := c.service.GetCharacterByID(uid)
+	if err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	response.OKChar(w, isBanned, isAdmin, payload.Character{
+		SteamID: "",
+		Slot: -1,
+		Size: char.Size,
+		Data: char.Data,
+	})
 }
 
 // GET character/{steamid:[0-9]+}/{slot:[0-9]}
@@ -136,4 +152,22 @@ func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 		Size: char.Size,
 		Data: char.Data,
 	})
+}
+
+// DELETE character/{uuid}
+func (c *Controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
+	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		c.logger.Error("controller: bad request", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	if err := c.service.DeleteCharacter(uid); err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	response.OK(w, true)
 }

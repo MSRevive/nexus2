@@ -3,7 +3,7 @@ package schema
 import (
 	"time"
 
-	//"github.com/google/uuid"
+	"github.com/google/uuid"
 )
 
 type CharacterData struct {
@@ -14,7 +14,7 @@ type CharacterData struct {
 
 //Characters collection
 type Character struct {
-	Slot int `bson:"slot`
+	ID uuid.UUID `bson:"_id"`
 	CreatedAt time.Time `bson:"created_at"`
 	UpdatedAt time.Time `bson:"updated_at"`
 	DeletedAt *time.Time `bson:"deleted_at"`
@@ -23,5 +23,5 @@ type Character struct {
 
 type User struct {
 	ID string `bson:"_id"` //this is the SteamID64
-	Characters map[int]Character `bson:"characters"`
+	Characters map[int]uuid.UUID `bson:"characters"` //Slot => reference Character by ID
 }

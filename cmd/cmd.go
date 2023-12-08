@@ -178,8 +178,9 @@ func Run(args []string) (error) {
 
 			r.Route("/character", func(r chi.Router) {
 				r.Post("/", con.PostCharacter)
-				r.Put("/{steamid:[0-9]+}/{slot:[0-9]}", con.PutCharacter)
-				r.Delete("/{steamid:[0-9]+}/{slot:[0-9]}", con.DeleteCharacter)
+				r.Put("/{uuid}", con.PutCharacter)
+				r.Delete("/{uuid}", con.DeleteCharacter)
+				r.Get("/{uuid}", con.GetCharacterByID)
 				r.Get("/{steamid:[0-9]+}/{slot:[0-9]}", con.GetCharacter)
 			})
 		})
