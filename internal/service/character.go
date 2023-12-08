@@ -9,13 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Service) NewCharacter(char payload.Character) (*uuid.UUID, error) {
-	uuid, err := s.db.NewCharacter(char.SteamID, char.Slot, char.Size, char.Data); 
+func (s *Service) NewCharacter(char payload.Character) (uuid.UUID, error) {
+	uid, err := s.db.NewCharacter(char.SteamID, char.Slot, char.Size, char.Data); 
 	if err != nil {
-		return nil, err
+		return uuid.Nil, err
 	}
 
-	return uuid, nil
+	return uid, nil
 }
 
 func (s *Service) UpdateCharacter(uuid uuid.UUID, char payload.Character) error {
@@ -46,7 +46,7 @@ func (s *Service) GetCharacter(steamid string, slot int) (*schema.CharacterData,
 		return nil, err
 	}
 
-	char, err := s.db.GetCharacter(*uid); 
+	char, err := s.db.GetCharacter(uid); 
 	if err != nil {
 		return nil, err
 	}

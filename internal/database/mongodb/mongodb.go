@@ -57,7 +57,7 @@ func (d *mongoDB) Disconnect() error {
 	return nil
 }
 
-func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) (*uuid.UUID, error) {
+func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
 	filter := bson.D{{"_id", steamid}}
 	var user schema.User
 	charID := uuid.New()
@@ -73,12 +73,12 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 		user.Characters[slot] = charID
 
 		if _, err := d.UserCollection.InsertOne(ctx, &user); err != nil {
-			return nil, err
+			return uuid.Nil, err
 		}
 
-		return &charID, nil
+		return charID, nil
 	} else if err != nil {
-		return nil, err
+		return uuid.Nil, err
 	}
 
 	user.Characters[slot] = charID
@@ -88,7 +88,7 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 	}
 	_, err := d.UserCollection.UpdateByID(ctx, steamid, update, opts)
 	if err != nil {
-		return nil, err
+		return uuid.Nil, err
 	}
 
 	// _,err := d.UserCollection.ReplaceOne(ctx, filter, user)
@@ -111,10 +111,10 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 		},
 	}
 	if _, err := d.CharCollection.InsertOne(ctx, &char); err != nil {
-		return nil, err
+		return uuid.Nil, err
 	}
 
-	return &charID, nil
+	return charID, nil
 }
 
 func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime string) error {
@@ -204,14 +204,14 @@ func (d *mongoDB) GetCharacters(steamid string) (map[int]schema.Character, error
 	return chars, nil
 }
 
-func (d *mongoDB) LookUpCharacterID(steamid string, slot int) (*uuid.UUID, error) {
+func (d *mongoDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
 	user, err := d.GetUser(steamid)
 	if err != nil {
-		return nil, err
+		return uuid.Nil, err
 	}
 
 	uuid := user.Characters[slot]
-	return &uuid, nil
+	return uuid, nil
 }
 
 func (d *mongoDB) SoftDeleteCharacter(id uuid.UUID) error {
