@@ -100,11 +100,10 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 	}
 
 	user.Characters[slot] = charID
-	opts := options.Update().SetUpsert(false)
 	update := bson.D{
 		{ "$set", bson.D{{ "characters", user.Characters }} },
 	}
-	_, err := d.UserCollection.UpdateByID(ctx, steamid, update, opts)
+	_, err := d.UserCollection.UpdateByID(ctx, steamid, update)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -154,12 +153,11 @@ func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 		char.Versions = append(char.Versions, newChar)
 	}
 
-	opts := options.Update().SetUpsert(false)
 	update := bson.D{
 		{ "$set", bson.D{{ "versions", char.Versions }} },
 		{ "$set", bson.D{{ "updated_at", time.Now() }} },
 	}
-	if _, err := d.CharCollection.UpdateByID(ctx, id, update, opts); err != nil {
+	if _, err := d.CharCollection.UpdateByID(ctx, id, update); err != nil {
 		return err
 	}
 
@@ -232,12 +230,11 @@ func (d *mongoDB) SoftDeleteCharacter(id uuid.UUID) (uuid.UUID, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	opts := options.Update().SetUpsert(false)
 	update := bson.D{
 		{ "$set", bson.D{{ "characters", user.Characters }} },
 		{ "$set", bson.D{{ "deleted_characters", user.DeletedCharacters }} },
 	}
-	if _, err := d.UserCollection.UpdateByID(ctx, char.SteamID, update, opts); err != nil {
+	if _, err := d.UserCollection.UpdateByID(ctx, char.SteamID, update); err != nil {
 		return uuid.Nil, err
 	}
 
@@ -269,11 +266,10 @@ func (d *mongoDB) DeleteCharacterReference(steamid string, slot int) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	opts := options.Update().SetUpsert(false)
 	update := bson.D{
 		{ "$set", bson.D{{ "characters", user.Characters }} },
 	}
-	if _, err := d.UserCollection.UpdateByID(ctx, steamid, update, opts); err != nil {
+	if _, err := d.UserCollection.UpdateByID(ctx, steamid, update); err != nil {
 		return err
 	}
 
