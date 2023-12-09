@@ -201,3 +201,23 @@ func (c *Controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 
 	response.OK(w, uid.String())
 }
+
+// GET character/lookup/{steamid:[0-9]+}/{slot:[0-9]}
+func (c *Controller) LookUpCharacterID(w http.ResponseWriter, r *http.Request) {
+	steamid := chi.URLParam(r, "steamid")
+	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
+	if err != nil {
+		c.logger.Error("controller: bad request", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	uid, err := c.service.LookUpCharacterID(steamid, slot)
+	if err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	response.OK(w, uid.String())
+}

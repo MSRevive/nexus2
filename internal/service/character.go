@@ -82,3 +82,12 @@ func (s *Service) DeleteCharacter(uid uuid.UUID) error {
 
 	return nil
 }
+
+func (s *Service) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
+	uid, err := s.db.LookUpCharacterID(steamid, slot)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return uid, nil
+}
