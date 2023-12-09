@@ -25,7 +25,7 @@ func New() *mongoDB {
 }
 
 func (d *mongoDB) Connect(conn string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	opts := options.Client().ApplyURI(conn).SetRegistry(mongoRegistry)
@@ -47,7 +47,7 @@ func (d *mongoDB) Connect(conn string) error {
 }
 
 func (d *mongoDB) Disconnect() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := d.Client.Disconnect(ctx); err != nil {

@@ -199,5 +199,5 @@ func (c *Controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.OK(w, uid)
+	response.OK(w, uid.String())
 }
