@@ -169,6 +169,7 @@ func Run(args []string) (error) {
 	service := service.New(a.DB, a.Config)
 	con := controller.New(a.Logger, a.Config, service, a.List.Ban, a.List.Map, a.List.Admin)
 	router.Route(static.APIVersion, func(r chi.Router) {
+		// Internal use for the game server only.
 		r.Route("/internal", func(r chi.Router) {
 			r.Use(mw.Tier2Auth)
 
@@ -180,10 +181,21 @@ func Run(args []string) (error) {
 				r.Post("/", con.PostCharacter)
 				r.Put("/{uuid}", con.PutCharacter)
 				r.Delete("/{uuid}", con.DeleteCharacter)
+
 				r.Get("/{uuid}", con.GetCharacterByID)
 				r.Get("/{steamid:[0-9]+}", con.GetCharacters)
 				r.Get("/{steamid:[0-9]+}/{slot:[0-9]}", con.GetCharacter)
+			})
+		})
+
+		r.Route("/", func(r chi.Router) {
+			r.Use(mw.Tier1Auth)
+
+			r.Route("/character", func(r chi.Router) {
+				r.Get("/lookup/{steamid:[0-9]+}/{slot:[0-9]}", con.LookUpCharacterID)
 				r.Get("/deleted/{steamid:[0-9]+}", con.GetDeletedCharacters)
+				r.Get("/{steamid:[0-9]+}", con.GetCharacters)
+				r.Get("/{uuid}", con.GetCharacterByID)
 			})
 		})
 
