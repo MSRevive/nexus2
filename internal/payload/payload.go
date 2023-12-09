@@ -4,10 +4,11 @@ package payload
 // inside the database like the character version or w/e
 
 import (
-
+	"github.com/google/uuid"
 )
 
 type Character struct {
+	ID uuid.UUID `json:"id"`
 	SteamID string `json:"steamid"`
 	Slot int `json:"slot"`
 	Size int `json:"size"`

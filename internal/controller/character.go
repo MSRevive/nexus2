@@ -120,10 +120,11 @@ func (c *Controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.OKChar(w, isBanned, isAdmin, payload.Character{
-		SteamID: "",
-		Slot: -1,
-		Size: char.Size,
-		Data: char.Data,
+		ID: char.ID,
+		SteamID: char.SteamID,
+		Slot: char.Slot,
+		Size: char.Versions[0].Size,
+		Data: char.Versions[0].Data,
 	})
 }
 
@@ -147,10 +148,11 @@ func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.OKChar(w, isBanned, isAdmin, payload.Character{
-		SteamID: steamid,
-		Slot: slot,
-		Size: char.Size,
-		Data: char.Data,
+		ID: char.ID,
+		SteamID: char.SteamID,
+		Slot: char.Slot,
+		Size: char.Versions[0].Size,
+		Data: char.Versions[0].Data,
 	})
 }
 

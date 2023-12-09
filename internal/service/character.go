@@ -26,21 +26,20 @@ func (s *Service) UpdateCharacter(uuid uuid.UUID, char payload.Character) error 
 	return nil
 }
 
-func (s *Service) GetCharacterByID(uuid uuid.UUID) (*schema.CharacterData, error) {
+func (s *Service) GetCharacterByID(uuid uuid.UUID) (*schema.Character, error) {
 	char, err := s.db.GetCharacter(uuid); 
 	if err != nil {
 		return nil, err
 	}
 
-	charData := char.Versions[0]
 	if len(char.Versions) == 0 {
-		return nil, errors.New("missing character data for 0")
+		return nil, errors.New("malformed character data")
 	}
 
-	return &charData, nil
+	return char, nil
 }
 
-func (s *Service) GetCharacter(steamid string, slot int) (*schema.CharacterData, error) {
+func (s *Service) GetCharacter(steamid string, slot int) (*schema.Character, error) {
 	uid, err := s.db.LookUpCharacterID(steamid, slot)
 	if err != nil {
 		return nil, err
@@ -51,12 +50,11 @@ func (s *Service) GetCharacter(steamid string, slot int) (*schema.CharacterData,
 		return nil, err
 	}
 
-	charData := char.Versions[0]
 	if len(char.Versions) == 0 {
-		return nil, errors.New("missing character data for 0")
+		return nil, errors.New("malformed character data")
 	}
 
-	return &charData, nil
+	return char, nil
 }
 
 func (s *Service) GetCharacters(steamid string) ([]schema.Character, error) {
