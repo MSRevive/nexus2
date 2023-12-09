@@ -75,7 +75,7 @@ func (s *Service) GetDeletedCharacters(steamid string) (map[int]schema.DeletedCh
 	return user.DeletedCharacters, nil
 }
 
-func (s *Service) DeleteCharacter(uid uuid.UUID) error {
+func (s *Service) SoftDeleteCharacter(uid uuid.UUID) error {
 	if _,err := s.db.SoftDeleteCharacter(uid); err != nil {
 		return err
 	}
@@ -90,4 +90,38 @@ func (s *Service) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error)
 	}
 
 	return uid, nil
+}
+
+func (s *Service) MoveCharacter(uid uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+	if err := s.db.MoveCharacter(uid, steamid, slot); err != nil {
+		return uuid.Nil, err
+	}
+
+	return uid, nil
+}
+
+func (s *Service) CopyCharacter(uid uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+	newUID, err := s.db.CopyCharacter(uid, steamid, slot); 
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return newUID, nil
+}
+
+func (s *Service) HardDeleteCharacter(uid uuid.UUID) error {
+	char, err := s.db.GetCharacter(uid); 
+	if err != nil {
+		return err
+	}
+
+	if err := s.db.DeleteCharacterReference(char.SteamID, char.Slot); err != nil {
+		return err
+	}
+
+	if err := s.db.DeleteCharacter(uid); err != nil {
+		return err
+	}
+
+	return nil
 }

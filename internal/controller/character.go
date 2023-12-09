@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// POST /character/
+// POST /internal/character/
 func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 	var char payload.Character
 	if err := json.NewDecoder(r.Body).Decode(&char); err != nil {
@@ -55,7 +55,7 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, uid.String())
 }
 
-// PUT /character/{uuid}
+// PUT /internal/character/{uuid}
 func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
@@ -101,7 +101,7 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, char.Size)
 }
 
-// GET character/{uuid}
+// GET /internal/character/{uuid}
 func (c *Controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
@@ -128,7 +128,7 @@ func (c *Controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GET character/{steamid:[0-9]+}/{slot:[0-9]}
+// GET /internal/character/{steamid:[0-9]+}/{slot:[0-9]}
 func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
@@ -156,7 +156,7 @@ func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GET /character/{steamid:[0-9]+}
+// GET /internal/character/{steamid:[0-9]+}
 func (c *Controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 
@@ -170,7 +170,7 @@ func (c *Controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, chars)
 }
 
-// GET /character/deleted/{steamid:[0-9]+}
+// GET /internal/character/deleted/{steamid:[0-9]+}
 func (c *Controller) GetDeletedCharacters(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 
@@ -184,8 +184,8 @@ func (c *Controller) GetDeletedCharacters(w http.ResponseWriter, r *http.Request
 	response.OK(w, chars)
 }
 
-// DELETE character/{uuid}
-func (c *Controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
+// DELETE /internal/character/{uuid}
+func (c *Controller) SoftDeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))
 	if err != nil {
 		c.logger.Error("controller: bad request", "error", err)
@@ -193,7 +193,7 @@ func (c *Controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := c.service.DeleteCharacter(uid); err != nil {
+	if err := c.service.SoftDeleteCharacter(uid); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.BadRequest(w, err)
 		return
@@ -220,4 +220,74 @@ func (c *Controller) LookUpCharacterID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.OK(w, uid.String())
+}
+
+// PATCH /unsafe/character/move/{uuid}/to/{steamid:[0-9]+}/{slot:[0-9]}
+func (c *Controller) UnsafeMoveCharacter(w http.ResponseWriter, r *http.Request) {
+	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		c.logger.Error("controller: bad request", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+	steamid := chi.URLParam(r, "steamid")
+	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
+	if err != nil {
+		c.logger.Error("controller: bad request", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	newUID, err := c.service.MoveCharacter(uid, steamid, slot)
+	if err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	response.OK(w, newUID.String())
+}
+
+// PATCH /unsafe/character/copy/{uuid}/to/{steamid:[0-9]+}/{slot:[0-9]}
+func (c *Controller) UnsafeCopyCharacter(w http.ResponseWriter, r *http.Request) {
+	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		c.logger.Error("controller: bad request", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+	steamid := chi.URLParam(r, "steamid")
+	slot, err := strconv.Atoi(chi.URLParam(r, "slot"))
+	if err != nil {
+		c.logger.Error("controller: bad request", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	newUID, err := c.service.CopyCharacter(uid, steamid, slot)
+	if err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	response.OK(w, newUID.String())
+}
+
+// DELETE /unsafe/character/delete/{uuid}
+func (c *Controller) UnsafeDeleteCharacter(w http.ResponseWriter, r *http.Request) {
+	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		c.logger.Error("controller: bad request", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	if err := c.service.HardDeleteCharacter(uid); err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	response.OK(w, uid)
 }

@@ -248,3 +248,112 @@ func (d *mongoDB) SoftDeleteCharacter(id uuid.UUID) (uuid.UUID, error) {
 
 	return id, nil
 }
+
+func (d *mongoDB) DeleteCharacter(id uuid.UUID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, err := d.CharCollection.DeleteOne(ctx, bson.D{{"_id", id}}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *mongoDB) DeleteCharacterReference(steamid string, slot int) error {
+	user, err := d.GetUser(steamid)
+	if err != nil {
+		return err
+	}
+
+	delete(user.Characters, slot)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	opts := options.Update().SetUpsert(false)
+	update := bson.D{
+		{ "$set", bson.D{{ "characters", user.Characters }} },
+	}
+	if _, err := d.UserCollection.UpdateByID(ctx, steamid, update, opts); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *mongoDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
+	user, err := d.GetUser(steamid)
+	if err != nil {
+		return err
+	}
+
+	user.Characters[slot] = id
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	update := bson.D{
+		{ "$set", bson.D{{ "characters", user.Characters }} },
+	}
+	if _, err := d.UserCollection.UpdateByID(ctx, steamid, update); err != nil {
+		return err
+	}
+
+	char, err := d.GetCharacter(id)
+	if err != nil {
+		return err
+	}
+
+	// Delete reference to the character from via old user
+	if err := d.DeleteCharacterReference(char.SteamID, char.Slot); err != nil {
+		return err
+	}
+
+	// Update character with new user information.
+	update = bson.D{
+		{ "$set", bson.D{{ "steamid", steamid }} },
+		{ "$set", bson.D{{ "slot", slot }} },
+	}
+	if _, err := d.CharCollection.UpdateByID(ctx, id, update); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *mongoDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+	charID := uuid.New()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Create reference to "new" character.
+	user, err := d.GetUser(steamid)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	user.Characters[slot] = charID
+
+	update := bson.D{
+		{ "$set", bson.D{{ "characters", user.Characters }} },
+	}
+	if _, err := d.UserCollection.UpdateByID(ctx, steamid, update); err != nil {
+		return uuid.Nil, err
+	}
+
+	// Insert new character data.
+	char, err := d.GetCharacter(id)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	char.ID = charID
+	char.SteamID = steamid
+	char.Slot = slot
+	char.CreatedAt = time.Now()
+	char.UpdatedAt = time.Now()
+
+	if _, err := d.CharCollection.InsertOne(ctx, &char); err != nil {
+		return uuid.Nil, err
+	}
+
+	return charID, nil
+}

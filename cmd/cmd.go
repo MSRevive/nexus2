@@ -180,7 +180,7 @@ func Run(args []string) (error) {
 			r.Route("/character", func(r chi.Router) {
 				r.Post("/", con.PostCharacter)
 				r.Put("/{uuid}", con.PutCharacter)
-				r.Delete("/{uuid}", con.DeleteCharacter)
+				r.Delete("/{uuid}", con.SoftDeleteCharacter)
 
 				r.Get("/{uuid}", con.GetCharacterByID)
 				r.Get("/{steamid:[0-9]+}", con.GetCharacters)
@@ -196,6 +196,16 @@ func Run(args []string) (error) {
 				r.Get("/deleted/{steamid:[0-9]+}", con.GetDeletedCharacters)
 				r.Get("/{steamid:[0-9]+}", con.GetCharacters)
 				r.Get("/{uuid}", con.GetCharacterByID)
+			})
+		})
+
+		r.Route("/unsafe", func(r chi.Router) {
+			r.Use(mw.Tier2Auth)
+
+			r.Route("/character", func(r chi.Router) {
+				r.Patch("/move/{uuid}/to/{steamid:[0-9]+}/{slot:[0-9]}", con.UnsafeMoveCharacter)
+				r.Patch("/copy/{uuid}/to/{steamid:[0-9]+}/{slot:[0-9]}", con.UnsafeCopyCharacter)
+				r.Delete("/delete/{uuid}", con.UnsafeDeleteCharacter)
 			})
 		})
 
