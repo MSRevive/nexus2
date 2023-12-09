@@ -184,19 +184,19 @@ func (d *mongoDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error)
 	return
 }
 
-func (d *mongoDB) GetCharacters(steamid string) (map[int]schema.Character, error) {
+func (d *mongoDB) GetCharacters(steamid string) ([]schema.Character, error) {
 	user, err := d.GetUser(steamid)
 	if err != nil {
 		return nil, err
 	}
 	
-	chars := make(map[int]schema.Character, len(user.Characters))
-	for k,v := range user.Characters {
+	chars := make([]schema.Character, len(user.Characters)-1)
+	for _,v := range user.Characters {
 		char, err := d.GetCharacter(v)
 		if err != nil {
 			return nil, err
 		}
-		chars[k] = *char
+		chars = append(chars, *char)
 	}
 
 	return chars, nil
@@ -248,4 +248,3 @@ func (d *mongoDB) SoftDeleteCharacter(id uuid.UUID) (uuid.UUID, error) {
 
 	return id, nil
 }
-

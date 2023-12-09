@@ -154,6 +154,34 @@ func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GET /character/{steamid:[0-9]+}
+func (c *Controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
+	steamid := chi.URLParam(r, "steamid")
+
+	chars, err := c.service.GetCharacters(steamid)
+	if err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	response.OK(w, chars)
+}
+
+// GET /character/deleted/{steamid:[0-9]+}
+func (c *Controller) GetDeletedCharacters(w http.ResponseWriter, r *http.Request) {
+	steamid := chi.URLParam(r, "steamid")
+
+	chars, err := c.service.GetDeletedCharacters(steamid)
+	if err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	response.OK(w, chars)
+}
+
 // DELETE character/{uuid}
 func (c *Controller) DeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))

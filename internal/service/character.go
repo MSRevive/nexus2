@@ -59,6 +59,24 @@ func (s *Service) GetCharacter(steamid string, slot int) (*schema.CharacterData,
 	return &charData, nil
 }
 
+func (s *Service) GetCharacters(steamid string) ([]schema.Character, error) {
+	chars, err := s.db.GetCharacters(steamid)
+	if err != nil {
+		return nil, err
+	}
+
+	return chars, nil
+}
+
+func (s *Service) GetDeletedCharacters(steamid string) (map[int]schema.DeletedCharacter, error) {
+	user, err := s.db.GetUser(steamid)
+	if err != nil {
+		return nil, err
+	}
+
+	return user.DeletedCharacters, nil
+}
+
 func (s *Service) DeleteCharacter(uid uuid.UUID) error {
 	if _,err := s.db.SoftDeleteCharacter(uid); err != nil {
 		return err
