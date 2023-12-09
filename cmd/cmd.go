@@ -196,6 +196,11 @@ func Run(args []string) (error) {
 				r.Get("/deleted/{steamid:[0-9]+}", con.GetDeletedCharacters)
 				r.Get("/{steamid:[0-9]+}", con.GetCharacters)
 				r.Get("/{uuid}", con.GetCharacterByID)
+				r.Patch("/restore/{uuid}", con.RestoreCharacter)
+			})
+
+			r.Route("/rollback/character", func(r chi.Router) {
+				
 			})
 		})
 
