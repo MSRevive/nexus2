@@ -38,9 +38,11 @@ func (m *Middleware) Headers(next http.Handler) http.Handler {
 
 func (m *Middleware) Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
+		t1 := time.Now()
+		defer func() {
+			m.logger.Info("", "method", r.Method, "proto", r.Proto, "URI", r.RequestURI, "IP", r.RemoteAddr, "bytes", r.ContentLength, "ping", time.Since(t1))
+		}()
 		next.ServeHTTP(w, r)
-		m.logger.Info("HTTP", "method", r.Method, "URI", r.RequestURI, "IP", r.RemoteAddr, "size", r.ContentLength, "ping", time.Since(start))
 	})
 }
 
