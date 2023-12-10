@@ -99,24 +99,26 @@ func (h *LogHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	buf = append(buf, []byte("level=")...)
 	buf = append(buf, r.Level.String()...)
-	buf = append(buf, ' ')
 
 	if (h.opts.AddSource && r.PC != 0) || (r.Level == 8) {
 		fs := runtime.CallersFrames([]uintptr{r.PC})
 		f, _ := fs.Next()
 		src := filepath.Base(f.File)
 
+		buf = append(buf, ' ')
 		buf = append(buf, []byte("src=")...)
 		buf = append(buf, src...)
 		buf = append(buf, ':')
 		buf = strconv.AppendInt(buf, int64(f.Line), 10)
-		buf = append(buf, ' ')
 	}
 
-	buf = append(buf, []byte("msg=")...)
-	buf = append(buf, '"')
-	buf = append(buf, r.Message...)
-	buf = append(buf, '"')
+	if r.Message != "" {
+		buf = append(buf, ' ')
+		buf = append(buf, []byte("msg=")...)
+		buf = append(buf, '"')
+		buf = append(buf, r.Message...)
+		buf = append(buf, '"')
+	}
 
 	buf = append(buf, h.preformat...)
 	r.Attrs(func(a slog.Attr) bool {
