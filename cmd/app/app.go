@@ -10,6 +10,7 @@ import (
 
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/config"
+	"github.com/msrevive/nexus2/internal/static"
 	"github.com/msrevive/nexus2/pkg/loghandler"
 
 	"github.com/saintwish/kv/ccmap"
@@ -114,6 +115,8 @@ func (a *App) LoadAdminList(path string) error {
 }
 
 func (a *App) Start() error {
+	a.Logger.Info("Starting Nexus2", "App Version", static.Version, "Go Version", static.GoVersion, "OS", static.OS, "Arch", static.OSArch)
+
 	a.Logger.Info("Connecting to database")
 	if err := a.DB.Connect(a.Config.Database.Connection); err != nil {
 		return err

@@ -1,7 +1,7 @@
 package static
 
 import (
-
+	"runtime"
 )
 
 const (
@@ -10,4 +10,7 @@ const (
 
 var (
 	Version = "canary"
+	GoVersion = runtime.Version()
+	OS = runtime.GOOS
+	OSArch = runtime.GOARCH
 )
