@@ -26,7 +26,7 @@ func New(log *slog.Logger, cfg *config.Config, ipList *ccmap.Cache[string, strin
 
 func (m *Middleware) Headers(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE")
 		// Maximum age allowable under Chromium v76 is 2 hours, so just use that since
 		// anything higher will be ignored (even if other browsers do allow higher values).
 		//
