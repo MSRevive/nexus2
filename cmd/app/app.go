@@ -18,7 +18,7 @@ import (
 )
 
 type App struct {
-	Config config.Config
+	Config *config.Config
 	DB database.Database
 	HTTPServer *http.Server
 	Logger *slog.Logger
@@ -30,7 +30,7 @@ type App struct {
 	}
 }
 
-func New(cfg config.Config, db database.Database) (app *App) {
+func New(cfg *config.Config, db database.Database) (app *App) {
 	app = &App{}
 	app.Config = cfg
 	app.DB = db

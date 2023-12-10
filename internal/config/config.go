@@ -54,11 +54,11 @@ type Config struct {
 	}
 }
   
-func LoadConfig(path string) (Config, error) {
+func LoadConfig(path string) (*Config, error) {
 	var cfg Config
 
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		return cfg, os.ErrNotExist
+		return nil, os.ErrNotExist
 	}
 
 	switch filepath.Ext(path) {
@@ -69,19 +69,19 @@ func LoadConfig(path string) (Config, error) {
 		}
 
 		if err != nil {
-			return cfg, err
+			return nil, err
 		}
-		return cfg, nil
+		return &cfg, nil
 
 	case ".toml", ".ini":
 		if err := ini.MapTo(&cfg, path); err != nil {
-			return cfg, err
+			return nil, err
 		}
-		return cfg, nil
+		return &cfg, nil
 		
 	default:
-		return cfg, fmt.Errorf("%s", "unsupported config type")
+		return nil, fmt.Errorf("%s", "unsupported config type")
 	}
 
-	return cfg, fmt.Errorf("Failed to read config file: %s", path)
+	return nil, fmt.Errorf("Failed to read config file: %s", path)
 }

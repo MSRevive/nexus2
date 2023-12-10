@@ -15,14 +15,14 @@ import (
 
 type Controller struct {
 	logger *slog.Logger
-	config config.Config
+	config *config.Config
 	service *service.Service
 	banList *ccmap.Cache[string, bool]
 	mapList *ccmap.Cache[string, uint32]
 	adminList *ccmap.Cache[string, bool]
 }
 
-func New(log *slog.Logger, cfg config.Config, svr *service.Service, bans *ccmap.Cache[string, bool], maps *ccmap.Cache[string, uint32], admins *ccmap.Cache[string, bool]) *Controller {
+func New(log *slog.Logger, cfg *config.Config, svr *service.Service, bans *ccmap.Cache[string, bool], maps *ccmap.Cache[string, uint32], admins *ccmap.Cache[string, bool]) *Controller {
 	return &Controller{
 		logger: log,
 		config: cfg,

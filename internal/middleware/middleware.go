@@ -12,11 +12,11 @@ import (
 
 type Middleware struct {
 	logger *slog.Logger
-	config config.Config
+	config *config.Config
 	ipList *ccmap.Cache[string, string]
 }
 
-func New(log *slog.Logger, cfg config.Config, ipList *ccmap.Cache[string, string]) *Middleware {
+func New(log *slog.Logger, cfg *config.Config, ipList *ccmap.Cache[string, string]) *Middleware {
 	return &Middleware{
 		logger: log,
 		config: cfg,

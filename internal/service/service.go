@@ -7,10 +7,10 @@ import (
 
 type Service struct {
 	db database.Database
-	config config.Config
+	config *config.Config
 }
 
-func New(db database.Database, cfg config.Config) *Service {
+func New(db database.Database, cfg *config.Config) *Service {
 	return &Service{
 		db: db,
 		config: cfg,
