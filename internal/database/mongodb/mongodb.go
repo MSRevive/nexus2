@@ -181,19 +181,19 @@ func (d *mongoDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error)
 	return
 }
 
-func (d *mongoDB) GetCharacters(steamid string) ([]schema.Character, error) {
+func (d *mongoDB) GetCharacters(steamid string) (map[int]schema.Character, error) {
 	user, err := d.GetUser(steamid)
 	if err != nil {
 		return nil, err
 	}
 	
-	chars := make([]schema.Character, len(user.Characters)-1)
-	for _,v := range user.Characters {
+	chars := make(map[int]schema.Character, len(user.Characters)-1)
+	for k,v := range user.Characters {
 		char, err := d.GetCharacter(v)
 		if err != nil {
 			return nil, err
 		}
-		chars = append(chars, *char)
+		chars[k] = *char
 	}
 
 	return chars, nil

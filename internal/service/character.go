@@ -57,7 +57,7 @@ func (s *Service) GetCharacter(steamid string, slot int) (*schema.Character, err
 	return char, nil
 }
 
-func (s *Service) GetCharacters(steamid string) ([]schema.Character, error) {
+func (s *Service) GetCharacters(steamid string) (map[int]schema.Character, error) {
 	chars, err := s.db.GetCharacters(steamid)
 	if err != nil {
 		return nil, err
