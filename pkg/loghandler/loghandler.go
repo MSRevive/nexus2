@@ -12,18 +12,20 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"path/filepath"
 )
 
-const logBufSize = 1024 // the log buffer size, the larger it is, means more memory usage.
-// might need larger for the massive discord debug logs.
+// the log buffer size, the larger it is, means more memory usage.
+// default: 1024
+const logBufSize = 1024
 
 type LogHandler struct {
-	opts      Options
-	prefix    string // preformatted group names followed by a dot
+	opts Options
+	prefix string // preformatted group names followed by a dot
 	preformat string // preformatted Attrs, with an initial space
 
 	mu sync.Mutex
-	w  io.Writer
+	w io.Writer
 }
 
 //apparently can't embed the slog.HandlerOptions for whatever reason.
@@ -99,19 +101,22 @@ func (h *LogHandler) Handle(ctx context.Context, r slog.Record) error {
 	buf = append(buf, r.Level.String()...)
 	buf = append(buf, ' ')
 
-	if h.opts.AddSource && r.PC != 0 {
+	if (h.opts.AddSource && r.PC != 0) || (r.Level == 8) {
 		fs := runtime.CallersFrames([]uintptr{r.PC})
 		f, _ := fs.Next()
+		src := filepath.Base(f.File)
 
-		buf = append(buf, []byte("source=")...)
-		buf = append(buf, f.File...)
+		buf = append(buf, []byte("src=")...)
+		buf = append(buf, src...)
 		buf = append(buf, ':')
 		buf = strconv.AppendInt(buf, int64(f.Line), 10)
 		buf = append(buf, ' ')
 	}
 
 	buf = append(buf, []byte("msg=")...)
+	buf = append(buf, '"')
 	buf = append(buf, r.Message...)
+	buf = append(buf, '"')
 
 	buf = append(buf, h.preformat...)
 	r.Attrs(func(a slog.Attr) bool {
