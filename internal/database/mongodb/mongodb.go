@@ -130,31 +130,40 @@ func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 		Data: data,
 	}
 
-	verLen := len(char.Versions)
-	if verLen > 0 {
+	// Version 0 is always going to be the current character so it's reserved.
+	// Everything after Version 0 are the backups.
+	bChars := char.Versions[1:]
+	bCharsLen := len(bChars)
+	if backupMax > 0 {
+		// Remove last backup if over the limit
+		if bCharsLen >= backupMax {
+			char.Versions = char.Versions[:len(char.Versions)-1]
+		}
+
 		time, err := time.ParseDuration(backupTime)
 		if err != nil {
 			return err
 		}
 
-		if verLen > backupMax {
-			char.Versions = char.Versions[:verLen-1]
-		}
+		curChar := char.Versions[0]
+		if bCharsLen > 0 {
+			bNewest := bChars[0] //latest backup
 
-		newest := char.Versions[0]
-		timeCheck := newest.CreatedAt.Add(time)
-		if (newest.CreatedAt.After(timeCheck)) {
-			char.Versions = append(char.Versions, newest)
+			timeCheck := bNewest.CreatedAt.Add(time)
+			if curChar.CreatedAt.After(timeCheck) {
+				char.Versions = append(char.Versions, curChar)
+			}
+		}else{
+			char.Versions = append(char.Versions, curChar)
 		}
-
-		char.Versions[0] = newChar
-	}else{
-		char.Versions = append(char.Versions, newChar)
 	}
+
+	// Update the current character.
+	char.Versions[0] = newChar
 
 	update := bson.D{
 		{ "$set", bson.D{{ "versions", char.Versions }} },
-		{ "$set", bson.D{{ "updated_at", time.Now() }} },
+		{ "$set", bson.D{{ "updated_at", newChar.CreatedAt }} },
 	}
 	if _, err := d.CharCollection.UpdateByID(ctx, id, update); err != nil {
 		return err
