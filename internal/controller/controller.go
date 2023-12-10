@@ -103,5 +103,5 @@ func (c *Controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
 
 //GET ping
 func (c *Controller) GetPing(w http.ResponseWriter, r *http.Request) {
-	response.Result(w, true)
+	response.OKNoContent(w)
 }

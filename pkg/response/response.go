@@ -7,18 +7,20 @@ import (
 
 //make public so other packages can create custom responses.
 type Response struct {
-	Code int `json:"code"`
 	Status bool `json:"status"`
-	Error string `json:"error"`
-	Data interface{} `json:"data"`
+	Code int `json:"code"`
+	Error string `json:"error,omitempty"`
+
 	IsBanned *bool `json:"isBanned,omitempty"`
 	IsAdmin *bool `json:"isAdmin,omitempty"`
+	Data interface{} `json:"data,omitempty"`
 	
-	w http.ResponseWriter `json:"-"`
+	w http.ResponseWriter
 }
 
-func (r *Response) SendJson() {
+func (r Response) SendJson() {
 	r.w.Header().Set("Content-Type", "application/json")
+	r.w.WriteHeader(r.Code)
 	json.NewEncoder(r.w).Encode(r)
 }
 
@@ -33,12 +35,33 @@ func TooManyRequests(w http.ResponseWriter) {
 	resp.SendJson()
 }
 
-func InternalServerError(w http.ResponseWriter) {
+func Created(w http.ResponseWriter, data interface{}) {
 	resp := Response{
-		Status: false,
-		Code: http.StatusInternalServerError,
-		Error: "Internal server error!",
-		Data: nil,
+		Status: true,
+		Code: http.StatusCreated,
+		Error: "",
+		Data: data,
+		w: w,
+	}
+	resp.SendJson()
+}
+
+func StillProcessing(w http.ResponseWriter, data interface{}) {
+	resp := Response{
+		Status: true,
+		Code: http.StatusAccepted,
+		Error: "",
+		Data: data,
+		w: w,
+	}
+	resp.SendJson()
+}
+
+func OKNoContent(w http.ResponseWriter) {
+	resp := Response{
+		Status: true,
+		Code: http.StatusNoContent,
+		Error: "",
 		w: w,
 	}
 	resp.SendJson()
@@ -95,6 +118,17 @@ func Error(w http.ResponseWriter, err error) {
 		Status: false,
 		Code: http.StatusInternalServerError,
 		Error: err.Error(),
+		Data: nil,
+		w: w,
+	}
+	resp.SendJson()
+}
+
+func GenericError(w http.ResponseWriter) {
+	resp := Response{
+		Status: false,
+		Code: http.StatusInternalServerError,
+		Error: "Internal server error!",
 		Data: nil,
 		w: w,
 	}

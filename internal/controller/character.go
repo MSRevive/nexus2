@@ -23,7 +23,7 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 
 		if size, err := io.Copy(&buf, r.Body); err != nil {
 			c.logger.Error("failed to copy body", "error", err, "size", size, "expectedSize", r.ContentLength)
-			response.BadRequest(w, err)
+			response.Error(w, err)
 			return
 		}
 
@@ -37,7 +37,7 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 
 		c.logger.Error("failed to parse data", "error", errln)
 		if errln == nil {
-			response.InternalServerError(w)
+			response.GenericError(w)
 			return
 		}
 
@@ -48,11 +48,11 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 	uid, err := c.service.NewCharacter(char); 
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
-		response.BadRequest(w, err)
+		response.Error(w, err)
 		return
 	}
 
-	response.OK(w, uid.String())
+	response.Created(w, uid.String())
 }
 
 // PUT /internal/character/{uuid}
@@ -70,7 +70,7 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 
 		if size, err := io.Copy(&buf, r.Body); err != nil {
 			c.logger.Error("failed to copy body", "error", err, "size", size, "expectedSize", r.ContentLength)
-			response.BadRequest(w, err)
+			response.Error(w, err)
 			return
 		}
 
@@ -84,7 +84,7 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 
 		c.logger.Error("failed to parse data", "error", errln)
 		if errln == nil {
-			response.InternalServerError(w)
+			response.GenericError(w)
 			return
 		}
 
@@ -94,7 +94,7 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 
 	if err := c.service.UpdateCharacter(uid, char); err != nil {
 		c.logger.Error("service failed", "error", err)
-		response.BadRequest(w, err)
+		response.Error(w, err)
 		return
 	}
 
@@ -115,7 +115,7 @@ func (c *Controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 	char, err := c.service.GetCharacterByID(uid)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
-		response.BadRequest(w, err)
+		response.Error(w, err)
 		return
 	}
 
@@ -143,7 +143,7 @@ func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	char, err := c.service.GetCharacter(steamid, slot)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
-		response.BadRequest(w, err)
+		response.Error(w, err)
 		return
 	}
 
@@ -163,7 +163,7 @@ func (c *Controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 	chars, err := c.service.GetCharacters(steamid)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
-		response.BadRequest(w, err)
+		response.Error(w, err)
 		return
 	}
 
@@ -177,7 +177,7 @@ func (c *Controller) GetDeletedCharacters(w http.ResponseWriter, r *http.Request
 	chars, err := c.service.GetDeletedCharacters(steamid)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
-		response.BadRequest(w, err)
+		response.Error(w, err)
 		return
 	}
 
@@ -195,7 +195,7 @@ func (c *Controller) SoftDeleteCharacter(w http.ResponseWriter, r *http.Request)
 
 	if err := c.service.SoftDeleteCharacter(uid); err != nil {
 		c.logger.Error("service failed", "error", err)
-		response.BadRequest(w, err)
+		response.Error(w, err)
 		return
 	}
 
@@ -215,7 +215,7 @@ func (c *Controller) LookUpCharacterID(w http.ResponseWriter, r *http.Request) {
 	uid, err := c.service.LookUpCharacterID(steamid, slot)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
-		response.BadRequest(w, err)
+		response.Error(w, err)
 		return
 	}
 
@@ -233,9 +233,9 @@ func (c *Controller) RestoreCharacter(w http.ResponseWriter, r *http.Request) {
 
 	if err := c.service.RestoreCharacter(uid); err != nil {
 		c.logger.Error("service failed", "error", err)
-		response.BadRequest(w, err)
+		response.Error(w, err)
 		return
 	}
 
-	response.OK(w, true)
+	response.OKNoContent(w)
 }
