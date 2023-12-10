@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Service) GetCharacterVersions(uid uuid.UUID) ([]schema.CharacterData, error) {
+func (s *Service) GetCharacterVersions(uid uuid.UUID) (map[int]schema.CharacterData, error) {
 	char, err := s.db.GetCharacter(uid)
 	if err != nil {
 		return nil, err
@@ -16,7 +16,13 @@ func (s *Service) GetCharacterVersions(uid uuid.UUID) ([]schema.CharacterData, e
 
 	dataLen := len(char.Versions)-1
 	if dataLen > 0 {
-		return char.Versions[1:], nil
+		datas := make(map[int]schema.CharacterData, dataLen)
+
+		for k,v := range char.Versions[1:] {
+			datas[k] = v
+		}
+
+		return datas, nil
 	}
 	
 	return nil, errors.New("no character versions exist")
