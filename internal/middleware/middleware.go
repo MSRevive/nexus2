@@ -4,6 +4,7 @@ import (
 	"time"
 	"net/http"
 	"log/slog"
+	"runtime/debug"
 
 	"github.com/msrevive/nexus2/internal/config"
 
@@ -51,7 +52,8 @@ func (m *Middleware) PanicRecovery(next http.Handler) http.Handler {
 		defer func() {
 			if p := recover(); p != nil {
 				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-				m.logger.Error("Recovered from fatal error", "error", p)
+				m.logger.Error("FATALITY", "error", p)
+				m.logger.Error("Trace", "stack", string(debug.Stack()))
 			}
 		}()
 		
