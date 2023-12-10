@@ -200,7 +200,7 @@ func Run(args []string) (error) {
 			})
 
 			r.Route("/rollback/character", func(r chi.Router) {
-				
+				r.Get("/{uuid}", con.GetCharacterVersions)
 			})
 		})
 
