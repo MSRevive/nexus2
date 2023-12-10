@@ -23,7 +23,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	cmw "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
-	flag "github.com/spf13/pflag"
+	"github.com/spf13/pflag"
 )
 
 type flags struct {
@@ -35,7 +35,7 @@ type flags struct {
 func doFlags(args []string) *flags {
 	flgs := &flags{}
 
-	flagSet := flag.NewFlagSet(args[0], flag.ExitOnError)
+	flagSet := pflag.NewFlagSet(args[0], pflag.ExitOnError)
 	flagSet.StringVarP(&flgs.cfgFile, "config", "c", "./runtime/config.yaml", "Location of via config file")
 	flagSet.BoolVarP(&flgs.debug, "debug", "d", false, "Run with debug mode.")
 	flagSet.IntVarP(&flgs.threads, "threads", "t", 0, "The maximum number of threads the app is allowed to use.")
@@ -45,21 +45,21 @@ func doFlags(args []string) *flags {
 }
 
 func Run(args []string) (error) {
-	flgs := doFlags(args)
+	flags := doFlags(args)
 
-	if flgs.debug {
+	if flags.debug {
 		fmt.Println("!!! Running in Debug mode, do not use in production! !!!")
 	}
 
 	//Max threads allowed.
-	if flgs.threads != 0 {
-		runtime.GOMAXPROCS(flgs.threads)
+	if flags.threads != 0 {
+		runtime.GOMAXPROCS(flags.threads)
 	}
 
 	/////////////////////////
 	//Config
 	/////////////////////////
-	config, err := config.LoadConfig(flgs.cfgFile)
+	config, err := config.LoadConfig(flags.cfgFile)
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func Run(args []string) (error) {
 		})
 
 		r.Get("/ping", con.GetPing)
-		if flgs.debug {
+		if flags.debug {
 			r.Mount("/debug", cmw.Profiler())
 		}
 	})
