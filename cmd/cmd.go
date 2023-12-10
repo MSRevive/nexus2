@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"strconv"
 	"time"
 	"syscall"
 	"os/signal"
-	"crypto/tls"
 	"net/http"
 
 	"github.com/msrevive/nexus2/cmd/app"
@@ -109,38 +107,6 @@ func Run(args []string) (error) {
 	}
 
 	/////////////////////////
-	//Setup HTTP Server
-	/////////////////////////
-	router := chi.NewRouter()
-	a.SetHTTPServer(&http.Server{
-		Handler:      router,
-		Addr:         config.Core.Address + ":" + strconv.Itoa(config.Core.Port),
-		WriteTimeout: 30 * time.Second,
-		ReadTimeout:  30 * time.Second,
-		IdleTimeout:  60 * time.Second,
-		// DefaultTLSConfig sets sane defaults to use when configuring the internal
-		// webserver to listen for public connections.
-		//
-		// @see https://blog.cloudflare.com/exposing-go-on-the-internet
-		// credit to https://github.com/pterodactyl/wings/blob/develop/config/config.go
-		TLSConfig: &tls.Config{
-			NextProtos: []string{"h2", "http/1.1"},
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
-				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
-			},
-			PreferServerCipherSuites: true,
-			MinVersion:               tls.VersionTLS12,
-			MaxVersion:               tls.VersionTLS13,
-			CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
-		},
-	})
-
-	/////////////////////////
 	//Middleware
 	/////////////////////////
 	mw := middleware.New(a.Logger, a.Config, a.List.IP)
@@ -148,6 +114,7 @@ func Run(args []string) (error) {
 	/////////////////////////
 	//Routing
 	/////////////////////////
+	router := chi.NewRouter()
 	router.Use(cmw.RealIP)
 	router.Use(mw.Headers)
 	if config.RateLimit.MaxRequests > 0 {
@@ -223,7 +190,7 @@ func Run(args []string) (error) {
 	/////////////////////////
 	//Auto certificate
 	/////////////////////////
-	if err := a.Start(); err != nil {
+	if err := a.Start(router); err != nil {
 		a.Logger.Error("Failed to start application", "error", err)
 		return err
 	}

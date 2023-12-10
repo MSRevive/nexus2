@@ -11,14 +11,14 @@ import (
 
 func (a *App) StartHTTPWithCert() (err error) {
 	cm := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
+		Prompt: autocert.AcceptTOS,
 		HostPolicy: autocert.HostWhitelist(a.Config.Cert.Domain),
-		Cache:      autocert.DirCache("./runtime/certs"),
+		Cache: autocert.DirCache("./runtime/certs"),
 	}
 
-	a.HTTPServer.TLSConfig = &tls.Config{
+	a.httpServer.TLSConfig = &tls.Config{
 		GetCertificate: cm.GetCertificate,
-		NextProtos:     append(a.HTTPServer.TLSConfig.NextProtos, acme.ALPNProto), // enable tls-alpn ACME challenges
+		NextProtos: append(a.httpServer.TLSConfig.NextProtos, acme.ALPNProto), // enable tls-alpn ACME challenges
 	}
 
 	go func() {
@@ -28,9 +28,9 @@ func (a *App) StartHTTPWithCert() (err error) {
 	}()
 	
 	go func() {
-		a.Logger.Info("Listening with TLS on IP", "IP", a.HTTPServer.Addr)
+		a.Logger.Info("Listening with TLS on IP", "IP", a.httpServer.Addr)
 
-		if errr := a.HTTPServer.ListenAndServeTLS("", ""); errr != nil && errr != http.ErrServerClosed {
+		if errr := a.httpServer.ListenAndServeTLS("", ""); errr != nil && errr != http.ErrServerClosed {
 			err = fmt.Errorf("failed to serve over HTTPS: %v", err)
 		}
 	}()
@@ -40,9 +40,9 @@ func (a *App) StartHTTPWithCert() (err error) {
 
 func (a *App) StartHTTP() (err error) {
 	go func() {
-		a.Logger.Info("Listening on IP", "IP", a.HTTPServer.Addr)
+		a.Logger.Info("Listening on IP", "IP", a.httpServer.Addr)
 
-		if errr := a.HTTPServer.ListenAndServe(); errr != nil && errr != http.ErrServerClosed {
+		if errr := a.httpServer.ListenAndServe(); errr != nil && errr != http.ErrServerClosed {
 			err = fmt.Errorf("failed to serve over HTTP: %v", errr)
 		}
 	}()
