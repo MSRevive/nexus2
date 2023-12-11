@@ -52,8 +52,7 @@ func (m *Middleware) PanicRecovery(next http.Handler) http.Handler {
 		defer func() {
 			if p := recover(); p != nil {
 				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-				m.logger.Error("FATALITY", "error", p)
-				m.logger.Error("Trace", "stack", string(debug.Stack()))
+				m.logger.Error("FATALITY", "error", p, "stack", string(debug.Stack()))
 			}
 		}()
 		
