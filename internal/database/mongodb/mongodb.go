@@ -113,7 +113,7 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 	return charID, nil
 }
 
-func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime string) error {
+func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
 	//defer runtime.GC()
 
 	filter := bson.D{{"_id", id}}
@@ -138,15 +138,10 @@ func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 			bCharsLen--
 		}
 
-		time, err := time.ParseDuration(backupTime)
-		if err != nil {
-			return err
-		}
-
 		if bCharsLen > 0 {
 			bNewest := charVersions[bCharsLen-1] //latest backup
 
-			timeCheck := bNewest.CreatedAt.Add(time)
+			timeCheck := bNewest.CreatedAt.Add(backupTime)
 			if char.Data.CreatedAt.After(timeCheck) {
 				charVersions = append(charVersions, char.Data)
 			}
