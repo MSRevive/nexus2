@@ -3,7 +3,6 @@ package config
 import (
 	"os"
 	"fmt"
-	"errors"
 	"time"
 	"path/filepath"
   
@@ -54,34 +53,20 @@ type Config struct {
 	}
 }
   
-func LoadConfig(path string) (*Config, error) {
-	var cfg Config
-
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		return nil, os.ErrNotExist
+func LoadConfig(path string) (cfg *Config, err error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return
 	}
 
 	switch filepath.Ext(path) {
 	case ".yaml", ".json", ".yml":
-		data,err := os.ReadFile(path)
-		if data != nil {
-			err = yaml.Unmarshal(data, &cfg)
-		}
-
-		if err != nil {
-			return nil, err
-		}
-		return &cfg, nil
-
+		err = yaml.Unmarshal(data, &cfg)
 	case ".toml", ".ini":
-		if err := ini.MapTo(&cfg, path); err != nil {
-			return nil, err
-		}
-		return &cfg, nil
-		
+		err = ini.MapTo(&cfg, path)
 	default:
-		return nil, fmt.Errorf("%s", "unsupported config type")
+		err = fmt.Errorf("%s", "unsupported config type")
 	}
 
-	return nil, fmt.Errorf("Failed to read config file: %s", path)
+	return
 }
