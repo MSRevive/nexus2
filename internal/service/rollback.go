@@ -14,11 +14,12 @@ func (s *Service) GetCharacterVersions(uid uuid.UUID) (map[int]schema.CharacterD
 		return nil, err
 	}
 
-	dataLen := len(char.Versions)-1
-	if dataLen > 0 {
-		datas := make(map[int]schema.CharacterData, dataLen)
+	backupChars := char.Versions[1:]
+	backupLen := len(backupChars)
+	if backupLen > 0 {
+		datas := make(map[int]schema.CharacterData, backupLen)
 
-		for k,v := range char.Versions[1:] {
+		for k,v := range backupChars {
 			datas[k] = v
 		}
 
@@ -26,4 +27,31 @@ func (s *Service) GetCharacterVersions(uid uuid.UUID) (map[int]schema.CharacterD
 	}
 	
 	return nil, errors.New("no character versions exist")
+}
+
+func (s *Service) RollbackCharacter(uid uuid.UUID, ver int) error {
+	err := s.db.RollbackCharacter(uid, ver)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) RollbackCharacterToLatest(uid uuid.UUID) error {
+	err := s.db.RollbackCharacterToLatest(uid)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) DeleteCharacterVersions(uid uuid.UUID) error {
+	err := s.db.DeleteCharacterVersions(uid)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

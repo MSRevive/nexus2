@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"context"
 	"time"
+	"errors"
 	//"strconv"
 	
 	"github.com/msrevive/nexus2/internal/database/schema"
@@ -132,12 +133,17 @@ func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 
 	// Version 0 is always going to be the current character so it's reserved.
 	// Everything after Version 0 are the backups.
+	charVersions := make([]schema.CharacterData, 0, backupMax+2)
 	bChars := char.Versions[1:]
 	bCharsLen := len(bChars)
 	if backupMax > 0 {
-		// Remove last backup if over the limit
+		//Preallocate a new slice
+		copy(charVersions, char.Versions)
+
+		// Remove first element
 		if bCharsLen >= backupMax {
-			char.Versions = char.Versions[:len(char.Versions)-1]
+			copy(charVersions, charVersions[1:])
+			charVersions = charVersions[:len(charVersions)-1]
 		}
 
 		time, err := time.ParseDuration(backupTime)
@@ -145,20 +151,22 @@ func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 			return err
 		}
 
-		curChar := char.Versions[0]
+		curChar := charVersions[0]
 		if bCharsLen > 0 {
 			bNewest := bChars[0] //latest backup
 
 			timeCheck := bNewest.CreatedAt.Add(time)
 			if curChar.CreatedAt.After(timeCheck) {
-				char.Versions = append(char.Versions, curChar)
+				fmt.Println("UPDATED")
+				charVersions = append(charVersions, curChar)
 			}
 		}else{
-			char.Versions = append(char.Versions, curChar)
+			charVersions = append(charVersions, curChar)
 		}
 	}
 
 	// Update the current character.
+	char.Versions = charVersions
 	char.Versions[0] = newChar
 
 	update := bson.D{
@@ -387,6 +395,83 @@ func (d *mongoDB) RestoreCharacter(id uuid.UUID) error {
 
 	update = bson.D{
 		{ "$unset", bson.D{{ "deleted_at", nil }} },
+	}
+	if _, err := d.CharCollection.UpdateByID(ctx, id, update); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *mongoDB) RollbackCharacter(id uuid.UUID, ver int) error {
+	char, err := d.GetCharacter(id)
+	if err != nil {
+		return err
+	}
+
+	bChars := char.Versions[1:]
+	bCharsLen := len(bChars)
+	if bCharsLen > ver {
+		// Replace the active character with the selected version
+		char.Versions[0] = char.Versions[ver]
+	}else{
+		return fmt.Errorf("no character version at index %d", ver)
+	} 
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	update := bson.D{
+		{ "$set", bson.D{{ "versions", char.Versions }} },
+		{ "$set", bson.D{{ "updated_at", char.Versions[0].CreatedAt }} },
+	}
+	if _, err := d.CharCollection.UpdateByID(ctx, id, update); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *mongoDB) RollbackCharacterToLatest(id uuid.UUID) error {
+	char, err := d.GetCharacter(id)
+	if err != nil {
+		return err
+	}
+
+	bChars := char.Versions[1:]
+	bCharsLen := len(bChars)
+	if bCharsLen > 0 {
+		// Replace the active character with the latest version
+		char.Versions[0] = char.Versions[bCharsLen-1]
+	}else{
+		return errors.New("no character backups exist")
+	} 
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	update := bson.D{
+		{ "$set", bson.D{{ "versions", char.Versions }} },
+		{ "$set", bson.D{{ "updated_at", char.Versions[0].CreatedAt }} },
+	}
+	if _, err := d.CharCollection.UpdateByID(ctx, id, update); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *mongoDB) DeleteCharacterVersions(id uuid.UUID) error {
+	char, err := d.GetCharacter(id)
+	if err != nil {
+		return err
+	}
+
+	// Delete everything after the first element.
+	char.Versions = char.Versions[:1]
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	update := bson.D{
+		{ "$set", bson.D{{ "versions", char.Versions }} },
 	}
 	if _, err := d.CharCollection.UpdateByID(ctx, id, update); err != nil {
 		return err

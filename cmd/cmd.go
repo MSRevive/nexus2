@@ -168,6 +168,9 @@ func Run(args []string) (error) {
 
 			r.Route("/rollback/character", func(r chi.Router) {
 				r.Get("/{uuid}", con.GetCharacterVersions)
+				r.Patch("/{uuid}/latest", con.RollbackCharToLatest)
+				r.Patch("/{uuid}/{version:[0-9]+}", con.RollbackCharToVersion)
+				r.Delete("/{uuid}", con.DeleteCharRollbacks)
 			})
 		})
 
