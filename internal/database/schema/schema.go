@@ -18,8 +18,8 @@ type Character struct {
 	SteamID string `bson:"steamid"`
 	Slot int `bson:"slot"`
 	CreatedAt time.Time `bson:"created_at"`
-	UpdatedAt time.Time `bson:"updated_at"`
 	DeletedAt *time.Time `bson:"deleted_at,omitempty"`
+	Data CharacterData `bson:"data,omitempty"`
 	Versions []CharacterData `bson:"versions"` //Version => character data
 }
 

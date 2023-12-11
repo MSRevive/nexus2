@@ -14,12 +14,11 @@ func (s *Service) GetCharacterVersions(uid uuid.UUID) (map[int]schema.CharacterD
 		return nil, err
 	}
 
-	backupChars := char.Versions[1:]
-	backupLen := len(backupChars)
+	backupLen := len(char.Versions)
 	if backupLen > 0 {
 		datas := make(map[int]schema.CharacterData, backupLen)
 
-		for k,v := range backupChars {
+		for k,v := range char.Versions {
 			datas[k] = v
 		}
 

@@ -123,8 +123,8 @@ func (c *Controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
 		ID: char.ID,
 		SteamID: char.SteamID,
 		Slot: char.Slot,
-		Size: char.Versions[0].Size,
-		Data: char.Versions[0].Data,
+		Size: char.Data.Size,
+		Data: char.Data.Data,
 	})
 }
 
@@ -151,8 +151,8 @@ func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 		ID: char.ID,
 		SteamID: char.SteamID,
 		Slot: char.Slot,
-		Size: char.Versions[0].Size,
-		Data: char.Versions[0].Data,
+		Size: char.Data.Size,
+		Data: char.Data.Data,
 	})
 }
 

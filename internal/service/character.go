@@ -32,7 +32,7 @@ func (s *Service) GetCharacterByID(uuid uuid.UUID) (*schema.Character, error) {
 		return nil, err
 	}
 
-	if len(char.Versions) == 0 {
+	if (schema.CharacterData{}) == char.Data {
 		return nil, errors.New("malformed character data")
 	}
 
@@ -50,7 +50,7 @@ func (s *Service) GetCharacter(steamid string, slot int) (*schema.Character, err
 		return nil, err
 	}
 
-	if len(char.Versions) == 0 {
+	if (schema.CharacterData{}) == char.Data {
 		return nil, errors.New("malformed character data")
 	}
 
