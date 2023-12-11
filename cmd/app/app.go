@@ -47,15 +47,10 @@ func New(cfg *config.Config, db database.Database) (app *App) {
 }
 
 func (a *App) InitializeLoggers() error {
-	expiration, err := time.ParseDuration(a.Config.Log.ExpireTime)
-	if err != nil {
-		return err
-	}
-
 	iow := io.MultiWriter(os.Stdout, &rw.RotateWriter{
 		Dir: a.Config.Log.Dir,
 		Filename: "server.log",
-		ExpireTime: expiration,
+		ExpireTime: a.Config.Log.ExpireTime,
 		MaxSize: 5 * rw.Megabyte,
 	})
 
