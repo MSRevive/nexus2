@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/msrevive/nexus2/pkg/helper"
+	"github.com/msrevive/nexus2/pkg/utils"
 )
 
 
@@ -24,7 +24,7 @@ func (mw *Middleware) Tier0Auth(next http.Handler) http.Handler {
 --- */
 func (mw *Middleware) Tier1Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := helper.GetIP(r)
+		ip := utils.GetIP(r)
 		key := r.Header.Get("Authorization")
 		
 		val,ok := mw.ipList.GetHas(ip)
@@ -55,7 +55,7 @@ func (mw *Middleware) Tier1Auth(next http.Handler) http.Handler {
 --- */
 func (mw *Middleware) Tier2Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := helper.GetIP(r)
+		ip := utils.GetIP(r)
 		key := r.Header.Get("Authorization")
 		
 		val,ok := mw.ipList.GetHas(ip)

@@ -1,13 +1,10 @@
 package utils
 
 import (
-	"fmt"
 	"strconv"
-	"bytes"
 	"net"
 	"strings"
 	"net/http"
-	"encoding/base64"
 )
 
 func GetIP(r *http.Request) string {
