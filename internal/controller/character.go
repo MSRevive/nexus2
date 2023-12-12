@@ -239,3 +239,31 @@ func (c *Controller) RestoreCharacter(w http.ResponseWriter, r *http.Request) {
 
 	response.OKNoContent(w)
 }
+
+// GET /character/export/{uuid}
+func (c *Controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
+	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		c.logger.Error("controller: bad request", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	char, err := c.service.GetCharacterByID(uid)
+	if err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.Error(w, err)
+		return
+	}
+
+	file, path, err := payload.GenerateCharFile(char.SteamID, char.Slot, char.Data.Data)
+	if err != nil {
+		c.logger.Error("character file generation failed", "error", err)
+		response.Error(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", path))
+	io.Copy(w, file)
+}

@@ -164,6 +164,7 @@ func Run(args []string) (error) {
 				r.Get("/{steamid:[0-9]+}", con.GetCharacters)
 				r.Get("/{uuid}", con.GetCharacterByID)
 				r.Patch("/restore/{uuid}", con.RestoreCharacter)
+				r.Get("/export/{uuid}", con.ExportCharacter)
 			})
 
 			r.Route("/rollback/character", func(r chi.Router) {
