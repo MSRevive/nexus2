@@ -11,7 +11,7 @@ require (
 	github.com/saintwish/rotatewriter v1.0.2-0.20231130031427-ca47f8a7efc2
 	github.com/spf13/pflag v1.0.5
 	go.mongodb.org/mongo-driver v1.13.0
-	golang.org/x/crypto v0.16.0
+	golang.org/x/crypto v0.17.0
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v2 v2.4.0
 )
