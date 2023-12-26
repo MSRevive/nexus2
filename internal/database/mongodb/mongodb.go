@@ -114,8 +114,6 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 }
 
 func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
-	//defer runtime.GC()
-
 	filter := bson.D{{"_id", id}}
 	var char schema.Character
 
