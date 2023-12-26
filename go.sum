@@ -35,6 +35,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/saintwish/kv v1.0.1-0.20231005191430-97f70ba34094 h1:JpH5vHzv2yR9oVuXu5RClm3mw0/rrDkWnju6Ls8kjVk=
 github.com/saintwish/kv v1.0.1-0.20231005191430-97f70ba34094/go.mod h1:w+RRuL88spjOma9LlGhaRvFHfZMfNgLJTCEwb9L2KyM=
+github.com/saintwish/kv v1.0.1 h1:w/GPV5vZAWOyd7GZna/CDaP4aorrO2cAtEMKO6VcXmo=
+github.com/saintwish/kv v1.0.1/go.mod h1:K6MbwPJrmSpsdQF0MjbiAdgq8WKWPJuNOiUWrDML3UA=
 github.com/saintwish/rotatewriter v1.0.2-0.20231130031427-ca47f8a7efc2 h1:1cc+omAcbAYicAFfB8plIjTa9ABTl4Y2z06L8ahBEtQ=
 github.com/saintwish/rotatewriter v1.0.2-0.20231130031427-ca47f8a7efc2/go.mod h1:NAqOz4Rn952kQohfH86TIWyBhrJRKaisJJWUf+dlJoQ=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
