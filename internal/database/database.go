@@ -27,4 +27,6 @@ type Database interface {
 	RollbackCharacter(id uuid.UUID, ver int) error
 	RollbackCharacterToLatest(id uuid.UUID) error
 	DeleteCharacterVersions(id uuid.UUID) error
+
+	SaveToDatabase() error
 }

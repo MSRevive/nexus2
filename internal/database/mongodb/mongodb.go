@@ -5,8 +5,6 @@ import (
 	"context"
 	"time"
 	"errors"
-	//"strconv"
-	//"runtime"
 	
 	"github.com/msrevive/nexus2/internal/database/schema"
 
@@ -14,12 +12,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/bson"
 	"github.com/google/uuid"
+	"github.com/saintwish/kv/kv1s"
 )
 
 type mongoDB struct {
 	Client *mongo.Client
 	UserCollection *mongo.Collection
 	CharCollection *mongo.Collection
+
+	CharacterCache *kv1s.Cache[uuid.UUID, schema.Character]
 }
 
 func New() *mongoDB {
@@ -43,6 +44,9 @@ func (d *mongoDB) Connect(conn string) error {
 
 	d.UserCollection = client.Database("msr").Collection("users")
 	d.CharCollection = client.Database("msr").Collection("characters")
+
+	// create cache with 1024 size and max of 2 shards
+	d.CharacterCache = kv1s.New[uuid.UUID, schema.Character](1024, 2)
 
 	fmt.Println("Connected to MongoDB!")
 	return nil
@@ -114,13 +118,23 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 }
 
 func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
-	filter := bson.D{{"_id", id}}
 	var char schema.Character
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := d.CharCollection.FindOne(ctx, filter).Decode(&char); err != nil {
-		return err
+	if d.CharacterCache.Has(id) {
+		fmt.Println("cached")
+
+		char = d.CharacterCache.Get(id)
+	}else{
+		fmt.Println("not cached")
+		
+		filter := bson.D{{"_id", id}}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := d.CharCollection.FindOne(ctx, filter).Decode(&char); err != nil {
+			return err
+		}
+
+		d.CharacterCache.SetOrUpdate(id, char)
 	}
 
 	// We preallocate a new slice to avoid GC running on a slice being resized.
@@ -148,11 +162,13 @@ func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 		}
 	}
 
-	update := bson.D{
-		{ "$set", bson.D{{ "versions", charVersions }} },
-		{ "$set", bson.D{{ "data", schema.CharacterData{CreatedAt: time.Now(), Size: size, Data: data,} }} },
+	char.Versions = charVersions
+	char.Data = schema.CharacterData{
+		CreatedAt: time.Now(), 
+		Size: size, 
+		Data: data,
 	}
-	if _, err := d.CharCollection.UpdateByID(ctx, id, update); err != nil {
+	if err := d.CharacterCache.Update(char); err != nil {
 		return err
 	}
 
@@ -441,6 +457,30 @@ func (d *mongoDB) DeleteCharacterVersions(id uuid.UUID) error {
 	}
 	if _, err := d.CharCollection.UpdateByID(ctx, id, update); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// TODO
+func (d *mongoDB) SaveToDatabase() error {
+	queue := []mongo.WriteModel
+
+	d.CharacterCache.ForEach(func(id uuid.UUID, char schema.Character){
+		updateModel := mongo.NewUpdateOneModel().
+		SetUpsert(false).
+		SetFilter(bson.D{{"_id", id}}).
+		SetUpdate(&char)
+
+		queue = append(queue, updateModel)
+	})
+
+	if len(queue) > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if _,err := collection.BulkWrite(ctx, queue); err != nil {
+			return err
+		}
 	}
 
 	return nil
