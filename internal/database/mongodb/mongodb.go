@@ -471,7 +471,10 @@ func (d *mongoDB) SaveToDatabase() error {
 			updateModel := mongo.NewUpdateOneModel().
 			SetUpsert(false).
 			SetFilter(bson.D{{"_id", id}}).
-			SetUpdate(&char)
+			SetUpdate(bson.D{
+				{ "$set", bson.D{{ "versions", char.Versions }} },
+				{ "$set", bson.D{{ "data", char.Data }} },
+			})
 
 			queue = append(queue, updateModel)
 		})
