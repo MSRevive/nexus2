@@ -8,7 +8,7 @@ require (
 	github.com/goccy/go-json v0.10.2
 	github.com/google/uuid v1.4.0
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/saintwish/kv v1.0.1
+	github.com/saintwish/kv v1.0.2
 	github.com/saintwish/rotatewriter v1.0.2-0.20231130031427-ca47f8a7efc2
 	github.com/spf13/pflag v1.0.5
 	go.mongodb.org/mongo-driver v1.13.0

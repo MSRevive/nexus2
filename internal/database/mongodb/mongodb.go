@@ -168,7 +168,7 @@ func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 		Size: size, 
 		Data: data,
 	}
-	if err := d.CharacterCache.Update(char); err != nil {
+	if err := d.CharacterCache.Update(id, char); err != nil {
 		return err
 	}
 
@@ -463,21 +463,24 @@ func (d *mongoDB) DeleteCharacterVersions(id uuid.UUID) error {
 }
 
 func (d *mongoDB) SaveToDatabase() error {
-	queue := []mongo.WriteModel
+	cacheSize := d.CharacterCache.Count()
+	queue := make([]mongo.WriteModel, 0, cacheSize)
 
-	d.CharacterCache.ForEach(func(id uuid.UUID, char schema.Character){
-		updateModel := mongo.NewUpdateOneModel().
-		SetUpsert(false).
-		SetFilter(bson.D{{"_id", id}}).
-		SetUpdate(&char)
+	if cacheSize > 0 {
+		d.CharacterCache.ForEach(func(id uuid.UUID, char schema.Character){
+			updateModel := mongo.NewUpdateOneModel().
+			SetUpsert(false).
+			SetFilter(bson.D{{"_id", id}}).
+			SetUpdate(&char)
 
-		queue = append(queue, updateModel)
-	})
+			queue = append(queue, updateModel)
+		})
+	}
 
 	if len(queue) > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if _,err := collection.BulkWrite(ctx, queue); err != nil {
+		if _,err := d.CharCollection.BulkWrite(ctx, queue); err != nil {
 			return err
 		}
 	}
