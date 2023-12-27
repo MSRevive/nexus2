@@ -462,7 +462,6 @@ func (d *mongoDB) DeleteCharacterVersions(id uuid.UUID) error {
 	return nil
 }
 
-// TODO
 func (d *mongoDB) SaveToDatabase() error {
 	queue := []mongo.WriteModel
 
@@ -484,4 +483,8 @@ func (d *mongoDB) SaveToDatabase() error {
 	}
 
 	return nil
+}
+
+func (d *mongoDB) ClearCache() {
+	d.CharacterCache.Clear()
 }

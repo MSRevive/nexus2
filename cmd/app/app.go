@@ -18,6 +18,7 @@ import (
 	"github.com/saintwish/kv/ccmap"
 	rw "github.com/saintwish/rotatewriter"
 	"github.com/go-chi/chi/v5"
+	"github.com/robfig/cron/v3"
 )
 
 type App struct {
@@ -145,6 +146,17 @@ func (a *App) Start(mux chi.Router) error {
 		},
 	}
 
+	cron := cron.New()
+	cron.AddFunc("*/30 * * * *", func(){
+		a.Logger.Info("Saving characters from database cache.")
+		if err := a.DB.SaveToDatabase(); err != nil {
+			a.Logger.Error("Failed to save characters!", "error", err)
+			return
+		}
+		a.DB.ClearCache()
+	})
+	cron.Start()
+
 	if a.Config.Cert.Enable {
 		a.Logger.Info("Starting HTTPS server with cert")
 		return a.StartHTTPWithCert()
@@ -157,6 +169,12 @@ func (a *App) Start(mux chi.Router) error {
 }
 
 func (a *App) Close() error {
+	a.Logger.Info("Saving characters from database cache.")
+	if err := a.DB.SaveToDatabase(); err != nil {
+		return err
+	}
+	a.DB.ClearCache()
+
 	//close database connection
 	a.Logger.Info("Closing database connection")
 	if err := a.DB.Disconnect(); err != nil {

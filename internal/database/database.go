@@ -29,4 +29,5 @@ type Database interface {
 	DeleteCharacterVersions(id uuid.UUID) error
 
 	SaveToDatabase() error
+	ClearCache()
 }
