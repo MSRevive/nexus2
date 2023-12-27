@@ -5,6 +5,9 @@
 * The database is now MongoDB instead of SQLite.
 * Switched to slog instead of using auralog, no more thirdparty dependency for logging!
 
+### Added
+* A bunch of stuff, afterall it was a recode.
+
 ## v1.3.1
 ### Added
 * New API endpoint to transfer characters and copy characters to another account.
