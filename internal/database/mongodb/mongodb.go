@@ -121,12 +121,8 @@ func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 	var char schema.Character
 
 	if d.CharacterCache.Has(id) {
-		fmt.Println("cached")
-
 		char = d.CharacterCache.Get(id)
 	}else{
-		fmt.Println("not cached")
-		
 		filter := bson.D{{"_id", id}}
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
