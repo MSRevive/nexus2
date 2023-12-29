@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"context"
 	"io"
@@ -35,10 +36,8 @@ type App struct {
 	httpServer *http.Server
 }
 
-func New(cfg *config.Config, db database.Database) (app *App) {
+func New() (app *App) {
 	app = &App{}
-	app.Config = cfg
-	app.DB = db
 	app.List.IP = ccmap.New[string, string]()
 	app.List.Ban = ccmap.New[string, bool]()
 	app.List.Map = ccmap.New[string, uint32]()
@@ -47,7 +46,13 @@ func New(cfg *config.Config, db database.Database) (app *App) {
 	return
 }
 
-func (a *App) InitializeLoggers() error {
+func (a *App) LoadConfig(path string) (err error) {
+	a.Config, err = config.Load(path)
+
+	return
+}
+
+func (a *App) InitializeLogger() {
 	iow := io.MultiWriter(os.Stdout, &rw.RotateWriter{
 		Dir: a.Config.Log.Dir,
 		Filename: "server.log",
@@ -70,11 +75,35 @@ func (a *App) InitializeLoggers() error {
 	a.Logger = slog.New(loghandler.New(iow, &loghandler.Options{
 		Level: slevel,
 	}))
+}
+
+func (a *App) LoadLists() error {
+	if a.Config.ApiAuth.EnforceIP {
+		if err := a.loadIPList(a.Config.ApiAuth.IPListFile); err != nil {
+			return fmt.Errorf("failed to load IP whitelist: %w", err)
+		}
+	}
+
+	if a.Config.Verify.EnforceMap {
+		if err := a.loadMapList(a.Config.Verify.MapListFile); err != nil {
+			return fmt.Errorf("failed to load map list: %w", err)
+		}
+	}
+
+	if a.Config.Verify.EnforceBan {
+		if err := a.loadBanList(a.Config.Verify.BanListFile); err != nil {
+			return fmt.Errorf("failed to load ban list: %w", err)
+		}
+	}
+
+	if err := a.loadAdminList(a.Config.Verify.AdminListFile); err != nil {
+		return fmt.Errorf("failed to load admin list: %w", err)
+	}
 
 	return nil
 }
 
-func (a *App) LoadIPList(path string) error {
+func (a *App) loadIPList(path string) error {
 	file,err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -83,7 +112,7 @@ func (a *App) LoadIPList(path string) error {
 	return a.List.IP.LoadFromJSON(file)
 }
 
-func (a *App) LoadMapList(path string) error {
+func (a *App) loadMapList(path string) error {
 	file,err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -92,7 +121,7 @@ func (a *App) LoadMapList(path string) error {
 	return a.List.Map.LoadFromJSON(file)
 }
 
-func (a *App) LoadBanList(path string) error {
+func (a *App) loadBanList(path string) error {
 	file,err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -101,7 +130,7 @@ func (a *App) LoadBanList(path string) error {
 	return a.List.Ban.LoadFromJSON(file)
 }
 
-func (a *App) LoadAdminList(path string) error {
+func (a *App) loadAdminList(path string) error {
 	file,err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -114,7 +143,7 @@ func (a *App) Start(mux chi.Router) error {
 	a.Logger.Info("Starting Nexus2", "App Version", static.Version, "Go Version", static.GoVersion, "OS", static.OS, "Arch", static.OSArch)
 
 	a.Logger.Info("Connecting to database")
-	if err := a.DB.Connect(a.Config.Database.Connection); err != nil {
+	if err := a.DB.Connect(a.Config.Database); err != nil {
 		return err
 	}
 

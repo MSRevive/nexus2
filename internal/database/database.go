@@ -9,7 +9,7 @@ import (
 )
 
 type Database interface {
-	Connect(conn string) error
+	Connect(cfg Config) error
 	Disconnect() error
 
 	NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error)

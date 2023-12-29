@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 	
+	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/database/schema"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,11 +27,11 @@ func New() *mongoDB {
 	return &mongoDB{}
 }
 
-func (d *mongoDB) Connect(conn string) error {
+func (d *mongoDB) Connect(cfg database.Config) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	opts := options.Client().ApplyURI(conn).SetRegistry(mongoRegistry)
+	opts := options.Client().ApplyURI(cfg.MongoDB.Connection).SetRegistry(mongoRegistry)
 	client, err := mongo.Connect(ctx, opts)
 	d.Client = client
 	if err != nil {
@@ -47,7 +48,6 @@ func (d *mongoDB) Connect(conn string) error {
 	// create cache with 1024 size and max of 2 shards
 	d.CharacterCache = kv1s.New[uuid.UUID, schema.Character](1024, 2)
 
-	fmt.Println("Connected to MongoDB!")
 	return nil
 }
 

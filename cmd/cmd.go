@@ -12,10 +12,8 @@ import (
 	"github.com/msrevive/nexus2/cmd/app"
 	"github.com/msrevive/nexus2/internal/controller"
 	"github.com/msrevive/nexus2/internal/middleware"
-	"github.com/msrevive/nexus2/internal/config"
 	"github.com/msrevive/nexus2/internal/service"
 	"github.com/msrevive/nexus2/internal/static"
-	"github.com/msrevive/nexus2/internal/database/mongodb"
 	"github.com/msrevive/nexus2/pkg/response"
 
 	"github.com/go-chi/chi/v5"
@@ -55,55 +53,22 @@ func Run(args []string) (error) {
 	}
 
 	/////////////////////////
-	//Config
+	//Application Stuff
 	/////////////////////////
-	config, err := config.LoadConfig(flags.cfgFile)
-	if err != nil {
+	a := app.New();
+
+	if err := a.LoadConfig(flags.cfgFile); err != nil {
 		return err
 	}
 
-	/////////////////////////
-	//Database
-	/////////////////////////
-	db := mongodb.New()
+	a.InitializeLogger()
 
-	/////////////////////////
-	//Application
-	/////////////////////////
-	a := app.New(config, db);
-
-	/////////////////////////
-	//Logger Dependency
-	/////////////////////////
-	a.InitializeLoggers()
-
-	/////////////////////////
-	//Load JSON files into lists
-	/////////////////////////
-	if config.ApiAuth.EnforceIP {
-		fmt.Printf("Loading IP list from %s\n", config.ApiAuth.IPListFile)
-		if err := a.LoadIPList(config.ApiAuth.IPListFile); err != nil {
-			a.Logger.Warn("Failed to load IP list.", "error", err)
-		}
+	if err := a.LoadLists(); err != nil {
+		a.Logger.Warn("Failed to load list(s)!", "error", err)
 	}
 
-	if config.Verify.EnforceMap {
-		fmt.Printf("Loading Map list from %s\n", config.Verify.MapListFile)
-		if err := a.LoadMapList(config.Verify.MapListFile); err != nil {
-			a.Logger.Warn("Failed to load Map list.", "error", err)
-		}
-	}
-
-	if config.Verify.EnforceBan {
-		fmt.Printf("Loading Ban list from %s\n", config.Verify.BanListFile)
-		if err := a.LoadBanList(config.Verify.BanListFile); err != nil {
-			a.Logger.Warn("Failed to load Ban list.", "error", err)
-		}
-	}
-
-	fmt.Printf("Loading Admin list from %s\n", config.Verify.AdminListFile)
-	if err := a.LoadAdminList(config.Verify.AdminListFile); err != nil {
-		a.Logger.Warn("Failed to load Admin list.", "error", err)
+	if err := a.SetupDatabase(); err != nil {
+		return err
 	}
 
 	/////////////////////////
@@ -117,10 +82,10 @@ func Run(args []string) (error) {
 	router := chi.NewRouter()
 	router.Use(cmw.RealIP)
 	router.Use(mw.Headers)
-	if config.RateLimit.MaxRequests > 0 {
-		if dur,err := time.ParseDuration(config.RateLimit.MaxAge); err != nil {
+	if a.Config.RateLimit.MaxRequests > 0 {
+		if dur,err := time.ParseDuration(a.Config.RateLimit.MaxAge); err != nil {
 			router.Use(httprate.Limit(
-				config.RateLimit.MaxRequests,
+				a.Config.RateLimit.MaxRequests,
 				dur,
 				httprate.WithKeyFuncs(httprate.KeyByIP),
 				httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {

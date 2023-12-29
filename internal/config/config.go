@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 	"path/filepath"
+
+	"github.com/msrevive/nexus2/internal/database"
   
 	"gopkg.in/ini.v1"
 	"gopkg.in/yaml.v2"
@@ -15,10 +17,9 @@ type Config struct {
 		Address string
 		Port int
 		Timeout time.Duration
+		DBType string
 	}
-	Database struct {
-		Connection string
-	}
+	Database database.Config
 	RateLimit struct {
 		MaxRequests int
 		MaxAge string
@@ -53,7 +54,7 @@ type Config struct {
 	}
 }
   
-func LoadConfig(path string) (cfg *Config, err error) {
+func Load(path string) (cfg *Config, err error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return
