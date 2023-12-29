@@ -1,7 +1,7 @@
 package service
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/msrevive/nexus2/internal/payload"
 	"github.com/msrevive/nexus2/internal/database/schema"
@@ -33,7 +33,7 @@ func (s *Service) GetCharacterByID(uuid uuid.UUID) (*schema.Character, error) {
 	}
 
 	if (schema.CharacterData{}) == char.Data {
-		return nil, errors.New("malformed character data")
+		return nil, fmt.Errorf("malformed character data")
 	}
 
 	return char, nil
@@ -51,7 +51,7 @@ func (s *Service) GetCharacter(steamid string, slot int) (*schema.Character, err
 	}
 
 	if (schema.CharacterData{}) == char.Data {
-		return nil, errors.New("malformed character data")
+		return nil, fmt.Errorf("malformed character data")
 	}
 
 	return char, nil

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"context"
 	"time"
-	"errors"
 	
 	"github.com/msrevive/nexus2/internal/database/schema"
 
@@ -430,7 +429,7 @@ func (d *mongoDB) RollbackCharacterToLatest(id uuid.UUID) error {
 		// Replace the active character with the selected version
 		char.Data = char.Versions[bCharsLen-1]
 	}else{
-		return errors.New("no character backups exist")
+		return fmt.Errorf("no character backups exist")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
