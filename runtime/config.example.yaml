@@ -2,9 +2,12 @@ core:
   address: 127.0.0.1
   port: 1337
   timeout: 60
+  dbtype: ""
 database:
-  #conn: file:./runtime/chars.db?cache=private&mode=rwc&_fk=1& # Cache should be be set to private!
-  connection: ""
+  mongodb:
+    connection: ""
+  clover:
+    connection: ""
 ratelimit:
   maxrequests: 0 # Max amount of requests in time range of MaxAge
   maxage: "" # Max age of ratelimiter bucket in minutes
