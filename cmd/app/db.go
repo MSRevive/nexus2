@@ -11,8 +11,6 @@ func (a *App) SetupDatabase() error {
 	case "mongodb":
 		a.Logger.Info("Database set to MongoDB!")
 		a.DB = mongodb.New()
-	case "clover":
-		return fmt.Errorf("database type not yet implemented.")
 	default:
 		return fmt.Errorf("database not available.")
 	}
