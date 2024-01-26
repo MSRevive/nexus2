@@ -3,13 +3,18 @@ package bbolt
 import (
 	"fmt"
 	"time"
-	//"encoding/gob"
+	"errors"
 	
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/database/schema"
 
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
+	"go.mongodb.org/mongo-driver/bson"
+)
+
+var (
+	ErrNoDocument = errors.New("no document")
 )
 
 type bboltDB struct {
@@ -52,13 +57,106 @@ func (d *bboltDB) Disconnect() error {
 }
 
 func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
-	if err := d.db.Update(func(tx *bbolt.Tx) error {
+	var user schema.User
+	var err error
+
+	charID := uuid.New()
+	char := schema.Character{
+		ID: charID,
+		SteamID: steamid,
+		Slot: slot,
+		CreatedAt: time.Now(),
+		Data: schema.CharacterData{
+			CreatedAt: time.Now(),
+			Size: size,
+			Data: data,
+		},
+	}
+
+	//Create new user and insert new character.
+	if err = d.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+
+		data := b.Get([]byte(steamid))
+		if len(data) == 0 {
+			return ErrNoDocument
+		}
+
+		if err := bson.Unmarshal(data, &user); err != nil {
+			return fmt.Errorf("bson: failed to unmarshal %v", err)
+		}
+
+		return nil
+	}); err == ErrNoDocument {
+		if err = d.db.Update(func(tx *bbolt.Tx) error {
+			fmt.Println("NEW USER")
+			user = schema.User{
+				ID: steamid,
+				Characters: make(map[int]uuid.UUID),
+			}
+			user.Characters[slot] = charID
+
+			userData, err := bson.Marshal(user)
+			if err != nil {
+				return fmt.Errorf("bson: failed to marshal user %v", err)
+			}
+
+			charData, err := bson.Marshal(char)
+			if err != nil {
+				return fmt.Errorf("bson: failed to marshal character %v", err)
+			}
+
+			bUser := tx.Bucket([]byte("users"))
+			bChar := tx.Bucket([]byte("characters"))
+
+			if err := bUser.Put([]byte(steamid), userData); err != nil {
+				return fmt.Errorf("bbolt: failed to put in users", err)
+			}
+
+			if err := bChar.Put([]byte(charID.String()), charData); err != nil {
+				return fmt.Errorf("bbolt: failed to put in characters", err)
+			}
+	
+			return nil
+		}); err != nil {
+			return uuid.Nil, err
+		}
+	} else if err != nil {
+		return uuid.Nil, err
+	}
+
+	// Update user data and insert new character.
+	if err = d.db.Update(func(tx *bbolt.Tx) error {
+		fmt.Println("EXISTING USER")
+		user.Characters[slot] = charID
+
+		userData, err := bson.Marshal(user)
+		if err != nil {
+			return fmt.Errorf("bson: failed to marshal user %v", err)
+		}
+
+		charData, err := bson.Marshal(char)
+		if err != nil {
+			return fmt.Errorf("bson: failed to marshal character %v", err)
+		}
+
+		bUser := tx.Bucket([]byte("users"))
+		bChar := tx.Bucket([]byte("characters"))
+
+		if err := bUser.Put([]byte(steamid), userData); err != nil {
+			return fmt.Errorf("bbolt: failed to put in users", err)
+		}
+
+		if err := bChar.Put([]byte(charID.String()), charData); err != nil {
+			return fmt.Errorf("bbolt: failed to put in characters", err)
+		}
+
 		return nil
 	}); err != nil {
 		return uuid.Nil, err
 	}
 
-	return uuid.Nil, nil
+	return charID, nil
 }
 
 func (d *bboltDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
