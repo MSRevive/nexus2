@@ -164,7 +164,24 @@ func (d *bboltDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 }
 
 func (d *bboltDB) GetUser(steamid string) (user *schema.User, err error) {
-	return &schema.User{}, nil
+	if err = d.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+
+		data := b.Get([]byte(steamid))
+		if len(data) == 0 {
+			return ErrNoDocument
+		}
+
+		if err := bsoncoder.Decode(data, &user); err != nil {
+			return fmt.Errorf("bson: failed to unmarshal %v", err)
+		}
+
+		return nil
+	}); err != nil {
+		return
+	}
+
+	return
 }
 
 func (d *bboltDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error) {
