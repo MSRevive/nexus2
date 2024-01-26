@@ -58,7 +58,7 @@ func (d *bboltDB) Disconnect() error {
 }
 
 func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
-	var user schema.User
+	var user *schema.User
 	var err error
 
 	charID := uuid.New()
@@ -86,13 +86,12 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 		if err := bsoncoder.Decode(data, &user); err != nil {
 			return fmt.Errorf("bson: failed to unmarshal %v", err)
 		}
-		fmt.Println(user)
 
 		return nil
 	}); err == ErrNoDocument {
 		if err = d.db.Update(func(tx *bbolt.Tx) error {
 			fmt.Println("NEW USER")
-			user = schema.User{
+			user = &schema.User{
 				ID: steamid,
 				Characters: make(map[int]uuid.UUID),
 			}
@@ -125,10 +124,7 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 		}
 	} else if err != nil {
 		return uuid.Nil, err
-	}
-
-	// Update user data and insert new character.
-	if err == nil {
+	} else {
 		if err = d.db.Update(func(tx *bbolt.Tx) error {
 			fmt.Println("EXISTING USER")
 			user.Characters[slot] = charID
