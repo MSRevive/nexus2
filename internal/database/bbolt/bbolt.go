@@ -206,7 +206,21 @@ func (d *bboltDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error)
 }
 
 func (d *bboltDB) GetCharacters(steamid string) (map[int]schema.Character, error) {
-	return make(map[int]schema.Character), nil
+	user, err := d.GetUser(steamid)
+	if err != nil {
+		return nil, err
+	}
+	
+	chars := make(map[int]schema.Character, len(user.Characters)-1)
+	for k,v := range user.Characters {
+		char, err := d.GetCharacter(v)
+		if err != nil {
+			return nil, err
+		}
+		chars[k] = *char
+	}
+
+	return chars, nil
 }
 
 func (d *bboltDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
