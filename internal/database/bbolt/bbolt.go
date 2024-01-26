@@ -7,10 +7,11 @@ import (
 	
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/database/schema"
+	"github.com/msrevive/nexus2/internal/database/bsoncoder"
 
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
-	"go.mongodb.org/mongo-driver/bson"
+	//"go.mongodb.org/mongo-driver/bson"
 )
 
 var (
@@ -82,9 +83,10 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 			return ErrNoDocument
 		}
 
-		if err := bson.Unmarshal(data, &user); err != nil {
+		if err := bsoncoder.Decode(data, &user); err != nil {
 			return fmt.Errorf("bson: failed to unmarshal %v", err)
 		}
+		fmt.Println(user)
 
 		return nil
 	}); err == ErrNoDocument {
@@ -96,12 +98,12 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 			}
 			user.Characters[slot] = charID
 
-			userData, err := bson.Marshal(user)
+			userData, err := bsoncoder.Encode(&user)
 			if err != nil {
 				return fmt.Errorf("bson: failed to marshal user %v", err)
 			}
 
-			charData, err := bson.Marshal(char)
+			charData, err := bsoncoder.Encode(&char)
 			if err != nil {
 				return fmt.Errorf("bson: failed to marshal character %v", err)
 			}
@@ -126,34 +128,36 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 	}
 
 	// Update user data and insert new character.
-	if err = d.db.Update(func(tx *bbolt.Tx) error {
-		fmt.Println("EXISTING USER")
-		user.Characters[slot] = charID
-
-		userData, err := bson.Marshal(user)
-		if err != nil {
-			return fmt.Errorf("bson: failed to marshal user %v", err)
+	if err == nil {
+		if err = d.db.Update(func(tx *bbolt.Tx) error {
+			fmt.Println("EXISTING USER")
+			user.Characters[slot] = charID
+	
+			userData, err := bsoncoder.Encode(&user)
+			if err != nil {
+				return fmt.Errorf("bson: failed to marshal user %v", err)
+			}
+	
+			charData, err := bsoncoder.Encode(&char)
+			if err != nil {
+				return fmt.Errorf("bson: failed to marshal character %v", err)
+			}
+	
+			bUser := tx.Bucket([]byte("users"))
+			bChar := tx.Bucket([]byte("characters"))
+	
+			if err := bUser.Put([]byte(steamid), userData); err != nil {
+				return fmt.Errorf("bbolt: failed to put in users", err)
+			}
+	
+			if err := bChar.Put([]byte(charID.String()), charData); err != nil {
+				return fmt.Errorf("bbolt: failed to put in characters", err)
+			}
+	
+			return nil
+		}); err != nil {
+			return uuid.Nil, err
 		}
-
-		charData, err := bson.Marshal(char)
-		if err != nil {
-			return fmt.Errorf("bson: failed to marshal character %v", err)
-		}
-
-		bUser := tx.Bucket([]byte("users"))
-		bChar := tx.Bucket([]byte("characters"))
-
-		if err := bUser.Put([]byte(steamid), userData); err != nil {
-			return fmt.Errorf("bbolt: failed to put in users", err)
-		}
-
-		if err := bChar.Put([]byte(charID.String()), charData); err != nil {
-			return fmt.Errorf("bbolt: failed to put in characters", err)
-		}
-
-		return nil
-	}); err != nil {
-		return uuid.Nil, err
 	}
 
 	return charID, nil
