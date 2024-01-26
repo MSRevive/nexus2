@@ -160,6 +160,59 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 }
 
 func (d *bboltDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
+	char, err := d.GetCharacter(id)
+	if err != nil {
+		return err
+	}
+
+	charVersions := make([]schema.CharacterData, 0, backupMax+2)
+	if backupMax > 0 {
+		copy(charVersions, char.Versions)
+		bCharsLen := len(charVersions)
+
+		// Remove first element
+		if bCharsLen >= backupMax {
+			copy(charVersions, charVersions[1:])
+			charVersions = charVersions[:bCharsLen-1]
+			bCharsLen--
+		}
+
+		if bCharsLen > 0 {
+			bNewest := charVersions[bCharsLen-1] //latest backup
+
+			timeCheck := bNewest.CreatedAt.Add(backupTime)
+			if char.Data.CreatedAt.After(timeCheck) {
+				charVersions = append(charVersions, char.Data)
+			}
+		}else{
+			charVersions = append(charVersions, char.Data)
+		}
+	}
+
+	char.Versions = charVersions
+	char.Data = schema.CharacterData{
+		CreatedAt: time.Now(), 
+		Size: size, 
+		Data: data,
+	}
+
+	if err = d.db.Batch(func(tx *bbolt.Tx) error {
+		charData, err := bsoncoder.Encode(&char)
+		if err != nil {
+			return fmt.Errorf("bson: failed to encode character %v", err)
+		}
+
+		b := tx.Bucket([]byte("characters"))
+
+		if err := b.Put([]byte(char.ID.String()), charData); err != nil {
+			return fmt.Errorf("bbolt: failed to update character %v", err)
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
