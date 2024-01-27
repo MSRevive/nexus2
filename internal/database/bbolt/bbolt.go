@@ -516,10 +516,70 @@ func (d *bboltDB) RestoreCharacter(id uuid.UUID) error {
 }
 
 func (d *bboltDB) RollbackCharacter(id uuid.UUID, ver int) error {
+	char, err := d.GetCharacter(id)
+	if err != nil {
+		return err
+	}
+
+	bCharsLen := len(char.Versions)
+	if bCharsLen > ver {
+		// Replace the active character with the selected version
+		char.Data = char.Versions[ver]
+	}else{
+		return fmt.Errorf("no character version at index %d", ver)
+	}
+
+	if err = d.db.Update(func(tx *bbolt.Tx) error {
+		charData, err := bsoncoder.Encode(&char)
+		if err != nil {
+			return fmt.Errorf("bson: failed to encode character %v", err)
+		}
+
+		b := tx.Bucket([]byte("characters"))
+
+		if err := b.Put([]byte(id.String()), charData); err != nil {
+			return fmt.Errorf("bbolt: failed to update char %v", err)
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (d *bboltDB) RollbackCharacterToLatest(id uuid.UUID) error {
+	char, err := d.GetCharacter(id)
+	if err != nil {
+		return err
+	}
+
+	bCharsLen := len(char.Versions)
+	if bCharsLen > 0 {
+		// Replace the active character with the selected version
+		char.Data = char.Versions[bCharsLen-1]
+	}else{
+		return fmt.Errorf("no character backups exist")
+	}
+
+	if err = d.db.Update(func(tx *bbolt.Tx) error {
+		charData, err := bsoncoder.Encode(&char)
+		if err != nil {
+			return fmt.Errorf("bson: failed to encode character %v", err)
+		}
+
+		b := tx.Bucket([]byte("characters"))
+
+		if err := b.Put([]byte(id.String()), charData); err != nil {
+			return fmt.Errorf("bbolt: failed to update char %v", err)
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
