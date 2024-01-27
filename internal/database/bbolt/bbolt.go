@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
-	//"go.mongodb.org/mongo-driver/bson"
 )
 
 var (
@@ -58,9 +57,6 @@ func (d *bboltDB) Disconnect() error {
 }
 
 func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
-	var user *schema.User
-	var err error
-
 	charID := uuid.New()
 	char := schema.Character{
 		ID: charID,
@@ -74,21 +70,9 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 		},
 	}
 
-	//Create new user and insert new character.
-	if err = d.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte("users"))
 
-		data := b.Get([]byte(steamid))
-		if len(data) == 0 {
-			return ErrNoDocument
-		}
-
-		if err := bsoncoder.Decode(data, &user); err != nil {
-			return fmt.Errorf("bson: failed to unmarshal %v", err)
-		}
-
-		return nil
-	}); err == ErrNoDocument {
+	user, err := d.GetUser(steamid)
+	if err == ErrNoDocument {
 		if err = d.db.Update(func(tx *bbolt.Tx) error {
 			fmt.Println("NEW USER")
 			user = &schema.User{
@@ -122,9 +106,11 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 		}); err != nil {
 			return uuid.Nil, err
 		}
-	} else if err != nil {
+	}else if err != nil {
 		return uuid.Nil, err
-	} else {
+	}
+
+	if user != nil {
 		if err = d.db.Update(func(tx *bbolt.Tx) error {
 			fmt.Println("EXISTING USER")
 			user.Characters[slot] = charID
