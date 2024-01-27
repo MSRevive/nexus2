@@ -277,18 +277,104 @@ func (d *bboltDB) GetCharacters(steamid string) (map[int]schema.Character, error
 }
 
 func (d *bboltDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
-	return uuid.Nil, nil
+	user, err := d.GetUser(steamid)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	uuid := user.Characters[slot]
+	return uuid, nil
 }
 
 func (d *bboltDB) SoftDeleteCharacter(id uuid.UUID) error {
+	char, err := d.GetCharacter(id)
+	if err != nil {
+		return err
+	}
+
+	user, err := d.GetUser(char.SteamID)
+	if err != nil {
+		return err
+	}
+
+	delete(user.Characters, char.Slot)
+	user.DeletedCharacters = make(map[int]uuid.UUID, 1)
+	user.DeletedCharacters[char.Slot] = id
+
+	timeNow := time.Now()
+	char.DeletedAt = &timeNow
+
+	if err = d.db.Update(func(tx *bbolt.Tx) error {
+		userData, err := bsoncoder.Encode(&user)
+		if err != nil {
+			return fmt.Errorf("bson: failed to encode user %v", err)
+		}
+
+		charData, err := bsoncoder.Encode(&char)
+		if err != nil {
+			return fmt.Errorf("bson: failed to encode character %v", err)
+		}
+
+		bUser := tx.Bucket([]byte("users"))
+		bChar := tx.Bucket([]byte("characters"))
+
+		if err := bUser.Put([]byte(char.SteamID), userData); err != nil {
+			return fmt.Errorf("bbolt: failed to update user %v", err)
+		}
+
+		if err := bChar.Put([]byte(id.String()), charData); err != nil {
+			return fmt.Errorf("bbolt: failed to update character %v", err)
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (d *bboltDB) DeleteCharacter(id uuid.UUID) error {
+	if err := d.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte("characters"))
+
+		if err := b.Delete([]byte(id.String())); err != nil {
+			return fmt.Errorf("bbolt: failed to delete character %v", err)
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (d *bboltDB) DeleteCharacterReference(steamid string, slot int) error {
+	user, err := d.GetUser(steamid)
+	if err != nil {
+		return err
+	}
+
+	delete(user.Characters, slot)
+
+	if err = d.db.Update(func(tx *bbolt.Tx) error {
+		userData, err := bsoncoder.Encode(&user)
+		if err != nil {
+			return fmt.Errorf("bson: failed to encode user %v", err)
+		}
+
+		b := tx.Bucket([]byte("users"))
+
+		if err := b.Put([]byte(steamid), userData); err != nil {
+			return fmt.Errorf("bbolt: failed to update user %v", err)
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -301,6 +387,48 @@ func (d *bboltDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UU
 }
 
 func (d *bboltDB) RestoreCharacter(id uuid.UUID) error {
+	char, err := d.GetCharacter(id)
+	if err != nil {
+		return err
+	}
+
+	user, err := d.GetUser(char.SteamID)
+	if err != nil {
+		return err
+	}
+
+	user.Characters[char.Slot] = id
+	delete(user.DeletedCharacters, char.Slot)
+
+	char.DeletedAt = nil
+
+	if err = d.db.Update(func(tx *bbolt.Tx) error {
+		userData, err := bsoncoder.Encode(&user)
+		if err != nil {
+			return fmt.Errorf("bson: failed to encode user %v", err)
+		}
+
+		charData, err := bsoncoder.Encode(&char)
+		if err != nil {
+			return fmt.Errorf("bson: failed to encode character %v", err)
+		}
+
+		bUser := tx.Bucket([]byte("users"))
+		bChar := tx.Bucket([]byte("characters"))
+
+		if err := bUser.Put([]byte(char.SteamID), userData); err != nil {
+			return fmt.Errorf("bbolt: failed to update user %v", err)
+		}
+
+		if err := bChar.Put([]byte(id.String()), charData); err != nil {
+			return fmt.Errorf("bbolt: failed to update character %v", err)
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -313,6 +441,30 @@ func (d *bboltDB) RollbackCharacterToLatest(id uuid.UUID) error {
 }
 
 func (d *bboltDB) DeleteCharacterVersions(id uuid.UUID) error {
+	char, err := d.GetCharacter(id)
+	if err != nil {
+		return err
+	}
+
+	char.Versions = nil
+
+	if err = d.db.Update(func(tx *bbolt.Tx) error {
+		charData, err := bsoncoder.Encode(&char)
+		if err != nil {
+			return fmt.Errorf("bson: failed to encode char %v", err)
+		}
+
+		b := tx.Bucket([]byte("users"))
+
+		if err := b.Put([]byte(id.String()), charData); err != nil {
+			return fmt.Errorf("bbolt: failed to update char %v", err)
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -321,5 +473,5 @@ func (d *bboltDB) SaveToDatabase() error {
 }
 
 func (d *bboltDB) ClearCache() {
-	
+	return
 }
