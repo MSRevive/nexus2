@@ -384,7 +384,7 @@ func (d *bboltDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 	// Assign character ID to the new account.
 	user.Characters[slot] = id
 
-	// Update the character information with new account data.\
+	// Update the character information with new account data.
 	char.SteamID = steamid
 	char.Slot = slot
 
@@ -419,10 +419,8 @@ func (d *bboltDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 }
 
 func (d *bboltDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
-	charID := uuid.New()
-	
 	// Create reference to "new" character.
-	user, err := d.GetUser(steamid)
+	targetUser, err := d.GetUser(steamid)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -433,7 +431,8 @@ func (d *bboltDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UU
 		return uuid.Nil, err
 	}
 
-	user.Characters[slot] = charID
+	charID := uuid.New()
+	targetUser.Characters[slot] = charID
 
 	char.ID = charID
 	char.SteamID = steamid
@@ -441,7 +440,7 @@ func (d *bboltDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UU
 	char.CreatedAt = time.Now()
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := bsoncoder.Encode(&targetUser)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode user %v", err)
 		}
@@ -458,7 +457,7 @@ func (d *bboltDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UU
 			return fmt.Errorf("bbolt: failed to update user %v", err)
 		}
 
-		if err := bChar.Put([]byte(id.String()), charData); err != nil {
+		if err := bChar.Put([]byte(charID.String()), charData); err != nil {
 			return fmt.Errorf("bbolt: failed to update character %v", err)
 		}
 
