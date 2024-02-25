@@ -71,9 +71,9 @@ func (d *mongoDB) NewCharacter(steamid string, slot int, size int, data string) 
 		ID: charID,
 		SteamID: steamid,
 		Slot: slot,
-		CreatedAt: time.Now(),
+		CreatedAt: time.Now().UTC(),
 		Data: schema.CharacterData{
-			CreatedAt: time.Now(),
+			CreatedAt: time.Now().UTC(),
 			Size: size,
 			Data: data,
 		},
@@ -133,34 +133,29 @@ func (d *mongoDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 		d.CharacterCache.SetOrUpdate(id, char)
 	}
 
-	// We preallocate a new slice to avoid GC running on a slice being resized.
-	charVersions := make([]schema.CharacterData, 0, backupMax+2)
+	bCharsLen := len(char.Versions)
 	if backupMax > 0 {
-		copy(charVersions, char.Versions)
-		bCharsLen := len(charVersions)
-
-		// Remove first element
+		// remove oldest backup which is the first element.
 		if bCharsLen >= backupMax {
-			copy(charVersions, charVersions[1:])
-			charVersions = charVersions[:bCharsLen-1]
+			copy(char.Versions, char.Versions[1:])
+			char.Versions = char.Versions[:bCharsLen-1]
 			bCharsLen--
 		}
 
 		if bCharsLen > 0 {
-			bNewest := charVersions[bCharsLen-1] //latest backup
+			bNewest := char.Versions[bCharsLen-1] //latest backup
 
 			timeCheck := bNewest.CreatedAt.Add(backupTime)
 			if char.Data.CreatedAt.After(timeCheck) {
-				charVersions = append(charVersions, char.Data)
+				char.Versions = append(char.Versions, char.Data)
 			}
 		}else{
-			charVersions = append(charVersions, char.Data)
+			char.Versions = append(char.Versions, char.Data)
 		}
 	}
 
-	char.Versions = charVersions
 	char.Data = schema.CharacterData{
-		CreatedAt: time.Now(), 
+		CreatedAt: time.Now().UTC(), 
 		Size: size, 
 		Data: data,
 	}
@@ -243,7 +238,7 @@ func (d *mongoDB) SoftDeleteCharacter(id uuid.UUID) error {
 	}
 
 	update = bson.D{
-		{ "$set", bson.D{{ "deleted_at", time.Now() }} },
+		{ "$set", bson.D{{ "deleted_at", time.Now().UTC() }} },
 	}
 	if _, err := d.CharCollection.UpdateByID(ctx, id, update); err != nil {
 		return err
@@ -350,7 +345,7 @@ func (d *mongoDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UU
 	char.ID = charID
 	char.SteamID = steamid
 	char.Slot = slot
-	char.CreatedAt = time.Now()
+	char.CreatedAt = time.Now().UTC()
 
 	if _, err := d.CharCollection.InsertOne(ctx, &char); err != nil {
 		return uuid.Nil, err
