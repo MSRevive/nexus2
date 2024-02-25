@@ -65,9 +65,9 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 		ID: charID,
 		SteamID: steamid,
 		Slot: slot,
-		CreatedAt: time.Now(),
+		CreatedAt: time.Now().UTC(),
 		Data: schema.CharacterData{
-			CreatedAt: time.Now(),
+			CreatedAt: time.Now().UTC(),
 			Size: size,
 			Data: data,
 		},
@@ -152,33 +152,29 @@ func (d *bboltDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 		return err
 	}
 
-	charVersions := make([]schema.CharacterData, 0, backupMax+2)
+	bCharsLen := len(char.Versions)
 	if backupMax > 0 {
-		copy(charVersions, char.Versions)
-		bCharsLen := len(charVersions)
-
-		// Remove first element
+		// we remove the oldest backup here
 		if bCharsLen >= backupMax {
-			copy(charVersions, charVersions[1:])
-			charVersions = charVersions[:bCharsLen-1]
+			copy(char.Versions, char.Versions[1:])
+			char.Versions = char.Versions[:bCharsLen-1]
 			bCharsLen--
 		}
 
 		if bCharsLen > 0 {
-			bNewest := charVersions[bCharsLen-1] //latest backup
+			bNewest := char.Versions[bCharsLen-1] //latest backup
 
 			timeCheck := bNewest.CreatedAt.Add(backupTime)
 			if char.Data.CreatedAt.After(timeCheck) {
-				charVersions = append(charVersions, char.Data)
+				char.Versions = append(char.Versions, char.Data)
 			}
 		}else{
-			charVersions = append(charVersions, char.Data)
+			char.Versions = append(char.Versions, char.Data)
 		}
 	}
 
-	char.Versions = charVersions
 	char.Data = schema.CharacterData{
-		CreatedAt: time.Now(), 
+		CreatedAt: time.Now().UTC(), 
 		Size: size, 
 		Data: data,
 	}
@@ -234,7 +230,7 @@ func (d *bboltDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error)
 		}
 
 		if err := bsoncoder.Decode(data, &char); err != nil {
-			return fmt.Errorf("bson: failed to unmarshal %v", err)
+			return fmt.Errorf("bson: failed to decode %v", err)
 		}
 
 		return nil
@@ -288,7 +284,7 @@ func (d *bboltDB) SoftDeleteCharacter(id uuid.UUID) error {
 	user.DeletedCharacters = make(map[int]uuid.UUID, 1)
 	user.DeletedCharacters[char.Slot] = id
 
-	timeNow := time.Now()
+	timeNow := time.Now().UTC()
 	char.DeletedAt = &timeNow
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
@@ -437,7 +433,7 @@ func (d *bboltDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UU
 	char.ID = charID
 	char.SteamID = steamid
 	char.Slot = slot
-	char.CreatedAt = time.Now()
+	char.CreatedAt = time.Now().UTC()
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
 		userData, err := bsoncoder.Encode(&targetUser)
