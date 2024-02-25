@@ -6,8 +6,9 @@ core:
 database:
   mongodb:
     connection: ""
-  clover:
-    connection: ""
+  bbolt:
+    file: ""
+    timeout: 0
 ratelimit:
   maxrequests: 0 # Max amount of requests in time range of MaxAge
   maxage: "" # Max age of ratelimiter bucket in minutes

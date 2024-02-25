@@ -7,6 +7,7 @@ import (
 	
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/database/schema"
+	"github.com/msrevive/nexus2/internal/database/bsoncoder"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -31,7 +32,7 @@ func (d *mongoDB) Connect(cfg database.Config) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	opts := options.Client().ApplyURI(cfg.MongoDB.Connection).SetRegistry(mongoRegistry)
+	opts := options.Client().ApplyURI(cfg.MongoDB.Connection).SetRegistry(bsoncoder.GetRegistry())
 	client, err := mongo.Connect(ctx, opts)
 	d.Client = client
 	if err != nil {
