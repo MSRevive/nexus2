@@ -100,8 +100,3 @@ func (c *Controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
 	c.logger.Warn("Failed SC verfication", "IP", r.RemoteAddr)
 	response.Result(w, false)
 }
-
-//GET ping
-func (c *Controller) GetPing(w http.ResponseWriter, r *http.Request) {
-	response.OKNoContent(w)
-}

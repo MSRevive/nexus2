@@ -140,19 +140,17 @@ func Run(args []string) (error) {
 				r.Patch("/{uuid}/{version:[0-9]+}", con.RollbackCharToVersion)
 				r.Delete("/{uuid}", con.DeleteCharRollbacks)
 			})
-		})
 
-		r.Route("/unsafe", func(r chi.Router) {
-			r.Use(mw.ExternalAuth)
-
-			r.Route("/character", func(r chi.Router) {
+			r.Route("/unsafe/character", func(r chi.Router) {
 				r.Patch("/move/{uuid}/to/{steamid:[0-9]+}/{slot:[0-9]}", con.UnsafeMoveCharacter)
 				r.Patch("/copy/{uuid}/to/{steamid:[0-9]+}/{slot:[0-9]}", con.UnsafeCopyCharacter)
 				r.Delete("/delete/{uuid}", con.UnsafeDeleteCharacter)
 			})
 		})
 
-		r.Get("/ping", con.GetPing)
+		r.Get("/ping", func(w http.ResponseWriter, r *http.Request){
+			response.OK(w, true)
+		})
 		if flags.debug {
 			r.Mount("/debug", cmw.Profiler())
 		}
