@@ -8,40 +8,30 @@ import (
 
 
 /* ---
-	Tier 0 Authenication
+	Basic authenication
 	Performs no authenication.
 --- */
-func (mw *Middleware) Tier0Auth(next http.Handler) http.Handler {
+func (mw *Middleware) BasicAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r)
 	})
 }
 
 /* ---
-	Tier 1 Authenication
+	External Authenication
 	Performs IP whitelist and API key checks against what's allowed (if they're enabled in the config).
-  	This should be used as the basic authentication
 --- */
-func (mw *Middleware) Tier1Auth(next http.Handler) http.Handler {
+func (mw *Middleware) ExternalAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip := utils.GetIP(r)
 		key := r.Header.Get("Authorization")
-		
-		val,ok := mw.ipList.GetHas(ip)
-		if mw.config.ApiAuth.EnforceIP {
-			if !ok {
-				mw.logger.Info("IP is not authorized!", "ip", ip)
-				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
-				return
-			}
-		}
 
-		if mw.config.ApiAuth.EnforceKey {
-			if !ok || val != key {
-				mw.logger.Info("API key is not authorized!", "ip", ip)
-				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
-				return
-			}
+		val,ok := mw.systemAdmins.GetHas(ip)
+
+		if !ok || (key != "" && val != key) {
+			mw.logger.Info("Unauthorized!", "ip", ip)
+			http.Error(w, http.StatusText(401), http.StatusUnauthorized)
+			return
 		}
 
 		next.ServeHTTP(w, r)
@@ -49,11 +39,11 @@ func (mw *Middleware) Tier1Auth(next http.Handler) http.Handler {
 }
 
 /* ---
-	Tier 2 Authenication
-	Performs level 1 authentication and user agent check.
-  	This should be used to make sure the request came from msr game server.
+	Internal Authenication
+	Performs IP whitelist and API key checks against what's allowed (if they're enabled in the config).
+  	These requests should only come from MSR game server.
 --- */
-func (mw *Middleware) Tier2Auth(next http.Handler) http.Handler {
+func (mw *Middleware) InternalAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip := utils.GetIP(r)
 		key := r.Header.Get("Authorization")

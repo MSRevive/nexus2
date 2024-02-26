@@ -29,6 +29,7 @@ type Config struct {
 		Domain string
 	}
 	ApiAuth struct {
+		SystemAdmins string
 		EnforceKey bool
 		EnforceIP bool
 		IPListFile string

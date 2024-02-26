@@ -74,7 +74,7 @@ func Run(args []string) (error) {
 	/////////////////////////
 	//Middleware
 	/////////////////////////
-	mw := middleware.New(a.Logger, a.Config, a.List.IP)
+	mw := middleware.New(a.Logger, a.Config, a.List.IP, a.List.SystemAdmin)
 
 	/////////////////////////
 	//Routing
@@ -101,9 +101,11 @@ func Run(args []string) (error) {
 	service := service.New(a.DB, a.Config)
 	con := controller.New(a.Logger, a.Config, service, a.List.Ban, a.List.Map, a.List.Admin)
 	router.Route(static.APIVersion, func(r chi.Router) {
+		r.Use(mw.BasicAuth)
+		
 		// Internal use for the game server only.
 		r.Route("/internal", func(r chi.Router) {
-			r.Use(mw.Tier2Auth)
+			r.Use(mw.InternalAuth)
 
 			r.Get("/map/{name}/{hash}", con.GetMapVerify)
 			r.Get("/ban/{steamid:[0-9]+}", con.GetBanVerify)
@@ -121,7 +123,7 @@ func Run(args []string) (error) {
 		})
 
 		r.Route("/", func(r chi.Router) {
-			r.Use(mw.Tier1Auth)
+			r.Use(mw.ExternalAuth)
 
 			r.Route("/character", func(r chi.Router) {
 				r.Get("/lookup/{steamid:[0-9]+}/{slot:[0-9]}", con.LookUpCharacterID)
@@ -141,7 +143,7 @@ func Run(args []string) (error) {
 		})
 
 		r.Route("/unsafe", func(r chi.Router) {
-			r.Use(mw.Tier2Auth)
+			r.Use(mw.ExternalAuth)
 
 			r.Route("/character", func(r chi.Router) {
 				r.Patch("/move/{uuid}/to/{steamid:[0-9]+}/{slot:[0-9]}", con.UnsafeMoveCharacter)

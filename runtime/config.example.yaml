@@ -16,6 +16,7 @@ cert:
   enable: false
   domain: ""
 apiauth:
+  systemadmins: ./runtime/systemadmins.json
   enforcekey: false
   enforceip: false
   iplistfile: ./runtime/ipwhitelist.json
@@ -33,5 +34,5 @@ char:
   backuptime: 1h
 log:
   level: debug
-  dir: ./runtime/logs/ # Where should we keep the bot log file.
+  dir: ./runtime/logs/ # Where should we keep the bot log files.
   expiretime: 24h

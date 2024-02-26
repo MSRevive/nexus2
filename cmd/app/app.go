@@ -27,6 +27,7 @@ type App struct {
 	DB database.Database
 	Logger *slog.Logger
 	List struct {
+		SystemAdmin *ccmap.Cache[string, string]
 		IP *ccmap.Cache[string, string]
 		Ban *ccmap.Cache[string, bool]
 		Map *ccmap.Cache[string, uint32]
@@ -39,6 +40,7 @@ type App struct {
 func New() (app *App) {
 	app = &App{}
 	app.List.IP = ccmap.New[string, string]()
+	app.List.SystemAdmin = ccmap.New[string, string]()
 	app.List.Ban = ccmap.New[string, bool]()
 	app.List.Map = ccmap.New[string, uint32]()
 	app.List.Admin = ccmap.New[string, bool]()
@@ -78,6 +80,10 @@ func (a *App) InitializeLogger() {
 }
 
 func (a *App) LoadLists() error {
+	if err := a.loadSystemAdminList(a.Config.ApiAuth.SystemAdmins); err != nil {
+		return fmt.Errorf("failed to load system admin list: %w", err)
+	}
+
 	if a.Config.ApiAuth.EnforceIP {
 		if err := a.loadIPList(a.Config.ApiAuth.IPListFile); err != nil {
 			return fmt.Errorf("failed to load IP whitelist: %w", err)
@@ -137,6 +143,15 @@ func (a *App) loadAdminList(path string) error {
 	}
 
 	return a.List.Admin.LoadFromJSON(file)
+}
+
+func (a *App) loadSystemAdminList(path string) error {
+	file,err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	return a.List.SystemAdmin.LoadFromJSON(file)
 }
 
 func (a *App) Start(mux chi.Router) error {
