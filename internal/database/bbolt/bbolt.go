@@ -73,7 +73,6 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 		},
 	}
 
-
 	user, err := d.GetUser(steamid)
 	if err == ErrNoDocument {
 		if err = d.db.Update(func(tx *bbolt.Tx) error {
