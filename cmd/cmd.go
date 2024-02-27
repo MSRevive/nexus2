@@ -146,9 +146,18 @@ func Run(args []string) (error) {
 				r.Patch("/copy/{uuid}/to/{steamid:[0-9]+}/{slot:[0-9]}", con.UnsafeCopyCharacter)
 				r.Delete("/delete/{uuid}", con.UnsafeDeleteCharacter)
 			})
+
+			r.Get("/refresh", func(w http.ResponseWriter, r *http.Request) {
+				if err := a.LoadLists(); err != nil {
+					response.Error(w, err)
+					return
+				}
+
+				response.OK(w, true)
+			})
 		})
 
-		r.Get("/ping", func(w http.ResponseWriter, r *http.Request){
+		r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 			response.OK(w, true)
 		})
 		if flags.debug {
