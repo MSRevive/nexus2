@@ -24,3 +24,4 @@ dev/*
 *.bak
 runtime/ipwhitelist.json
 runtime/config.yaml
+runtime/systemadmins.json
