@@ -100,3 +100,13 @@ func (c *Controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
 	c.logger.Warn("Failed SC verfication", "IP", r.RemoteAddr)
 	response.Result(w, false)
 }
+
+//GET /server/{hash}
+func (c *Controller) GetServerVerify(w http.ResponseWriter, r *http.Request) {
+	if !c.config.Verify.EnforceServer {
+		response.Result(w, true)
+		return
+	}
+
+	response.Result(w, false)
+}

@@ -110,6 +110,7 @@ func Run(args []string) (error) {
 			r.Get("/map/{name}/{hash}", con.GetMapVerify)
 			r.Get("/ban/{steamid:[0-9]+}", con.GetBanVerify)
 			r.Get("/sc/{hash}", con.GetSCVerify)
+			r.Get("/server/{hash}", con.GetServerVerify)
 
 			r.Route("/character", func(r chi.Router) {
 				r.Post("/", con.PostCharacter)

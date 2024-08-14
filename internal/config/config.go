@@ -38,6 +38,7 @@ type Config struct {
 		EnforceBan bool
 		EnforceMap bool
 		EnforceSC bool
+		EnforceServer bool
 		MapListFile string
 		BanListFile string
 		AdminListFile string

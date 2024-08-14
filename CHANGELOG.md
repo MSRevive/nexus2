@@ -7,6 +7,7 @@
 
 ### Added
 * A bunch of stuff, afterall it was a recode.
+* New endpoint for server DLL verification.
 
 ## v1.3.1
 ### Added
