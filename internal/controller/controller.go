@@ -13,6 +13,15 @@ import (
 	"github.com/saintwish/kv/ccmap"
 )
 
+type Options struct {
+	BanList *ccmap.Cache[string, bool]
+	MapList *ccmap.Cache[string, uint32]
+	AdminList *ccmap.Cache[string, bool]
+	ServerWinHash uint32
+	ServerUnixHash uint32
+	ScriptsHash uint32
+}
+
 type Controller struct {
 	logger *slog.Logger
 	config *config.Config
@@ -26,14 +35,18 @@ type Controller struct {
 	scriptsHash uint32
 }
 
-func New(log *slog.Logger, cfg *config.Config, svr *service.Service, bans *ccmap.Cache[string, bool], maps *ccmap.Cache[string, uint32], admins *ccmap.Cache[string, bool]) *Controller {
+func New(service *service.Service, log *slog.Logger, cfg *config.Config, opts Options) *Controller {
 	return &Controller{
 		logger: log,
+		service: service,
 		config: cfg,
-		service: svr,
-		banList: bans,
-		mapList: maps,
-		adminList: admins,
+		banList: opts.BanList,
+		mapList: opts.MapList,
+		adminList: opts.AdminList,
+
+		serverWinHash: opts.ServerWinHash,
+		serverUnixHash: opts.ServerUnixHash,
+		scriptsHash: opts.ScriptsHash,
 	}
 }
 

@@ -103,7 +103,14 @@ func Run(args []string) (error) {
 	router.Use(cmw.Timeout(a.Config.Core.Timeout * time.Second))
 
 	service := service.New(a.DB, a.Config)
-	con := controller.New(a.Logger, a.Config, service, a.List.Ban, a.List.Map, a.List.Admin)
+	con := controller.New(service, a.Logger, a.Config, controller.Options{
+		BanList: a.List.Ban,
+		MapList: a.List.Map,
+		AdminList: a.List.Admin,
+		ServerWinHash: a.Hashes.ServerWin,
+		ServerUnixHash: a.Hashes.ServerUnix,
+		ScriptsHash: a.Hashes.Scripts,
+	})
 	router.Route(static.APIVersion, func(r chi.Router) {
 		r.Use(mw.BasicAuth)
 		
