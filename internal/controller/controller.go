@@ -20,6 +20,10 @@ type Controller struct {
 	banList *ccmap.Cache[string, bool]
 	mapList *ccmap.Cache[string, uint32]
 	adminList *ccmap.Cache[string, bool]
+
+	serverWinHash uint32
+	serverUnixHash uint32
+	scriptsHash uint32
 }
 
 func New(log *slog.Logger, cfg *config.Config, svr *service.Service, bans *ccmap.Cache[string, bool], maps *ccmap.Cache[string, uint32], admins *ccmap.Cache[string, bool]) *Controller {
@@ -80,11 +84,6 @@ func (c *Controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
 
 //GET sc/{hash}
 func (c *Controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
-	if !c.config.Verify.EnforceSC {
-		response.Result(w, true)
-		return
-	}
-	
 	hash, err := strconv.ParseUint(chi.URLParam(r, "hash"), 10, 32)
 	if err != nil {
 		c.logger.Error("HTTP: failed to GetSCVerify")
@@ -92,21 +91,16 @@ func (c *Controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if c.config.Verify.SCHash == uint32(hash) {
+	if c.scriptsHash == uint32(hash) {
 		response.Result(w, true)
 		return
 	}
 	
-	c.logger.Warn("Failed SC verfication", "IP", r.RemoteAddr)
+	c.logger.Warn("Failed scripts verfication", "IP", r.RemoteAddr)
 	response.Result(w, false)
 }
 
 //GET /server/{hash}
 func (c *Controller) GetServerVerify(w http.ResponseWriter, r *http.Request) {
-	if !c.config.Verify.EnforceServer {
-		response.Result(w, true)
-		return
-	}
-
 	response.Result(w, false)
 }

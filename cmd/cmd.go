@@ -63,12 +63,16 @@ func Run(args []string) (error) {
 
 	a.InitializeLogger()
 
+	if err := a.SetupDatabase(); err != nil {
+		return err
+	}
+
 	if err := a.LoadLists(); err != nil {
 		a.Logger.Warn("Failed to load list(s)!", "error", err)
 	}
 
-	if err := a.SetupDatabase(); err != nil {
-		return err
+	if err := a.CalcHashes(); err != nil {
+		a.Logger.Warn("Failed to calculate hash!", "error", err)
 	}
 
 	/////////////////////////
@@ -105,12 +109,17 @@ func Run(args []string) (error) {
 		
 		// Internal use for the game server only.
 		r.Route("/internal", func(r chi.Router) {
-			r.Use(mw.InternalAuth)
+			if !flags.debug {
+				r.Use(mw.InternalAuth)
+			}
 
 			r.Get("/map/{name}/{hash}", con.GetMapVerify)
 			r.Get("/ban/{steamid:[0-9]+}", con.GetBanVerify)
 			r.Get("/sc/{hash}", con.GetSCVerify)
 			r.Get("/server/{hash}", con.GetServerVerify)
+			r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+				response.OK(w, true)
+			})
 
 			r.Route("/character", func(r chi.Router) {
 				r.Post("/", con.PostCharacter)
@@ -124,7 +133,9 @@ func Run(args []string) (error) {
 		})
 
 		r.Route("/", func(r chi.Router) {
-			r.Use(mw.ExternalAuth)
+			if !flags.debug {
+				r.Use(mw.ExternalAuth)
+			}
 
 			r.Route("/character", func(r chi.Router) {
 				r.Get("/lookup/{steamid:[0-9]+}/{slot:[0-9]}", con.LookUpCharacterID)

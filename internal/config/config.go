@@ -33,17 +33,17 @@ type Config struct {
 		EnforceKey bool
 		EnforceIP bool
 		IPListFile string
+		UserAgent string
 	}
 	Verify struct {
 		EnforceBan bool
 		EnforceMap bool
-		EnforceSC bool
-		EnforceServer bool
 		MapListFile string
 		BanListFile string
 		AdminListFile string
-		SCHash uint32
-		Useragent string
+		ServerUnixBin string
+		ServerWinBin string
+		ScriptsBin string
 	}
 	Char struct {
 		MaxBackups int

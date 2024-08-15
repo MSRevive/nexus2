@@ -17,18 +17,19 @@ cert:
   domain: ""
 apiauth:
   systemadmins: ./runtime/systemadmins.json
+  iplistfile: ./runtime/ipwhitelist.json
   enforcekey: false
   enforceip: false
-  iplistfile: ./runtime/ipwhitelist.json
+  useragent: ""
 verify:
   enforceban: false
   enforcemap: false
-  enforcesc: false
   maplistfile: ./runtime/game/maps.json
   banlistfile: ./runtime/game/bans.json
   adminlistfile: ./runtime/game/admins.json
-  schash: 125454
-  useragent: ""
+  serverunixbin: ./runtime/game/ms.dll
+  serverwinbin: ./runtime/game/ms.so
+  scriptsbin: ./runtime/game/sc.dll
 char:
   maxbackups: 10
   backuptime: 1h

@@ -20,6 +20,8 @@ func (mw *Middleware) BasicAuth(next http.Handler) http.Handler {
 /* ---
 	External Authenication
 	Performs IP whitelist and API key checks against what's allowed (if they're enabled in the config).
+
+	SystemAdmins [IP address] = API key check for external endpoints.
 --- */
 func (mw *Middleware) ExternalAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -66,8 +68,8 @@ func (mw *Middleware) InternalAuth(next http.Handler) http.Handler {
 		}
 		
 		//if useragent in config is empty then just skip.
-		if mw.config.Verify.Useragent != "" {
-			if r.UserAgent() != mw.config.Verify.Useragent {
+		if mw.config.ApiAuth.UserAgent != "" {
+			if r.UserAgent() != mw.config.ApiAuth.UserAgent {
 				mw.logger.Info("Incorrect user agent!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return

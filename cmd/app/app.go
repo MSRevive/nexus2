@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"strconv"
 	"crypto/tls"
+	"hash/crc32"
 
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/config"
@@ -33,19 +34,67 @@ type App struct {
 		Map *ccmap.Cache[string, uint32]
 		Admin *ccmap.Cache[string, bool]
 	}
+	Hashes struct {
+		ServerWin uint32
+		ServerUnix uint32
+		Scripts uint32
+	}
 
 	httpServer *http.Server
 }
 
 func New() (app *App) {
 	app = &App{}
-	app.List.IP = ccmap.New[string, string]()
 	app.List.SystemAdmin = ccmap.New[string, string]()
+	app.List.IP = ccmap.New[string, string]()
 	app.List.Ban = ccmap.New[string, bool]()
 	app.List.Map = ccmap.New[string, uint32]()
 	app.List.Admin = ccmap.New[string, bool]()
 
 	return
+}
+
+func (a *App) CalcHashes() error {
+	// Calculate hash for win32 server binary
+	a.Logger.Info("Calculating hash for Server win32 binary", "file", a.Config.Verify.ServerWinBin)
+	fh, err := os.Open(a.Config.Verify.ServerWinBin)
+	if err != nil {
+		return fmt.Errorf("unable to open server win32 binary: %v\n", err)
+	}
+
+	hasher := crc32.NewIEEE()
+	if _, err := io.Copy(hasher, fh); err != nil {
+		return fmt.Errorf("unable to hash: %v\n", err)
+	}
+	a.Hashes.ServerWin = hasher.Sum32()
+
+	// Calculate hash for unix server binary
+	a.Logger.Info("Calculating hash for Server unix binary", "file", a.Config.Verify.ServerUnixBin)
+	fh, err = os.Open(a.Config.Verify.ServerUnixBin)
+	if err != nil {
+		return fmt.Errorf("unable to open server unix binary: %v\n", err)
+	}
+
+	hasher = crc32.NewIEEE()
+	if _, err := io.Copy(hasher, fh); err != nil {
+		return fmt.Errorf("unable to hash: %v\n", err)
+	}
+	a.Hashes.ServerUnix = hasher.Sum32()
+
+	// Calculate hash for scripts binary
+	a.Logger.Info("Calculating hash for scripts binary", "file", a.Config.Verify.ScriptsBin)
+	fh, err = os.Open(a.Config.Verify.ScriptsBin)
+	if err != nil {
+		return fmt.Errorf("unable to open scripts binary: %v\n", err)
+	}
+
+	hasher = crc32.NewIEEE()
+	if _, err := io.Copy(hasher, fh); err != nil {
+		return fmt.Errorf("unable to hash: %v\n", err)
+	}
+	a.Hashes.Scripts = hasher.Sum32()
+
+	return nil
 }
 
 func (a *App) LoadConfig(path string) (err error) {
