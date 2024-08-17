@@ -6,8 +6,8 @@ import (
 	"errors"
 	
 	"github.com/msrevive/nexus2/internal/database"
-	"github.com/msrevive/nexus2/internal/database/schema"
-	"github.com/msrevive/nexus2/internal/database/bsoncoder"
+	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
+	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"

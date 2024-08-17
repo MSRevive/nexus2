@@ -6,8 +6,8 @@ import (
 	"time"
 	
 	"github.com/msrevive/nexus2/internal/database"
-	"github.com/msrevive/nexus2/internal/database/schema"
-	"github.com/msrevive/nexus2/internal/database/bsoncoder"
+	"github.com/msrevive/nexus2/pkg/database/schema"
+	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

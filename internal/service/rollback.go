@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 
-	"github.com/msrevive/nexus2/internal/database/schema"
+	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/google/uuid"
 )
