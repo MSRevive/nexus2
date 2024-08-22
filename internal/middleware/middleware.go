@@ -43,7 +43,7 @@ func (m *Middleware) Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t1 := time.Now()
 		defer func() {
-			m.logger.Info("", "method", r.Method, "proto", r.Proto, "URI", r.RequestURI, "IP", r.RemoteAddr, "bytes", r.ContentLength, "ping", time.Since(t1))
+			m.logger.Info("", "method", r.Method, "proto", r.Proto, "URI", r.RequestURI, "IP", r.RemoteAddr, "bytes", r.ContentLength, "ping", time.Since(t1), "useragent", r.Header.Get("User-Agent"))
 		}()
 		next.ServeHTTP(w, r)
 	})
