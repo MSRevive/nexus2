@@ -172,6 +172,11 @@ func Run(args []string) (error) {
 					return
 				}
 
+				if err := a.CalcHashes(); err != nil {
+					response.Error(w, err)
+					return
+				}
+
 				response.OK(w, true)
 			})
 		})

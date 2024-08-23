@@ -104,7 +104,7 @@ func (c *Controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if c.scriptsHash == uint32(hash) {
+	if (c.scriptsHash == 0) || (uint32(hash) == c.scriptsHash) {
 		response.Result(w, true)
 		return
 	}
@@ -115,5 +115,18 @@ func (c *Controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
 
 //GET /server/{hash}
 func (c *Controller) GetServerVerify(w http.ResponseWriter, r *http.Request) {
+	hash, err := strconv.ParseUint(chi.URLParam(r, "hash"), 10, 32)
+	if err != nil {
+		c.logger.Error("HTTP: failed to GetServerVerify")
+		response.BadRequest(w, err)
+		return
+	}
+
+	if ((c.serverUnixHash == 0) || (c.serverWinHash == 0)) || ((uint32(hash) == c.serverUnixHash) || (uint32(hash) == c.serverWinHash)) {
+		response.Result(w, true)
+		return
+	}
+
+	c.logger.Warn("Failed server verfication", "IP", r.RemoteAddr)
 	response.Result(w, false)
 }
