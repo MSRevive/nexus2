@@ -25,6 +25,7 @@ type Character struct {
 
 type User struct {
 	ID string `bson:"_id"` //this is the SteamID64
+	Revision int `bson:"revison"` //we store what revision the user is on so in the future we can automagically update users.
 	Characters map[int]uuid.UUID `bson:"characters"` //Slot => reference Character by ID
 	DeletedCharacters map[int]uuid.UUID `bson:"deleted_characters"`
 }
