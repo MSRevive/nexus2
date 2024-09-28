@@ -166,7 +166,7 @@ func Run(args []string) (error) {
 			})
 
 			r.Route("/user", func(r chi.Router) {
-				r.Post("/ban/{steamid:[0-9]+}", con.NotAvailable)
+				r.Post("/ban/{steamid:[0-9]+}", con.PostBanSteamID)
 				r.Post("/unban/{steamid:[0-9]+}", con.NotAvailable)
 				r.Post("/admin/{steamid:[0-9]+}", con.NotAvailable)
 				r.Post("/unadmin/{steamid:[0-9]+}", con.NotAvailable)
@@ -197,6 +197,7 @@ func Run(args []string) (error) {
 		}
 	})
 
+	// Let the game server know that's it's trying to use the old API.
 	router.Route(static.OldAPIVersion, func(r chi.Router) {
 		r.Route("/", func(r chi.Router) {
 			r.Get("/sc/{hash}", con.DepreciatedAPIVersion)

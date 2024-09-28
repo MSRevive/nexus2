@@ -30,14 +30,14 @@ func (d *bboltDB) GetUser(steamid string) (user *schema.User, err error) {
 	return
 }
 
-func (d *bboltDB) UpdateUserFlags(steamid string, bitmask uint32) (error) {
+func (d *bboltDB) SetUserFlags(steamid string, flag uint32) (error) {
 	user, err := d.GetUser(steamid)
 	if err != nil {
 		return err
 	}
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
-		user.Flags = bitmask
+		user.Flags = flag
 
 		userData, err := bsoncoder.Encode(&user)
 		if err != nil {

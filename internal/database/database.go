@@ -13,7 +13,7 @@ type Database interface {
 	Disconnect() error
 
 	GetUser(steamid string) (*schema.User, error)
-	UpdateUserFlags(steamid string, bitmask uint32) (error)
+	SetUserFlags(steamid string, flag uint32) (error)
 	GetUserFlags(steamid string) (uint32, error)
 
 	NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error)

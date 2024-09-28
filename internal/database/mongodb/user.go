@@ -19,14 +19,14 @@ func (d *mongoDB) GetUser(steamid string) (user *schema.User, err error) {
 	return
 }
 
-func (d *mongoDB) UpdateUserFlags(steamid string, bitmask uint32) (error) {
+func (d *mongoDB) SetUserFlags(steamid string, flag uint32) (error) {
 	filter := bson.D{{"_id", steamid}}
 	var user schema.User
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := d.UserCollection.FindOne(ctx, filter).Decode(&user); err == mongo.ErrNoDocuments {
-		user.Flags = bitmask
+		user.Flags = flag
 
 		if _, err := d.UserCollection.InsertOne(ctx, &user); err != nil {
 			return err
