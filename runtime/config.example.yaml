@@ -1,40 +1,40 @@
 core:
-  address: 127.0.0.1
-  port: 1337
-  timeout: 60
-  dbtype: ""
+  address: 127.0.0.1 # The IP the FN server should be on.
+  port: 1337 # The port the FN server should listen on.
+  timeout: 60 # The HTTP failure timeout.
+  dbtype: "" # The type of database the FN should store characters.
 database:
   mongodb:
-    connection: ""
+    connection: "" # The MongoDB connection link to connect to the MongoDB
   bbolt:
-    file: ""
-    timeout: 0
+    file: "" # The location for database file.
+    timeout: 0 # The timeout for opening of the database file.
 ratelimit:
   maxrequests: 0 # Max amount of requests in time range of MaxAge
   maxage: "" # Max age of ratelimiter bucket in minutes
 cert:
-  enable: false
-  domain: ""
+  enable: false # Disable HTTPs certificate.
+  domain: "" # The domain the system should try load certificate for.
 apiauth:
-  systemadmins: ./runtime/systemadmins.json
-  iplistfile: ./runtime/ipwhitelist.json
-  enforcekey: false
-  enforceip: false
-  useragent: ""
+  systemadmins: ./runtime/systemadmins.json # System admins IP list.
+  iplistfile: ./runtime/ipwhitelist.json # Game server IP whitelist.
+  enforcekey: false # Require API key for game servers and system admin.
+  enforceip: false # Require IP check.
+  useragent: "" # The specific user agent that it should check against for game servers.
 verify:
-  enforceban: false
-  enforcemap: false
-  enforcebins: false
-  maplistfile: ./runtime/game/maps.json
-  banlistfile: ./runtime/game/bans.json
-  adminlistfile: ./runtime/game/admins.json
-  serverunixbin: ./runtime/game/ms.dll
-  serverwinbin: ./runtime/game/ms.so
-  scriptsbin: ./runtime/game/sc.dll
+  enforceban: false # Should we enforce FN bans?
+  enforcemap: false # Should we enforce FN verification of maps.
+  enforcebins: false # Should we enforce same version of bins for game server.
+  maplistfile: ./runtime/game/maps.json # The map list that contains map name and CRC hash.
+  banlistfile: ./runtime/game/bans.json # The ban list of FN bans.
+  adminlistfile: ./runtime/game/admins.json # The admin list list for FN game masters.
+  serverunixbin: ./runtime/game/ms.dll # The location of the Windows binary for game servers.
+  serverwinbin: ./runtime/game/ms.so # The location of the Linux binary for game servers.
+  scriptsbin: ./runtime/game/sc.dll # The location of the scripts file for game servers.
 char:
-  maxbackups: 10
-  backuptime: 1h
+  maxbackups: 10 # The maximum number of character backups, when limit is reach it will replace the older backup.
+  backuptime: 1h # How often should the system make a backup of character data.
 log:
-  level: debug
-  dir: ./runtime/logs/ # Where should we keep the bot log files.
-  expiretime: 24h
+  level: debug # Logging level.
+  dir: ./runtime/logs/ # The directory we should keep all the log files for the FN.
+  expiretime: 24h # How long before we switch to a new log file.
