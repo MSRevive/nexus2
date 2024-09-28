@@ -104,9 +104,7 @@ func Run(args []string) (error) {
 
 	service := service.New(a.DB, a.Config)
 	con := controller.New(service, a.Logger, a.Config, controller.Options{
-		BanList: a.List.Ban,
 		MapList: a.List.Map,
-		AdminList: a.List.Admin,
 		ServerWinHash: a.Hashes.ServerWin,
 		ServerUnixHash: a.Hashes.ServerUnix,
 		ScriptsHash: a.Hashes.Scripts,

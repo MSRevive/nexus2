@@ -1,7 +1,6 @@
 package bitmask
 
 import (
-
 )
 
 type Bitmask uint32

@@ -30,9 +30,7 @@ type App struct {
 	List struct {
 		SystemAdmin *ccmap.Cache[string, string]
 		IP *ccmap.Cache[string, string]
-		Ban *ccmap.Cache[string, bool]
 		Map *ccmap.Cache[string, uint32]
-		Admin *ccmap.Cache[string, bool]
 	}
 	Hashes struct {
 		ServerWin uint32
@@ -47,9 +45,7 @@ func New() (app *App) {
 	app = &App{}
 	app.List.SystemAdmin = ccmap.New[string, string]()
 	app.List.IP = ccmap.New[string, string]()
-	app.List.Ban = ccmap.New[string, bool]()
 	app.List.Map = ccmap.New[string, uint32]()
-	app.List.Admin = ccmap.New[string, bool]()
 
 	return
 }
@@ -149,16 +145,6 @@ func (a *App) LoadLists() error {
 		}
 	}
 
-	if a.Config.Verify.EnforceBan {
-		if err := a.loadBanList(a.Config.Verify.BanListFile); err != nil {
-			return fmt.Errorf("failed to load ban list: %w", err)
-		}
-	}
-
-	if err := a.loadAdminList(a.Config.Verify.AdminListFile); err != nil {
-		return fmt.Errorf("failed to load admin list: %w", err)
-	}
-
 	return nil
 }
 
@@ -178,24 +164,6 @@ func (a *App) loadMapList(path string) error {
 	}
 
 	return a.List.Map.LoadFromJSON(file)
-}
-
-func (a *App) loadBanList(path string) error {
-	file,err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	return a.List.Ban.LoadFromJSON(file)
-}
-
-func (a *App) loadAdminList(path string) error {
-	file,err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	return a.List.Admin.LoadFromJSON(file)
 }
 
 func (a *App) loadSystemAdminList(path string) error {
