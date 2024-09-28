@@ -3,6 +3,7 @@ package database
 import (
 	"time"
 
+	"github.com/msrevive/nexus2/internal/bitmask"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/google/uuid"
@@ -13,8 +14,8 @@ type Database interface {
 	Disconnect() error
 
 	GetUser(steamid string) (*schema.User, error)
-	SetUserFlags(steamid string, flag uint32) (error)
-	GetUserFlags(steamid string) (uint32, error)
+	SetUserFlags(steamid string, flags bitmask.Bitmask) (error)
+	GetUserFlags(steamid string) (bitmask.Bitmask, error)
 
 	NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error)
 	UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error

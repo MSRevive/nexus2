@@ -10,16 +10,15 @@ func (s *Service) GetUserFlags(steamid string) (bitmask.Bitmask, error) {
 		return 0, err
 	}
 
-	return bitmask.Bitmask(flags), nil
+	return flags, nil
 }
 
 func (s *Service) AddUserFlag(steamid string, flag bitmask.Bitmask) (error) {
-	rawFlags, err := s.db.GetUserFlags(steamid)
+	flags, err := s.db.GetUserFlags(steamid)
 	if err != nil {
-		err
+		return err
 	}
 
-	flags := bitmask.Bitmask(rawFlags)
 	flags.AddFlag(flag)
 
 	if err := s.db.SetUserFlags(steamid, flags); err != nil {
@@ -30,12 +29,11 @@ func (s *Service) AddUserFlag(steamid string, flag bitmask.Bitmask) (error) {
 }
 
 func (s *Service) RemoveUserFlag(steamid string, flag bitmask.Bitmask) (error) {
-	rawFlags, err := s.db.GetUserFlags(steamid)
+	flags, err := s.db.GetUserFlags(steamid)
 	if err != nil {
-		err
+		return err
 	}
 
-	flags := bitmask.Bitmask(rawFlags)
 	flags.ClearFlag(flag)
 
 	if err := s.db.SetUserFlags(steamid, flags); err != nil {

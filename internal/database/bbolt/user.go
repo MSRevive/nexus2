@@ -3,6 +3,7 @@ package bbolt
 import (
 	"fmt"
 	
+	"github.com/msrevive/nexus2/internal/bitmask"
 	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
@@ -30,14 +31,14 @@ func (d *bboltDB) GetUser(steamid string) (user *schema.User, err error) {
 	return
 }
 
-func (d *bboltDB) SetUserFlags(steamid string, flag uint32) (error) {
+func (d *bboltDB) SetUserFlags(steamid string, flags bitmask.Bitmask) (error) {
 	user, err := d.GetUser(steamid)
 	if err != nil {
 		return err
 	}
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
-		user.Flags = flag
+		user.Flags = uint32(flags) // cast it to a uint32 to make the database behave.
 
 		userData, err := bsoncoder.Encode(&user)
 		if err != nil {
@@ -58,11 +59,11 @@ func (d *bboltDB) SetUserFlags(steamid string, flag uint32) (error) {
 	return nil
 }
 
-func (d *bboltDB) GetUserFlags(steamid string) (uint32, error) {
+func (d *bboltDB) GetUserFlags(steamid string) (bitmask.Bitmask, error) {
 	user, err := d.GetUser(steamid)
 	if err != nil {
 		return 0, err
 	}
 
-	return user.Flags, nil
+	return bitmask.Bitmask(user.Flags), nil
 }

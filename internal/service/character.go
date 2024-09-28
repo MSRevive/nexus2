@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 
+	"github.com/msrevive/nexus2/internal/bitmask"
 	"github.com/msrevive/nexus2/internal/payload"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
@@ -39,7 +40,7 @@ func (s *Service) GetCharacterByID(uuid uuid.UUID) (*schema.Character, error) {
 	return char, nil
 }
 
-func (s *Service) GetCharacter(steamid string, slot int) (*schema.Character, uint32, error) {
+func (s *Service) GetCharacter(steamid string, slot int) (*schema.Character, bitmask.Bitmask, error) {
 	user, err := s.db.GetUser(steamid)
 	if err != nil {
 		return nil, 0, err
@@ -52,10 +53,10 @@ func (s *Service) GetCharacter(steamid string, slot int) (*schema.Character, uin
 
 	char, err := s.GetCharacterByID(charID)
 
-	return char, user.Flags, err
+	return char, bitmask.Bitmask(user.Flags), err
 }
 
-func (s *Service) GetCharacters(steamid string) (map[int]schema.Character, uint32, error) {
+func (s *Service) GetCharacters(steamid string) (map[int]schema.Character, bitmask.Bitmask, error) {
 	chars, err := s.db.GetCharacters(steamid)
 	if err != nil {
 		return nil, 0, err
