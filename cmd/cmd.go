@@ -111,6 +111,8 @@ func Run(args []string) (error) {
 		ServerUnixHash: a.Hashes.ServerUnix,
 		ScriptsHash: a.Hashes.Scripts,
 	})
+
+	// API version 2
 	router.Route(static.APIVersion, func(r chi.Router) {
 		r.Use(mw.BasicAuth)
 		
@@ -187,6 +189,24 @@ func Run(args []string) (error) {
 		if flags.debug {
 			r.Mount("/debug", cmw.Profiler())
 		}
+	})
+
+	router.Route(static.OldAPIVersion, func(r chi.Router) {
+		r.Route("/", func(r chi.Router) {
+			r.Get("/sc/{hash}", con.DepreciatedAPIVersion)
+			r.Get("/ban/{steamid:[0-9]+}", con.DepreciatedAPIVersion)
+			r.Get("/map/{name}/{hash}", con.DepreciatedAPIVersion)
+			r.Get("/ping", con.DepreciatedAPIVersion)
+
+			r.Route("/character", func(r chi.Router) {
+				r.Get("/{steamid:[0-9]+}/{slot:[0-9]}", con.DepreciatedAPIVersion)
+				r.Get("/export/{steamid:[0-9]+}/{slot:[0-9]}", con.DepreciatedAPIVersion)
+
+				r.Post("/", con.DepreciatedAPIVersion)
+				r.Put("/{uid}", con.DepreciatedAPIVersion)
+				r.Delete("/{uid}", con.DepreciatedAPIVersion)
+			})
+		})
 	})
 
 	/////////////////////////

@@ -135,3 +135,14 @@ func GenericError(w http.ResponseWriter) {
 	}
 	resp.SendJson()
 }
+
+func DepreciatedError(w http.ResponseWriter) {
+	resp := Response{
+		Status: false,
+		Code: http.StatusUpgradeRequired,
+		Error: "Server is out of date!",
+		Data: nil,
+		w: w,
+	}
+	resp.SendJson()
+}

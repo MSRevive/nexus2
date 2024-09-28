@@ -130,3 +130,8 @@ func (c *Controller) GetServerVerify(w http.ResponseWriter, r *http.Request) {
 	c.logger.Warn("Failed server verfication", "IP", r.RemoteAddr)
 	response.Result(w, false)
 }
+
+// DEPRECIATED
+func (c *Controller) DepreciatedAPIVersion(w http.ResponseWriter, r *http.Request) {
+	response.DepreciatedError(w)
+}
