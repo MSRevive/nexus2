@@ -24,6 +24,7 @@ apiauth:
 verify:
   enforceban: false
   enforcemap: false
+  enforcebins: false
   maplistfile: ./runtime/game/maps.json
   banlistfile: ./runtime/game/bans.json
   adminlistfile: ./runtime/game/admins.json

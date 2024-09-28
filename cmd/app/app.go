@@ -55,6 +55,10 @@ func New() (app *App) {
 }
 
 func (a *App) CalcHashes() error {
+	if (!a.Config.Verify.EnforceBins) {
+		return nil
+	}
+
 	// Calculate hash for win32 server binary
 	a.Logger.Info("Calculating hash for Server win32 binary", "file", a.Config.Verify.ServerWinBin)
 	fh, err := os.Open(a.Config.Verify.ServerWinBin)

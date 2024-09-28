@@ -38,6 +38,7 @@ type Config struct {
 	Verify struct {
 		EnforceBan bool
 		EnforceMap bool
+		EnforceBins bool
 		MapListFile string
 		BanListFile string
 		AdminListFile string
