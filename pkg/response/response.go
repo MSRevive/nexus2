@@ -11,11 +11,14 @@ type Response struct {
 	Code int `json:"code"`
 	Error string `json:"error,omitempty"`
 
-	IsBanned *bool `json:"isBanned,omitempty"`
-	IsAdmin *bool `json:"isAdmin,omitempty"`
 	Data interface{} `json:"data,omitempty"`
+	ExtraData ExtraData `json:"extradata,omitempty"`
 	
 	w http.ResponseWriter
+}
+
+type ExtraData struct {
+	PlayerFlags uint32 `json:"playerflags,omitempty"`
 }
 
 func (r Response) SendJson() {
@@ -84,8 +87,6 @@ func OKChar(w http.ResponseWriter, isBanned bool, isAdmin bool, data interface{}
 		Code: http.StatusOK,
 		Error: "",
 		Data: data,
-		IsBanned: &isBanned,
-		IsAdmin: &isAdmin,
 		w: w,
 	}
 	resp.SendJson()

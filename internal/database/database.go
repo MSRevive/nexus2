@@ -12,9 +12,12 @@ type Database interface {
 	Connect(cfg Config) error
 	Disconnect() error
 
+	GetUser(steamid string) (*schema.User, error)
+	UpdateUserFlags(steamid string, bitmask uint32) (error)
+	GetUserFlags(steamid string) (uint32, error)
+
 	NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error)
 	UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error
-	GetUser(steamid string) (*schema.User, error)
 	GetCharacter(id uuid.UUID) (*schema.Character, error)
 	GetCharacters(steamid string) (map[int]schema.Character, error) //Gotta be a map cause JSON
 	LookUpCharacterID(steamid string, slot int) (uuid.UUID, error)
