@@ -149,3 +149,13 @@ func DepreciatedError(w http.ResponseWriter) {
 	}
 	resp.SendJson()
 }
+
+func NotAvailable(w http.ResponseWriter) {
+	resp := Response{
+		Status: false,
+		Code: http.StatusNotImplemented,
+		Error: "Not available!",
+		w: w,
+	}
+	resp.SendJson()
+}

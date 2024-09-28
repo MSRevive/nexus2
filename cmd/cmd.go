@@ -165,6 +165,15 @@ func Run(args []string) (error) {
 				r.Delete("/delete/{uuid}", con.UnsafeDeleteCharacter)
 			})
 
+			r.Route("/user", func(r chi.Router) {
+				r.Post("/ban/{steamid:[0-9]+}", con.NotAvailable)
+				r.Post("/unban/{steamid:[0-9]+}", con.NotAvailable)
+				r.Post("/admin/{steamid:[0-9]+}", con.NotAvailable)
+				r.Post("/unadmin/{steamid:[0-9]+}", con.NotAvailable)
+				r.Post("/donor/{steamid:[0-9]+}", con.NotAvailable)
+				r.Post("/undonor/{steamid:[0-9]+}", con.NotAvailable)
+			})
+
 			r.Get("/refresh", func(w http.ResponseWriter, r *http.Request) {
 				if err := a.LoadLists(); err != nil {
 					response.Error(w, err)

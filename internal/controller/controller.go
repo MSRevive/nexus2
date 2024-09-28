@@ -45,6 +45,15 @@ func New(service *service.Service, log *slog.Logger, cfg *config.Config, opts Op
 	}
 }
 
+// DEPRECIATED
+func (c *Controller) DepreciatedAPIVersion(w http.ResponseWriter, r *http.Request) {
+	response.DepreciatedError(w)
+}
+
+func (c *Controller) NotAvailable(w http.ResponseWriter, r *http.Request) {
+	response.NotAvailable(w)
+}
+
 //GET map/{name}/{hash}
 func (c *Controller) GetMapVerify(w http.ResponseWriter, r *http.Request) {
 	if !c.config.Verify.EnforceMap {
@@ -131,9 +140,4 @@ func (c *Controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
 	
 	response.Result(w, false)
 	return
-}
-
-// DEPRECIATED
-func (c *Controller) DepreciatedAPIVersion(w http.ResponseWriter, r *http.Request) {
-	response.DepreciatedError(w)
 }
