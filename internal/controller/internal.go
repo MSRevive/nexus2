@@ -101,33 +101,6 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 	response.OK(w, uid.String())
 }
 
-// GET /internal/character/{uuid}
-func (c *Controller) GetCharacterByID(w http.ResponseWriter, r *http.Request) {
-	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))
-	if err != nil {
-		c.logger.Error("controller: bad request", "error", err)
-		response.BadRequest(w, err)
-		return
-	}
-	isBanned := false;
-	isAdmin := false;
-
-	char, err := c.service.GetCharacterByID(uid)
-	if err != nil {
-		c.logger.Error("service failed", "error", err)
-		response.Error(w, err)
-		return
-	}
-
-	response.OKChar(w, isBanned, isAdmin, payload.Character{
-		ID: char.ID,
-		SteamID: char.SteamID,
-		Slot: char.Slot,
-		Size: char.Data.Size,
-		Data: char.Data.Data,
-	})
-}
-
 // GET /internal/character/{steamid:[0-9]+}/{slot:[0-9]}
 func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
@@ -137,51 +110,35 @@ func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 		response.BadRequest(w, err)
 		return
 	}
-	isBanned := false;
-	isAdmin := false;
 
-	char, err := c.service.GetCharacter(steamid, slot)
+	char, flags, err := c.service.GetCharacter(steamid, slot)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
 	}
 
-	response.OKChar(w, isBanned, isAdmin, payload.Character{
+	response.OKChar(w, payload.Character{
 		ID: char.ID,
 		SteamID: char.SteamID,
 		Slot: char.Slot,
 		Size: char.Data.Size,
 		Data: char.Data.Data,
-	})
+	}, flags)
 }
 
 // GET /internal/character/{steamid:[0-9]+}
 func (c *Controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 
-	chars, err := c.service.GetCharacters(steamid)
+	chars, flags, err := c.service.GetCharacters(steamid)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
 	}
 
-	response.OK(w, chars)
-}
-
-// GET /internal/character/deleted/{steamid:[0-9]+}
-func (c *Controller) GetDeletedCharacters(w http.ResponseWriter, r *http.Request) {
-	steamid := chi.URLParam(r, "steamid")
-
-	chars, err := c.service.GetDeletedCharacters(steamid)
-	if err != nil {
-		c.logger.Error("service failed", "error", err)
-		response.Error(w, err)
-		return
-	}
-
-	response.OK(w, chars)
+	response.OKChar(w, chars, flags)
 }
 
 // DELETE /internal/character/{uuid}

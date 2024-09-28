@@ -3,11 +3,13 @@
 ## v2.0.0
 ### Changed
 * The database is now MongoDB instead of SQLite.
+  * The database system is now modular so it's easier to add new databases.
 * Switched to slog instead of using auralog, no more thirdparty dependency for logging!
 
 ### Added
 * A bunch of stuff, afterall it was a recode.
 * New endpoint for server DLL verification.
+* User bit flag system for different flags like DONOR and such. Should match up with the game server otherwise issues may occur.
 
 ## v1.3.1
 ### Added

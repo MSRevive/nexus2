@@ -18,7 +18,7 @@ type Response struct {
 }
 
 type ExtraData struct {
-	PlayerFlags uint32 `json:"playerflags,omitempty"`
+	UserFlags uint32 `json:"userflags,omitempty"`
 }
 
 func (r Response) SendJson() {
@@ -81,12 +81,15 @@ func OK(w http.ResponseWriter, data interface{}) {
 	resp.SendJson()
 }
 
-func OKChar(w http.ResponseWriter, isBanned bool, isAdmin bool, data interface{}) {
+func OKChar(w http.ResponseWriter, data interface{}, userflags uint32) {
 	resp := Response{
 		Status: true,
 		Code: http.StatusOK,
 		Error: "",
 		Data: data,
+		ExtraData: ExtraData {
+			UserFlags: userflags,
+		},
 		w: w,
 	}
 	resp.SendJson()

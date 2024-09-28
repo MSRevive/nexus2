@@ -87,8 +87,6 @@ func (c *Controller) GetCharacterByIDExternal(w http.ResponseWriter, r *http.Req
 		response.BadRequest(w, err)
 		return
 	}
-	isBanned := false;
-	isAdmin := false;
 
 	char, err := c.service.GetCharacterByID(uid)
 	if err != nil {
@@ -97,5 +95,19 @@ func (c *Controller) GetCharacterByIDExternal(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	response.OKChar(w, isBanned, isAdmin, char)
+	response.OKChar(w, char, 0)
+}
+
+// GET /character/deleted/{steamid:[0-9]+}
+func (c *Controller) GetDeletedCharacters(w http.ResponseWriter, r *http.Request) {
+	steamid := chi.URLParam(r, "steamid")
+
+	chars, err := c.service.GetDeletedCharacters(steamid)
+	if err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.Error(w, err)
+		return
+	}
+
+	response.OK(w, chars)
 }

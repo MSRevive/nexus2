@@ -135,7 +135,6 @@ func Run(args []string) (error) {
 				r.Put("/{uuid}", con.PutCharacter)
 				r.Delete("/{uuid}", con.SoftDeleteCharacter)
 
-				r.Get("/{uuid}", con.GetCharacterByID)
 				r.Get("/{steamid:[0-9]+}", con.GetCharacters)
 				r.Get("/{steamid:[0-9]+}/{slot:[0-9]}", con.GetCharacter)
 			})

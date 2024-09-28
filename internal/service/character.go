@@ -39,31 +39,34 @@ func (s *Service) GetCharacterByID(uuid uuid.UUID) (*schema.Character, error) {
 	return char, nil
 }
 
-func (s *Service) GetCharacter(steamid string, slot int) (*schema.Character, error) {
-	uid, err := s.db.LookUpCharacterID(steamid, slot)
+func (s *Service) GetCharacter(steamid string, slot int) (*schema.Character, uint32, error) {
+	user, err := s.db.GetUser(steamid)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	char, err := s.db.GetCharacter(uid); 
-	if err != nil {
-		return nil, err
+	charID, ok := user.Characters[slot]
+	if !ok {
+		return nil, 0, fmt.Errorf("unable to get character at %d", slot)
 	}
 
-	if (schema.CharacterData{}) == char.Data {
-		return nil, fmt.Errorf("malformed character data")
-	}
+	char, err := s.GetCharacterByID(charID)
 
-	return char, nil
+	return char, user.Flags, err
 }
 
-func (s *Service) GetCharacters(steamid string) (map[int]schema.Character, error) {
+func (s *Service) GetCharacters(steamid string) (map[int]schema.Character, uint32, error) {
 	chars, err := s.db.GetCharacters(steamid)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return chars, nil
+	flags, err := s.db.GetUserFlags(steamid)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return chars, flags, nil
 }
 
 func (s *Service) GetDeletedCharacters(steamid string) (map[int]uuid.UUID, error) {
