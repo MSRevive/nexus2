@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func (d *mongoDB) GetUser() ([]*schema.User, error) {
+func (d *mongoDB) GetAllUsers() ([]*schema.User, error) {
 	var users []*schema.User
 	return users, nil
 }

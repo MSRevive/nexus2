@@ -17,7 +17,7 @@ func (c *Controller) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Result(w, users)
+	response.OK(w, users)
 	return
 }
 

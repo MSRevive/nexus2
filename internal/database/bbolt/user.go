@@ -23,14 +23,16 @@ func (d *bboltDB) GetAllUsers() ([]*schema.User, error) {
 				return fmt.Errorf("bson: failed to unmarshal %v", err)
 			}
 
-			users.append(user)
+			users = append(users, user)
+
+			return nil
 		}); err != nil {
 			return err
 		}
 
-		return users, nil
+		return nil
 	}); err != nil {
-		return users, err
+		return users, nil
 	}
 
 	return users, nil
