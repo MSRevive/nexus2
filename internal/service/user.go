@@ -1,8 +1,13 @@
 package service
 
 import (
+	"github.com/msrevive/nexus2/pkg/database/schema"
 	"github.com/msrevive/nexus2/internal/bitmask"
 )
+
+func (s *Service) GetAllUsers() ([]*schema.User, error) {
+	return s.db.GetAllUsers()
+}
 
 func (s *Service) GetUserFlags(steamid string) (bitmask.Bitmask, error) {
 	flags, err := s.db.GetUserFlags(steamid)

@@ -3,6 +3,8 @@ package response
 import (
 	"net/http"
 	json "github.com/goccy/go-json"
+
+	"github.com/msrevive/nexus2/internal/bitmask"
 )
 
 //make public so other packages can create custom responses.
@@ -18,7 +20,7 @@ type Response struct {
 }
 
 type ExtraData struct {
-	UserFlags uint32 `json:"userflags,omitempty"`
+	UserFlags bitmask.Bitmask `json:"userflags,omitempty"`
 }
 
 func (r Response) SendJson() {
@@ -81,7 +83,7 @@ func OK(w http.ResponseWriter, data interface{}) {
 	resp.SendJson()
 }
 
-func OKChar(w http.ResponseWriter, data interface{}, userflags uint32) {
+func OKChar(w http.ResponseWriter, data interface{}, userflags bitmask.Bitmask) {
 	resp := Response{
 		Status: true,
 		Code: http.StatusOK,

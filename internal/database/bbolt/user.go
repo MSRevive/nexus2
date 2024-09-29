@@ -10,6 +10,32 @@ import (
 	"go.etcd.io/bbolt"
 )
 
+func (d *bboltDB) GetAllUsers() ([]*schema.User, error) {
+	var users []*schema.User
+
+	if err := d.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(UserBucket)
+
+		if err := b.ForEach(func(k, v []byte) error {
+			var user *schema.User
+
+			if err := bsoncoder.Decode(v, &user); err != nil {
+				return fmt.Errorf("bson: failed to unmarshal %v", err)
+			}
+
+			users.append(user)
+		}); err != nil {
+			return err
+		}
+
+		return users, nil
+	}); err != nil {
+		return users, err
+	}
+
+	return users, nil
+}
+
 func (d *bboltDB) GetUser(steamid string) (user *schema.User, err error) {
 	if err = d.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(UserBucket)

@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/msrevive/nexus2/internal/payload"
-	"github.com/msrevive/nexus2/pkg/response"
+	"github.com/msrevive/nexus2/internal/response"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"

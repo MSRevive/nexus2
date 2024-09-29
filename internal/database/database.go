@@ -13,6 +13,7 @@ type Database interface {
 	Connect(cfg Config) error
 	Disconnect() error
 
+	GetAllUsers() ([]*schema.User, error)
 	GetUser(steamid string) (*schema.User, error)
 	SetUserFlags(steamid string, flags bitmask.Bitmask) (error)
 	GetUserFlags(steamid string) (bitmask.Bitmask, error)

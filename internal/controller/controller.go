@@ -8,7 +8,7 @@ import (
 	"github.com/msrevive/nexus2/internal/config"
 	"github.com/msrevive/nexus2/internal/service"
 	"github.com/msrevive/nexus2/internal/bitmask"
-	"github.com/msrevive/nexus2/pkg/response"
+	"github.com/msrevive/nexus2/internal/response"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/saintwish/kv/ccmap"
