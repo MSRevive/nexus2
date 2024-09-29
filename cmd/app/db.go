@@ -6,6 +6,7 @@ import (
 
 	"github.com/msrevive/nexus2/internal/database/mongodb"
 	"github.com/msrevive/nexus2/internal/database/bbolt"
+	"github.com/msrevive/nexus2/internal/database/badger"
 
 	"github.com/robfig/cron/v3"
 )
@@ -18,6 +19,9 @@ func (a *App) SetupDatabase() error {
 	case "bbolt":
 		a.Logger.Info("Database set to BBolt!")
 		a.DB = bbolt.New()
+	case "badger":
+		a.Logger.Info("Database set to Badger!")
+		a.DB = badger.New()
 	default:
 		return fmt.Errorf("database not available.")
 	}

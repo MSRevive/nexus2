@@ -12,4 +12,7 @@ type Config struct {
 		File string
 		Timeout time.Duration
 	}
+	Badger struct {
+		Directory string
+	}
 }

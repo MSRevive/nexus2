@@ -9,6 +9,8 @@ database:
   bbolt:
     file: "" # The location for database file.
     timeout: 0 # The timeout for opening of the database file.
+  badger:
+    directory: "" # Where the database should be contained.
 ratelimit:
   maxrequests: 0 # Max amount of requests in time range of MaxAge
   maxage: "" # Max age of ratelimiter bucket in minutes
