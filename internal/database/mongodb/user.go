@@ -11,6 +11,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+func (d *mongoDB) GetUser() ([]*schema.User, error) {
+	var users []*schema.User
+	return users, nil
+}
+
 func (d *mongoDB) GetUser(steamid string) (user *schema.User, err error) {
 	filter := bson.D{{"_id", steamid}}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
