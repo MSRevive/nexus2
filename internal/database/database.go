@@ -23,7 +23,7 @@ type Database interface {
 	GetCharacter(id uuid.UUID) (*schema.Character, error)
 	GetCharacters(steamid string) (map[int]schema.Character, error) //Gotta be a map cause JSON
 	LookUpCharacterID(steamid string, slot int) (uuid.UUID, error)
-	SoftDeleteCharacter(id uuid.UUID) error
+	SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) error
 	DeleteCharacter(id uuid.UUID) error
 	DeleteCharacterReference(steamid string, slot int) error
 	MoveCharacter(id uuid.UUID, steamid string, slot int) error

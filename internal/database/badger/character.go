@@ -214,7 +214,8 @@ func (d *badgerDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error
 	return uuid, nil
 }
 
-func (d *badgerDB) SoftDeleteCharacter(id uuid.UUID) error {
+// We remove the character from user's active list and set an expiration.
+func (d *badgerDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -249,7 +250,9 @@ func (d *badgerDB) SoftDeleteCharacter(id uuid.UUID) error {
 			return fmt.Errorf("badger: failed to update user %v", err)
 		}
 
-		if err := txn.Set(charKey, charData); err != nil {
+		charEntry := badger.NewEntry(charKey, charData)
+		charEntry.WithTTL(expiration)
+		if err := txn.SetEntry(charEntry); err != nil {
 			return fmt.Errorf("badger: failed to update character %v", err)
 		}
 

@@ -199,7 +199,7 @@ func (d *bboltDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error)
 	return uuid, nil
 }
 
-func (d *bboltDB) SoftDeleteCharacter(id uuid.UUID) error {
+func (d *bboltDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
