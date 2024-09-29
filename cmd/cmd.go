@@ -14,7 +14,7 @@ import (
 	"github.com/msrevive/nexus2/internal/middleware"
 	"github.com/msrevive/nexus2/internal/service"
 	"github.com/msrevive/nexus2/internal/static"
-	"github.com/msrevive/nexus2/pkg/response"
+	"github.com/msrevive/nexus2/internal/response"
 
 	"github.com/go-chi/chi/v5"
 	cmw "github.com/go-chi/chi/v5/middleware"
@@ -172,6 +172,10 @@ func Run(args []string) (error) {
 				r.Post("/unadmin/{steamid:[0-9]+}", con.NotAvailable)
 				r.Post("/donor/{steamid:[0-9]+}", con.NotAvailable)
 				r.Post("/undonor/{steamid:[0-9]+}", con.NotAvailable)
+
+				if flags.debug {
+					r.Get("/list", con.GetAllUsers)
+				}
 			})
 
 			r.Get("/refresh", func(w http.ResponseWriter, r *http.Request) {
