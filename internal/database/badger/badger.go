@@ -3,6 +3,8 @@ package badger
 import (
 	"errors"
 
+	"github.com/msrevive/nexus2/internal/database"
+
 	"github.com/dgraph-io/badger/v4"
 )
 
@@ -22,7 +24,15 @@ func New() *badgerDB {
 }
 
 func (d *badgerDB) Connect(cfg database.Config) error {
-	db, err := badger.Open(badger.DefaultOptions(cfg.Badger.Directory))
+	opts := badger.DefaultOptions(cfg.Badger.Directory)
+	// opts.ValueLogFileSize = 256 * 1024 * 1024 // 256 MB
+	// opts.LevelFanout = 10
+	// opts.LevelFringeSize = 100
+	// opts.BloomFalsePositive = 0.01
+	// opts.Compression = badger.Snappy
+	// opts.SyncWrites = false
+
+	db, err := badger.Open(opts)
 	if err != nil {
 		return err
 	}

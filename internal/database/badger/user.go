@@ -10,17 +10,21 @@ import (
 	"github.com/dgraph-io/badger/v4"
 )
 
+func (d *badgerDB) GetAllUsers() ([]*schema.User, error) {
+	return nil, nil
+}
+
 func (d *badgerDB) GetUser(steamid string) (user *schema.User, err error) {
 	if err = d.db.View(func(txn *badger.Txn) error {
 		// we attack a prefix to the key. we are treating prefixes like buckets.
-		key := append(UserPrefix, []byte(steamid))
+		key := append(UserPrefix, []byte(steamid)...)
 
 		item, err := txn.Get(key)
-		if err {
+		if err != nil {
 			return ErrNoDocument
 		}
 
-		data, err := txn.ValueCopy(nil)
+		data, err := item.ValueCopy(nil)
 		if err != nil {
 			return fmt.Errorf("badger: failed to get value from item")
 		}
@@ -37,7 +41,7 @@ func (d *badgerDB) GetUser(steamid string) (user *schema.User, err error) {
 	return
 }
 
-func (d *bboltDB) SetUserFlags(steamid string, flags bitmask.Bitmask) (error) {
+func (d *badgerDB) SetUserFlags(steamid string, flags bitmask.Bitmask) (error) {
 	user, err := d.GetUser(steamid)
 	if err != nil {
 		return err
@@ -51,7 +55,7 @@ func (d *bboltDB) SetUserFlags(steamid string, flags bitmask.Bitmask) (error) {
 			return fmt.Errorf("bson: failed to marshal user %v", err)
 		}
 
-		key := append(UserPrefix, []byte(steamid))
+		key := append(UserPrefix, []byte(steamid)...)
 		return txn.Set(key, userData)
 	}); err != nil {
 		return err

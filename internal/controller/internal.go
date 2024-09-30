@@ -150,7 +150,7 @@ func (c *Controller) SoftDeleteCharacter(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := c.service.SoftDeleteCharacter(uid, config.Char.DeletedExpireTime); err != nil {
+	if err := c.service.SoftDeleteCharacter(uid, c.config.Char.DeletedExpireTime); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return

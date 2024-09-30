@@ -26,14 +26,14 @@ func (d *badgerDB) NewCharacter(steamid string, slot int, size int, data string)
 	}
 
 	//use a read-write transaction to save CPU time.
-	if err = d.db.Update(func(txn *badger.Txn) error {
-		userKey := append(UserPrefix, []byte(steamid))
-		charKey := append(CharPrefix, []byte(charID.String()))
+	if err := d.db.Update(func(txn *badger.Txn) error {
+		userKey := append(UserPrefix, []byte(steamid)...)
+		charKey := append(CharPrefix, []byte(charID.String())...)
 
 		item, err := txn.Get(userKey)
 		//user doesn't exists so create a new one
 		if err != nil {
-			user = &schema.User{
+			user := &schema.User{
 				ID: steamid,
 				Characters: make(map[int]uuid.UUID),
 			}
@@ -58,13 +58,15 @@ func (d *badgerDB) NewCharacter(steamid string, slot int, size int, data string)
 			if err := txn.Set(charKey, charData); err != nil {
 				return err
 			}
+
+			return nil
 		}else{ // user does exists so just create character.
 			data, err := item.ValueCopy(nil)
 			if err != nil {
 				return fmt.Errorf("badger: failed to get value from item")
 			}
 
-			user schema.User
+			var user *schema.User
 			if err := bsoncoder.Decode(data, &user); err != nil {
 				return fmt.Errorf("bson: failed to unmarshal %v", err)
 			}
@@ -91,7 +93,11 @@ func (d *badgerDB) NewCharacter(steamid string, slot int, size int, data string)
 			if err := txn.Set(charKey, charData); err != nil {
 				return fmt.Errorf("badger: failed to set character %v with key %s", err, charKey)
 			}
+
+			return nil
 		}
+
+		return nil
 	}); err != nil {
 		return uuid.Nil, err
 	}
@@ -100,21 +106,21 @@ func (d *badgerDB) NewCharacter(steamid string, slot int, size int, data string)
 }
 
 func (d *badgerDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
-	key := append(CharPrefix, []byte(id.String()))
+	key := append(CharPrefix, []byte(id.String())...)
 
-	if err = d.db.Update(func(txn *badger.Txn) error {
+	if err := d.db.Update(func(txn *badger.Txn) error {
 		item, err := txn.Get(key)
 		if err != nil {
 			return err
 		}
 
-		data, err := item.ValueCopy(nil)
+		val, err := item.ValueCopy(nil)
 		if err != nil {
 			return fmt.Errorf("badger: failed to get value from item")
 		}
 
-		char schema.Character
-		if err := bsoncoder.Decode(data, &char); err != nil {
+		var char *schema.Character
+		if err := bsoncoder.Decode(val, &char); err != nil {
 			return fmt.Errorf("bson: failed to unmarshal %v", err)
 		}
 
@@ -153,8 +159,10 @@ func (d *badgerDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMa
 		}
 
 		if err := txn.Set(key, charData); err != nil {
-			return fmt.Errorf("badger: failed to set character %v with key %s", err, charKey)
+			return fmt.Errorf("badger: failed to set character %v with key %s", err, key)
 		}
+
+		return nil
 	}); err != nil {
 		return nil
 	}
@@ -163,7 +171,7 @@ func (d *badgerDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMa
 }
 
 func (d *badgerDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error) {
-	key := append(CharPrefix, []byte(id.String()))
+	key := append(CharPrefix, []byte(id.String())...)
 
 	if err = d.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(key)
@@ -179,6 +187,8 @@ func (d *badgerDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error
 		if err := bsoncoder.Decode(data, &char); err != nil {
 			return fmt.Errorf("bson: failed to unmarshal %v", err)
 		}
+
+		return nil
 	}); err != nil {
 		return
 	}
@@ -189,7 +199,7 @@ func (d *badgerDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error
 func (d *badgerDB) GetCharacters(steamid string) (map[int]schema.Character, error) {
 	user, err := d.GetUser(steamid)
 	if err != nil {
-		return chars, err
+		return nil, err
 	}
 	
 	chars := make(map[int]schema.Character, len(user.Characters)-1)
@@ -233,8 +243,8 @@ func (d *badgerDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 	timeNow := time.Now().UTC()
 	char.DeletedAt = &timeNow
 
-	userKey := append(UserPrefix, []byte(char.SteamID))
-	charKey := append(CharPrefix, []byte(id.String()))
+	userKey := append(UserPrefix, []byte(char.SteamID)...)
+	charKey := append(CharPrefix, []byte(id.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
 		userData, err := bsoncoder.Encode(&user)
 		if err != nil {
@@ -265,7 +275,7 @@ func (d *badgerDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 }
 
 func (d *badgerDB) DeleteCharacter(id uuid.UUID) error {
-	key := append(CharPrefix, []byte(id.String()))
+	key := append(CharPrefix, []byte(id.String())...)
 	if err := d.db.Update(func(txn *badger.Txn) error {
 		if err := txn.Delete(key); err != nil {
 			return fmt.Errorf("badger: failed to delete character %v", err)
@@ -287,7 +297,7 @@ func (d *badgerDB) DeleteCharacterReference(steamid string, slot int) error {
 
 	delete(user.Characters, slot)
 
-	key := append(UserPrefix, []byte(steamid))
+	key := append(UserPrefix, []byte(steamid)...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
 		userData, err := bsoncoder.Encode(&user)
 		if err != nil {
@@ -328,8 +338,8 @@ func (d *badgerDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 	char.SteamID = steamid
 	char.Slot = slot
 
-	userKey := append(UserPrefix, []byte(steamid))
-	charKey := append(CharPrefix, []byte(id.String()))
+	userKey := append(UserPrefix, []byte(steamid)...)
+	charKey := append(CharPrefix, []byte(id.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
 		userData, err := bsoncoder.Encode(&user)
 		if err != nil {
@@ -378,8 +388,8 @@ func (d *badgerDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.U
 	char.Slot = slot
 	char.CreatedAt = time.Now().UTC()
 
-	userKey := append(UserPrefix, []byte(steamid))
-	charKey := append(CharPrefix, []byte(charID.String()))
+	userKey := append(UserPrefix, []byte(steamid)...)
+	charKey := append(CharPrefix, []byte(charID.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
 		userData, err := bsoncoder.Encode(&targetUser)
 		if err != nil {
@@ -423,8 +433,8 @@ func (d *badgerDB) RestoreCharacter(id uuid.UUID) error {
 
 	char.DeletedAt = nil
 
-	userKey := append(UserPrefix, []byte(char.SteamID))
-	charKey := append(CharPrefix, []byte(id.String()))
+	userKey := append(UserPrefix, []byte(char.SteamID)...)
+	charKey := append(CharPrefix, []byte(id.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
 		userData, err := bsoncoder.Encode(&user)
 		if err != nil {
@@ -466,7 +476,7 @@ func (d *badgerDB) RollbackCharacter(id uuid.UUID, ver int) error {
 		return fmt.Errorf("no character version at index %d", ver)
 	}
 
-	key := append(CharPrefix, []byte(id.String()))
+	key := append(CharPrefix, []byte(id.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
 		charData, err := bsoncoder.Encode(&char)
 		if err != nil {
@@ -499,7 +509,7 @@ func (d *badgerDB) RollbackCharacterToLatest(id uuid.UUID) error {
 		return fmt.Errorf("no character backups exist")
 	}
 
-	key := append(CharPrefix, []byte(id.String()))
+	key := append(CharPrefix, []byte(id.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
 		charData, err := bsoncoder.Encode(&char)
 		if err != nil {
@@ -526,7 +536,7 @@ func (d *badgerDB) DeleteCharacterVersions(id uuid.UUID) error {
 
 	char.Versions = nil
 
-	key := append(CharPrefix, []byte(id.String()))
+	key := append(CharPrefix, []byte(id.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
 		charData, err := bsoncoder.Encode(&char)
 		if err != nil {
