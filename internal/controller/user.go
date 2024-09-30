@@ -9,6 +9,20 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request) {
+	steamid := chi.URLParam(r, "steamid")
+
+	user, err := c.service.GetUser(steamid)
+	if err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.Error(w, err)
+		return
+	}
+
+	response.OK(w, user)
+	return
+}
+
 func (c *Controller) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := c.service.GetAllUsers()
 	if err != nil {

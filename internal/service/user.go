@@ -9,6 +9,10 @@ func (s *Service) GetAllUsers() ([]*schema.User, error) {
 	return s.db.GetAllUsers()
 }
 
+func (s *Service) GetUser(steamid string) (*schema.User, error) {
+	return s.db.GetUser(steamid)
+}
+
 func (s *Service) GetUserFlags(steamid string) (bitmask.Bitmask, error) {
 	flags, err := s.db.GetUserFlags(steamid)
 	if err != nil {

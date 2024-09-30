@@ -166,6 +166,8 @@ func Run(args []string) (error) {
 			})
 
 			r.Route("/user", func(r chi.Router) {
+				r.Get("/{steamid:[0-9]+}", con.GetUser)
+
 				r.Patch("/ban/{steamid:[0-9]+}", con.PatchBanSteamID)
 				r.Patch("/unban/{steamid:[0-9]+}", con.PatchUnBanSteamID)
 				r.Patch("/admin/{steamid:[0-9]+}", con.PatchAdminSteamID)
