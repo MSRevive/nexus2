@@ -37,7 +37,7 @@ func (d *badgerDB) GetAllUsers() ([]*schema.User, error) {
 		return nil, err
 	}
 
-	return nil, nil
+	return users, nil
 }
 
 func (d *badgerDB) GetUser(steamid string) (user *schema.User, err error) {
