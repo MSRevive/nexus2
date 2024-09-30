@@ -8,7 +8,6 @@ type Bitmask uint32
 const (
 	BANNED Bitmask = 1 << iota
 	DONOR
-	DEV
 	ADMIN
 )
 
