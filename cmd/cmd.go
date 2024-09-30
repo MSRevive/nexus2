@@ -166,12 +166,14 @@ func Run(args []string) (error) {
 			})
 
 			r.Route("/user", func(r chi.Router) {
-				r.Post("/ban/{steamid:[0-9]+}", con.PostBanSteamID)
-				r.Post("/unban/{steamid:[0-9]+}", con.NotAvailable)
-				r.Post("/admin/{steamid:[0-9]+}", con.NotAvailable)
-				r.Post("/unadmin/{steamid:[0-9]+}", con.NotAvailable)
-				r.Post("/donor/{steamid:[0-9]+}", con.NotAvailable)
-				r.Post("/undonor/{steamid:[0-9]+}", con.NotAvailable)
+				r.Patch("/ban/{steamid:[0-9]+}", con.PatchBanSteamID)
+				r.Patch("/unban/{steamid:[0-9]+}", con.PatchUnBanSteamID)
+				r.Patch("/admin/{steamid:[0-9]+}", con.PatchAdminSteamID)
+				r.Patch("/unadmin/{steamid:[0-9]+}", con.PatchUnAdminSteamID)
+				r.Patch("/donor/{steamid:[0-9]+}", con.PatchDonorSteamID)
+				r.Patch("/undonor/{steamid:[0-9]+}", con.PatchUnDonorSteamID)
+
+				//r.Get("/isdonor/{steamid:[0-9]+}", con.GetIsDonorSteamID)
 
 				if flags.debug {
 					r.Get("/list", con.GetAllUsers)
