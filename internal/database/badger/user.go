@@ -11,6 +11,32 @@ import (
 )
 
 func (d *badgerDB) GetAllUsers() ([]*schema.User, error) {
+	var users []*schema.User
+
+	if err := d.db.View(func(txn *badger.Txn) error {
+		it := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer it.Close()
+
+		
+		for it.Seek(UserPrefix); it.ValidForPrefix(UserPrefix); it.Next() {
+			item := it.Item()
+
+			item.Value(func(v []byte) error {
+				var user *schema.User
+				if err := bsoncoder.Decode(v, &user); err != nil {
+					return fmt.Errorf("bson: failed to unmarshal %v", err)
+				}
+
+				users = append(users, user)
+				return nil
+			})
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 
