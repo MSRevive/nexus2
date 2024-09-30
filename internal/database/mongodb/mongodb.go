@@ -28,12 +28,12 @@ func New() *mongoDB {
 	return &mongoDB{}
 }
 
-func (d *mongoDB) Connect(cfg database.Config) error {
+func (d *mongoDB) Connect(cfg database.Config, opts database.Options) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	opts := options.Client().ApplyURI(cfg.MongoDB.Connection).SetRegistry(bsoncoder.GetRegistry())
-	client, err := mongo.Connect(ctx, opts)
+	dOpts := options.Client().ApplyURI(cfg.MongoDB.Connection).SetRegistry(bsoncoder.GetRegistry())
+	client, err := mongo.Connect(ctx, dOpts)
 	d.Client = client
 	if err != nil {
 		return fmt.Errorf("error connecting to database, %w", err)

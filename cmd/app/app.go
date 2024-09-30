@@ -178,7 +178,9 @@ func (a *App) Start(mux chi.Router) error {
 	a.Logger.Info("Starting Nexus2", "App Version", static.Version, "Go Version", static.GoVersion, "OS", static.OS, "Arch", static.OSArch)
 
 	a.Logger.Info("Connecting to database")
-	if err := a.DB.Connect(a.Config.Database); err != nil {
+	if err := a.DB.Connect(a.Config.Database, database.Options{
+		Logger: a.SetUpDatabaseLogger(),
+	}); err != nil {
 		return err
 	}
 

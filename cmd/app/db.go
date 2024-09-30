@@ -3,11 +3,15 @@ package app
 import (
 	"fmt"
 	"time"
+	"log"
+	"io"
+	"os"
 
 	"github.com/msrevive/nexus2/internal/database/mongodb"
 	"github.com/msrevive/nexus2/internal/database/bbolt"
 	"github.com/msrevive/nexus2/internal/database/badger"
 
+	rw "github.com/saintwish/rotatewriter"
 	"github.com/robfig/cron/v3"
 )
 
@@ -48,4 +52,21 @@ func (a *App) SetupDatabaseAutoSave() {
 		a.Logger.Info("Finished saving to database.", "ping", time.Since(t1))
 	})
 	cron.Start()
+}
+
+// TODO: Move this to database package.
+func (a *App) SetUpDatabaseLogger() *log.Logger {
+	if a.Config.Core.DBType != "badger" {
+		return nil
+	}
+
+	iow := io.MultiWriter(os.Stdout, &rw.RotateWriter{
+		Dir: a.Config.Log.Dir+"database/",
+		Filename: "database.log",
+		ExpireTime: a.Config.Log.ExpireTime,
+		MaxSize: 5 * rw.Megabyte,
+	})
+
+	fmt.Println("Setting up database logger!")
+	return log.New(iow, "", log.LstdFlags)
 }

@@ -2,6 +2,7 @@ package database
 
 import (
 	"time"
+	"log"
 
 	"github.com/msrevive/nexus2/internal/bitmask"
 	"github.com/msrevive/nexus2/pkg/database/schema"
@@ -9,8 +10,12 @@ import (
 	"github.com/google/uuid"
 )
 
+type Options struct {
+	Logger *log.Logger
+}
+
 type Database interface {
-	Connect(cfg Config) error
+	Connect(cfg Config, opts Options) error
 	Disconnect() error
 
 	GetAllUsers() ([]*schema.User, error)
