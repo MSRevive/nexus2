@@ -56,10 +56,10 @@ func (d *bboltDB) Disconnect() error {
 	return d.db.Close()
 }
 
-func (d *bboltDB) SaveToDatabase() error {
+func (d *bboltDB) SyncToDisk() error {
 	return nil
 }
 
-func (d *bboltDB) ClearCache() {
-	return
+func (d *bboltDB) RunGC() error {
+	return nil
 }

@@ -63,7 +63,7 @@ func (d *mongoDB) Disconnect() error {
 	return nil
 }
 
-func (d *mongoDB) SaveToDatabase() error {
+func (d *mongoDB) SyncToDisk() error {
 	cacheSize := d.CharacterCache.Count()
 	queue := make([]mongo.WriteModel, 0, cacheSize)
 
@@ -92,6 +92,7 @@ func (d *mongoDB) SaveToDatabase() error {
 	return nil
 }
 
-func (d *mongoDB) ClearCache() {
+func (d *mongoDB) RunGC() error {
 	d.CharacterCache.Clear()
+	return nil
 }
