@@ -40,7 +40,7 @@ func (a *App) SetupDatabaseAutoSave() {
 		a.Logger.Info("Syncing data to disk")
 		t1 := time.Now()
 		if err := a.DB.SyncToDisk(); err != nil {
-			a.Logger.Error("Failed to sync data to disk!", "error", err)
+			a.Logger.Error("Failed to sync data to disk", "error", err)
 			return
 		}
 		a.Logger.Info("Finished syncing data to disk", "ping", time.Since(t1))
@@ -52,7 +52,7 @@ func (a *App) SetupDatabaseAutoSave() {
 		a.Logger.Info("Running database garbage collection")
 		t1 := time.Now()
 		if err := a.DB.RunGC(); err != nil {
-			a.Logger.Error("Failed to run garbage collection!", "error", err)
+			a.Logger.Error("Failed to run garbage collection", "error", err)
 			return
 		}
 		a.Logger.Info("Finished running garbage collection", "ping", time.Since(t1))
