@@ -93,10 +93,11 @@ func (d *mongoDB) SyncToDisk() error {
 		}
 	}
 
+	d.CharacterCache.Clear()
+
 	return nil
 }
 
 func (d *mongoDB) RunGC() error {
-	d.CharacterCache.Clear()
 	return nil
 }
