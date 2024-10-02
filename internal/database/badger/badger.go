@@ -46,10 +46,10 @@ func (d *badgerDB) Disconnect() error {
 	return d.db.Close()
 }
 
-func (d *badgerDB) SaveToDatabase() error {
-	return nil
+func (d *badgerDB) SyncToDisk() error {
+	return d.db.Sync()
 }
 
-func (d *badgerDB) ClearCache() {
-	return
+func (d *badgerDB) RunGC() error {
+	return d.db.RunValueLogGC(0.5)
 }

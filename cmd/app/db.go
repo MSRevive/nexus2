@@ -34,22 +34,21 @@ func (a *App) SetupDatabase() error {
 }
 
 // This is for databases that we use a cache to make writing faster.
-// Databases that are embedded like BBolt don't use a cache instead data is entered on demand.
 func (a *App) SetupDatabaseAutoSave() {
-	if a.Config.Core.DBType != "mongodb" {
-		return
-	}
-
 	cron := cron.New()
-	cron.AddFunc("*/30 * * * *", func(){
-		a.Logger.Info("Saving characters from database cache...")
+	cron.AddFunc("*/30 * * * *", func(){ //This runs every 30 minutes.
+		a.Logger.Info("Syncing data to disk")
 		t1 := time.Now()
-		if err := a.DB.SaveToDatabase(); err != nil {
-			a.Logger.Error("Failed to save characters!", "error", err)
+		if err := a.DB.SyncToDisk(); err != nil {
+			a.Logger.Error("Failed to sync data to disk!", "error", err)
 			return
 		}
-		a.DB.ClearCache()
-		a.Logger.Info("Finished saving to database.", "ping", time.Since(t1))
+
+		if err := a.DB.RunGC(); err != nil {
+			a.Logger.Error("Failed to run garbage collection!", "error", err)
+			return
+		}
+		a.Logger.Info("Finished syncing to disk and running garbage collection", "ping", time.Since(t1))
 	})
 	cron.Start()
 }
