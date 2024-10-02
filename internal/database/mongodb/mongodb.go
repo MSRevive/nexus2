@@ -56,6 +56,10 @@ func (d *mongoDB) Disconnect() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	if err := d.SyncToDisk(); err != nil {
+		return err
+	}
+
 	if err := d.Client.Disconnect(ctx); err != nil {
 		return err
 	}
