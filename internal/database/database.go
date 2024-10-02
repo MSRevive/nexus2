@@ -38,6 +38,6 @@ type Database interface {
 	RollbackCharacterToLatest(id uuid.UUID) error
 	DeleteCharacterVersions(id uuid.UUID) error
 
-	SaveToDatabase() error
-	ClearCache()
+	SyncToDisk() error
+	RunGC() error
 }
