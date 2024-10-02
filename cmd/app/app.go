@@ -227,14 +227,6 @@ func (a *App) Start(mux chi.Router) error {
 }
 
 func (a *App) Close() error {
-	a.Logger.Info("Saving characters from database cache...")
-	t1 := time.Now()
-	if err := a.DB.SaveToDatabase(); err != nil {
-		return err
-	}
-	a.DB.ClearCache()
-	a.Logger.Info("Finished saving to database.", "ping", time.Since(t1))
-
 	//close database connection
 	a.Logger.Info("Closing database connection")
 	if err := a.DB.Disconnect(); err != nil {
