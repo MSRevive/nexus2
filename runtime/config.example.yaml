@@ -2,12 +2,12 @@ core:
   address: 127.0.0.1 # The IP the FN server should be on.
   port: 1337 # The port the FN server should listen on.
   timeout: 60 # The HTTP failure timeout.
-  dbtype: "" # The type of database the FN should store characters.
+  dbtype: "bbolt" # The type of database the FN should store characters.
 database:
   mongodb:
     connection: "" # The MongoDB connection link to connect to the MongoDB
   bbolt:
-    file: "" # The location for database file.
+    file: "./runtime/database/bbolt" # The location for database file.
     timeout: 0 # The timeout for opening of the database file.
   badger:
     directory: "" # Where the database should be contained.
