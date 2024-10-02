@@ -6,6 +6,7 @@ import (
 	
 	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
 	"github.com/msrevive/nexus2/pkg/database/schema"
+	"github.com/msrevive/nexus2/internal/database"
 
 	"github.com/google/uuid"
 	"github.com/dgraph-io/badger/v4"
@@ -175,7 +176,9 @@ func (d *badgerDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error
 
 	if err = d.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(key)
-		if err != nil {
+		if err == badger.ErrKeyNotFound {
+			return database.ErrNoDocument
+		}else if err != nil {
 			return err
 		}
 

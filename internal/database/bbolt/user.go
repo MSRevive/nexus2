@@ -4,6 +4,7 @@ import (
 	"fmt"
 	
 	"github.com/msrevive/nexus2/internal/bitmask"
+	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
@@ -44,7 +45,7 @@ func (d *bboltDB) GetUser(steamid string) (user *schema.User, err error) {
 
 		data := b.Get([]byte(steamid))
 		if len(data) == 0 {
-			return ErrNoDocument
+			return database.ErrNoDocument
 		}
 
 		if err := bsoncoder.Decode(data, &user); err != nil {

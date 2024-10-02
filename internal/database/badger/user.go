@@ -4,6 +4,7 @@ import (
 	"fmt"
 	
 	"github.com/msrevive/nexus2/internal/bitmask"
+	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
@@ -46,8 +47,10 @@ func (d *badgerDB) GetUser(steamid string) (user *schema.User, err error) {
 		key := append(UserPrefix, []byte(steamid)...)
 
 		item, err := txn.Get(key)
-		if err != nil {
-			return ErrNoDocument
+		if err == badger.ErrKeyNotFound {
+			return database.ErrNoDocument
+		}else if err != nil {
+			return err
 		}
 
 		data, err := item.ValueCopy(nil)

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"strconv"
 
+	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/payload"
 	"github.com/msrevive/nexus2/internal/response"
 
@@ -112,8 +113,12 @@ func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	char, flags, err := c.service.GetCharacter(steamid, slot)
-	if err != nil {
-		c.logger.Error("service failed", "error", err)
+	if err == database.ErrNoDocument {
+		c.logger.Warn("service warning", "error", err)
+		response.OKNoContent(w)
+		return
+	}else if err != nil {
+		c.logger.Error("service error", "error", err)
 		response.Error(w, err)
 		return
 	}

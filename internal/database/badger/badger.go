@@ -1,16 +1,12 @@
 package badger
 
 import (
-	"errors"
-
 	"github.com/msrevive/nexus2/internal/database"
 
 	"github.com/dgraph-io/badger/v4"
 )
 
 var (
-	ErrNoDocument = errors.New("no document")
-
 	UserPrefix = []byte("users:")
 	CharPrefix = []byte("characters:")
 )

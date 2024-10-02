@@ -3,7 +3,6 @@ package bbolt
 import (
 	"fmt"
 	"time"
-	"errors"
 	
 	"github.com/msrevive/nexus2/internal/database"
 
@@ -11,8 +10,6 @@ import (
 )
 
 var (
-	ErrNoDocument = errors.New("no document")
-
 	UserBucket = []byte("users")
 	CharBucket = []byte("characters")
 )

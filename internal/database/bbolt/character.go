@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 	
+	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
@@ -26,7 +27,7 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 	}
 
 	user, err := d.GetUser(steamid)
-	if err == ErrNoDocument {
+	if err == database.ErrNoDocument {
 		if err = d.db.Update(func(tx *bbolt.Tx) error {
 			user = &schema.User{
 				ID: steamid,
@@ -156,7 +157,7 @@ func (d *bboltDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error)
 
 		data := b.Get([]byte(id.String()))
 		if len(data) == 0 {
-			return ErrNoDocument
+			return database.ErrNoDocument
 		}
 
 		if err := bsoncoder.Decode(data, &char); err != nil {

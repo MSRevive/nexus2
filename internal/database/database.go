@@ -3,11 +3,16 @@ package database
 import (
 	"time"
 	"log"
+	"errors"
 
 	"github.com/msrevive/nexus2/internal/bitmask"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/google/uuid"
+)
+
+var (
+	ErrNoDocument = errors.New("no document")
 )
 
 type Options struct {
