@@ -46,14 +46,14 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid, err := c.service.NewCharacter(char); 
+	uid, flags, err := c.service.NewCharacter(char); 
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
 	}
 
-	response.Created(w, uid.String())
+	response.Created(w, uid.String(), flags)
 }
 
 // PUT /internal/character/{uuid}

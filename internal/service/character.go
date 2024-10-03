@@ -11,13 +11,18 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Service) NewCharacter(char payload.Character) (uuid.UUID, error) {
+func (s *Service) NewCharacter(char payload.Character) (uuid.UUID, bitmask.Bitmask, error) {
 	uid, err := s.db.NewCharacter(char.SteamID, char.Slot, char.Size, char.Data); 
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, 0, err
 	}
 
-	return uid, nil
+	flags, err := s.db.GetUserFlags(char.SteamID)
+	if err != nil {
+		return uuid.Nil, 0, err
+	}
+
+	return uid, flags, nil
 }
 
 func (s *Service) UpdateCharacter(uuid uuid.UUID, char payload.Character) error {
@@ -47,12 +52,12 @@ func (s *Service) GetCharacter(steamid string, slot int) (*schema.Character, bit
 		return nil, 0, err
 	}
 
-	charID, ok := user.Characters[slot]
-	if !ok {
-		return nil, 0, fmt.Errorf("unable to get character at %d", slot)
-	}
+	charID, _ := user.Characters[slot]
 
 	char, err := s.GetCharacterByID(charID)
+	if err != nil {
+		return nil, 0, err
+	}
 
 	return char, bitmask.Bitmask(user.Flags), err
 }

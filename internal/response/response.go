@@ -40,13 +40,16 @@ func TooManyRequests(w http.ResponseWriter) {
 	resp.SendJson()
 }
 
-func Created(w http.ResponseWriter, data interface{}) {
+func Created(w http.ResponseWriter, data interface{}, userflags bitmask.Bitmask) {
 	resp := Response{
 		Status: true,
 		Code: http.StatusCreated,
 		Error: "",
 		Data: data,
 		w: w,
+		ExtraData: ExtraData {
+			UserFlags: userflags,
+		},
 	}
 	resp.SendJson()
 }
