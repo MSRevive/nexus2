@@ -50,7 +50,7 @@ func (a *App) SetupDatabaseAutoSave() {
 	syncCron.Start()
 
 	gcCron := cron.New()
-	gcCron.AddFunc("*/10 * * * *", func(){ //This runs at 23:00 every day.
+	gcCron.AddFunc("*/10 * * * *", func(){ //This runs on the 10th minute
 		go func() {
 			a.Logger.Info("Running database garbage collection")
 			t1 := time.Now()
