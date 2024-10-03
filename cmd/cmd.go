@@ -133,7 +133,6 @@ func Run(args []string) (error) {
 				r.Put("/{uuid}", con.PutCharacter)
 				r.Delete("/{uuid}", con.SoftDeleteCharacter)
 
-				r.Get("/{steamid:[0-9]+}", con.GetCharacters)
 				r.Get("/{steamid:[0-9]+}/{slot:[0-9]}", con.GetCharacter)
 			})
 		})
@@ -150,6 +149,7 @@ func Run(args []string) (error) {
 				r.Get("/{uuid}", con.GetCharacterByIDExternal)
 				r.Patch("/restore/{uuid}", con.RestoreCharacter)
 				r.Get("/export/{uuid}", con.ExportCharacter)
+				r.Get("/{steamid:[0-9]+}", con.GetCharacters)
 			})
 
 			r.Route("/rollback/character", func(r chi.Router) {

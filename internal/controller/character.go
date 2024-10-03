@@ -95,7 +95,7 @@ func (c *Controller) GetCharacterByIDExternal(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	response.OKChar(w, char, 0)
+	response.OK(w, char)
 }
 
 // GET /character/deleted/{steamid:[0-9]+}
@@ -103,6 +103,20 @@ func (c *Controller) GetDeletedCharacters(w http.ResponseWriter, r *http.Request
 	steamid := chi.URLParam(r, "steamid")
 
 	chars, err := c.service.GetDeletedCharacters(steamid)
+	if err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.Error(w, err)
+		return
+	}
+
+	response.OK(w, chars)
+}
+
+// GET /character/{steamid:[0-9]+}
+func (c *Controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
+	steamid := chi.URLParam(r, "steamid")
+
+	chars, _, err := c.service.GetCharacters(steamid)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
