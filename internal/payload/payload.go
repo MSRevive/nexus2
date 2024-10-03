@@ -4,6 +4,7 @@ package payload
 // inside the database like the character version or w/e
 
 import (
+	"github.com/msrevive/nexus2/internal/bitmask"
 	"github.com/google/uuid"
 )
 
@@ -13,4 +14,10 @@ type Character struct {
 	Slot int `json:"slot"`
 	Size int `json:"size"`
 	Data string `json:"data"`
+	Flags bitmask.Bitmask `json:"flags,omitempty"`
+}
+
+type CharacterCreate struct {
+	ID uuid.UUID `json:"id"`
+	Flags bitmask.Bitmask `json:"flags,omitempty"`
 }

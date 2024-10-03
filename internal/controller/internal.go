@@ -53,7 +53,10 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Created(w, uid.String(), flags)
+	response.Created(w, payload.CharacterCreate{
+		ID: uid,
+		Flags: flags,
+	})
 }
 
 // PUT /internal/character/{uuid}
@@ -129,21 +132,8 @@ func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 		Slot: char.Slot,
 		Size: char.Data.Size,
 		Data: char.Data.Data,
-	}, flags)
-}
-
-// GET /internal/character/{steamid:[0-9]+}
-func (c *Controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
-	steamid := chi.URLParam(r, "steamid")
-
-	chars, flags, err := c.service.GetCharacters(steamid)
-	if err != nil {
-		c.logger.Error("service failed", "error", err)
-		response.Error(w, err)
-		return
-	}
-
-	response.OKChar(w, chars, flags)
+		Flags: flags,
+	})
 }
 
 // DELETE /internal/character/{uuid}
