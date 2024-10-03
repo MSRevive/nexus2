@@ -6,9 +6,10 @@ import (
 	"github.com/dgraph-io/badger/v4"
 )
 
+// The smaller the key prefix the better?
 var (
-	UserPrefix = []byte("users:")
-	CharPrefix = []byte("chars:")
+	UserPrefix = []byte("u:")
+	CharPrefix = []byte("c:")
 )
 
 type badgerDB struct {
@@ -27,7 +28,6 @@ func (d *badgerDB) Connect(cfg database.Config, opts database.Options) error {
 	// opts.BloomFalsePositive = 0.01
 	// opts.Compression = badger.Snappy
 	// opts.SyncWrites = false
-	// opts.BaseTableSize = 2 << 20 // default is around 2 GBs?
 	opts.Logger = opts.Logger
 
 	db, err := badger.Open(dOpts)
