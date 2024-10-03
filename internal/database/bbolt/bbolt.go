@@ -11,7 +11,7 @@ import (
 
 var (
 	UserBucket = []byte("users")
-	CharBucket = []byte("characters")
+	CharBucket = []byte("chars")
 )
 
 type bboltDB struct {

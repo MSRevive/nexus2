@@ -8,7 +8,7 @@ import (
 
 var (
 	UserPrefix = []byte("users:")
-	CharPrefix = []byte("characters:")
+	CharPrefix = []byte("chars:")
 )
 
 type badgerDB struct {
@@ -27,6 +27,7 @@ func (d *badgerDB) Connect(cfg database.Config, opts database.Options) error {
 	// opts.BloomFalsePositive = 0.01
 	// opts.Compression = badger.Snappy
 	// opts.SyncWrites = false
+	// opts.BaseTableSize = 2 << 20 // default is around 2 GBs?
 	opts.Logger = opts.Logger
 
 	db, err := badger.Open(dOpts)
