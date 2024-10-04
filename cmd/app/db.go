@@ -55,8 +55,7 @@ func (a *App) SetupDatabaseAutoSave() {
 			a.Logger.Info("Running database garbage collection")
 			t1 := time.Now()
 			if err := a.DB.RunGC(); err != nil {
-				a.Logger.Error("Failed to run garbage collection", "error", err)
-				return
+				a.Logger.Warn("Unable to run garbage collection", "error", err)
 			}
 			a.Logger.Info("Finished running garbage collection", "ping", time.Since(t1))
 		}()
