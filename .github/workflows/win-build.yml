@@ -16,9 +16,9 @@ jobs:
 
       - name: env vars
         run: | 
-          setx CGO_ENABLED=0
-          setx GOOS=windows
-          setx GOARCH=amd64
+          setx CGO_ENABLED 0
+          setx GOOS windows
+          setx GOARCH amd64
 
       - name: build
         run: go build -ldflags="-s -w" -o build/nexus2_win -v .
