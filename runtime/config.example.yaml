@@ -7,7 +7,7 @@ database:
   mongodb:
     connection: "" # The MongoDB connection link to connect to the MongoDB
   bbolt:
-    file: "./runtime/database/bbolt" # The location for database file.
+    file: ./runtime/game/database/characters.db # The location for database file.
     timeout: 0 # The timeout for opening of the database file.
   badger:
     directory: "" # Where the database should be contained.

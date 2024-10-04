@@ -6,6 +6,7 @@ import (
 	"log"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/msrevive/nexus2/internal/database/mongodb"
 	"github.com/msrevive/nexus2/internal/database/bbolt"
@@ -15,22 +16,24 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-func (a *App) SetupDatabase() error {
+func (a *App) SetupDatabase() (err error) {
 	switch a.Config.Core.DBType {
 	case "mongodb":
 		a.Logger.Info("Database set to MongoDB!")
 		a.DB = mongodb.New()
 	case "bbolt":
 		a.Logger.Info("Database set to BBolt!")
+		// This is needed because BBolt doesn't automatically create the directory.
+		err = os.MkdirAll(filepath.Dir(a.Config.Database.BBolt.File), os.ModePerm)
 		a.DB = bbolt.New()
 	case "badger":
 		a.Logger.Info("Database set to Badger!")
 		a.DB = badger.New()
 	default:
-		return fmt.Errorf("database not available.")
+		err = fmt.Errorf("database not available.")
 	}
 
-	return nil
+	return err
 }
 
 // This is for databases that we use a cache to make writing faster.
