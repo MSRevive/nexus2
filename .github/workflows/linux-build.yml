@@ -1,5 +1,4 @@
-name: build
-
+name: linux-build
 on:
   workflow_dispatch:
     

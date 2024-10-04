@@ -1,0 +1,32 @@
+name: win-build
+on:
+  workflow_dispatch:
+    
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '^1.23'
+
+      - name: build
+        run: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o build/nexus2_win -v .
+
+      - name: Install UPX
+        uses: crazy-max/ghaction-upx@v3
+        with:
+          install-only: true
+
+      - name: compress binary
+        run: upx build/nexus2_win && chmod +x build/nexus2_win
+
+      - name: upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: win_amd64
+          path: build/nexus2_win
