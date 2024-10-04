@@ -8,8 +8,8 @@ import (
 
 // The smaller the key prefix the better?
 var (
-	UserPrefix = []byte("u:")
-	CharPrefix = []byte("c:")
+	UserPrefix = []byte("users:")
+	CharPrefix = []byte("chars:")
 )
 
 type badgerDB struct {
