@@ -6,10 +6,10 @@ core:
 database:
   mongodb:
     connection: "" # The MongoDB connection link to connect to the MongoDB
-  bbolt:
+  bbolt: # Slower than badger, but uses less disk space and is a single file.
     file: ./runtime/game/database/characters.db # The location for database file.
     timeout: 0 # The timeout for opening of the database file.
-  badger:
+  badger: # The fastest option, but uses more diskspace at runtime.
     directory: "" # Where the database should be contained.
 ratelimit:
   maxrequests: 0 # Max amount of requests in time range of MaxAge
