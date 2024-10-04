@@ -99,45 +99,53 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 }
 
 func (d *bboltDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
-	char, err := d.GetCharacter(id)
-	if err != nil {
-		return err
-	}
+	if err := d.db.Batch(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(CharBucket)
 
-	bCharsLen := len(char.Versions)
-	if backupMax > 0 {
-		// we remove the oldest backup here
-		if bCharsLen >= backupMax {
-			copy(char.Versions, char.Versions[1:])
-			char.Versions = char.Versions[:bCharsLen-1]
-			bCharsLen--
+		// Get the character data.
+		item := b.Get([]byte(id.String()))
+		if len(item) == 0 {
+			return database.ErrNoDocument
 		}
 
-		if bCharsLen > 0 {
-			bNewest := char.Versions[bCharsLen-1] //latest backup
+		// Decode the data
+		var char *schema.Character
+		if err := bsoncoder.Decode(item, &char); err != nil {
+			return fmt.Errorf("bson: failed to unmarshal %v", err)
+		}
 
-			timeCheck := bNewest.CreatedAt.Add(backupTime)
-			if char.Data.CreatedAt.After(timeCheck) {
+		// Handle backups for characters
+		bCharsLen := len(char.Versions)
+		if backupMax > 0 {
+			// we remove the oldest backup here
+			if bCharsLen >= backupMax {
+				copy(char.Versions, char.Versions[1:])
+				char.Versions = char.Versions[:bCharsLen-1]
+				bCharsLen--
+			}
+
+			if bCharsLen > 0 {
+				bNewest := char.Versions[bCharsLen-1] //latest backup
+
+				timeCheck := bNewest.CreatedAt.Add(backupTime)
+				if char.Data.CreatedAt.After(timeCheck) {
+					char.Versions = append(char.Versions, char.Data)
+				}
+			}else{
 				char.Versions = append(char.Versions, char.Data)
 			}
-		}else{
-			char.Versions = append(char.Versions, char.Data)
 		}
-	}
 
-	char.Data = schema.CharacterData{
-		CreatedAt: time.Now().UTC(), 
-		Size: size, 
-		Data: data,
-	}
+		char.Data = schema.CharacterData{
+			CreatedAt: time.Now().UTC(), 
+			Size: size, 
+			Data: data,
+		}
 
-	if err = d.db.Batch(func(tx *bbolt.Tx) error {
 		charData, err := bsoncoder.Encode(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
-
-		b := tx.Bucket(CharBucket)
 
 		if err := b.Put([]byte(char.ID.String()), charData); err != nil {
 			return fmt.Errorf("bbolt: failed to update character %v", err)
