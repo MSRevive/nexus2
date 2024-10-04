@@ -14,10 +14,10 @@ type Character struct {
 	Slot int `json:"slot"`
 	Size int `json:"size"`
 	Data string `json:"data"`
-	Flags bitmask.Bitmask `json:"flags,omitempty"`
+	Flags bitmask.Bitmask `json:"flags"`
 }
 
 type CharacterCreate struct {
 	ID uuid.UUID `json:"id"`
-	Flags bitmask.Bitmask `json:"flags,omitempty"`
+	Flags bitmask.Bitmask `json:"flags"`
 }
