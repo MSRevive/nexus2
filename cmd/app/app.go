@@ -102,7 +102,9 @@ func (a *App) LoadConfig(path string) (err error) {
 	return
 }
 
-func (a *App) InitializeLogger() {
+func (a *App) InitializeLogger() (err error) {
+	err = os.MkdirAll(a.Config.Log.Dir, os.ModePerm)
+
 	iow := io.MultiWriter(os.Stdout, &rw.RotateWriter{
 		Dir: a.Config.Log.Dir,
 		Filename: "server.log",
@@ -125,6 +127,8 @@ func (a *App) InitializeLogger() {
 	a.Logger = slog.New(loghandler.New(iow, &loghandler.Options{
 		Level: slevel,
 	}))
+
+	return
 }
 
 func (a *App) LoadLists() error {

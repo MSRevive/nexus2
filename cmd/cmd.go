@@ -61,7 +61,9 @@ func Run(args []string) (error) {
 		return err
 	}
 
-	a.InitializeLogger()
+	if err := a.InitializeLogger(); err != nil {
+		return err
+	}
 
 	if err := a.SetupDatabase(); err != nil {
 		return err

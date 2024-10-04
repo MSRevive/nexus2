@@ -69,6 +69,11 @@ func (a *App) SetUpDatabaseLogger() *log.Logger {
 		return nil
 	}
 
+	if err := os.MkdirAll(a.Config.Log.Dir+"database/", os.ModePerm); err != nil {
+		fmt.Println(fmt.Errorf("database error: failed to create logging directory %v", err))
+		return nil
+	}
+
 	iow := io.MultiWriter(os.Stdout, &rw.RotateWriter{
 		Dir: a.Config.Log.Dir+"database/",
 		Filename: "database.log",
