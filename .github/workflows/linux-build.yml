@@ -18,13 +18,13 @@ jobs:
         run: sudo apt-get -y install build-essential
 
       - name: build
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o build/msnexus2_linux_amd64 -v .
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o build/nexus2_linux_amd64 -v .
 
       - name: compress binary
-        run: upx build/msnexus2_linux_amd64 && chmod +x build/msnexus2_linux_amd64
+        run: upx build/nexus2_linux_amd64 && chmod +x build/nexus2_linux_amd64
 
       - name: upload binaries
         uses: actions/upload-artifact@v4
         with:
           name: linux_amd64
-          path: build/msnexus2_linux_amd64
+          path: build/nexus2_linux_amd64

@@ -23,16 +23,16 @@ jobs:
       - name: build
         env:
           REF: ${{ github.ref }}
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X github.com/msrevive/nexus2/internal/static.Version=${REF:11}" -o build/msnexus2_linux_amd64 -v .
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X github.com/msrevive/nexus2/internal/static.Version=${REF:11}" -o build/nexus2_linux_amd64 -v .
 
       - name: compress binary
-        run: upx build/msnexus2_linux_amd64 && chmod +x build/msnexus2_linux_amd64
+        run: upx build/nexus2_linux_amd64 && chmod +x build/nexus2_linux_amd64
 
       - name: copy runtime directory
         run: cp -avr ./runtime/ ./build/
 
       - name: tar release
-        run: tar -czvf ~/msnexus2.tar.gz build
+        run: tar -czvf ~/nexus2.tar.gz build
 
       - name: extract changelog
         env:
@@ -57,6 +57,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /home/runner/msnexus2.tar.gz
-          asset_name: msnexus2.tar.gz
+          asset_path: /home/runner/nexus2.tar.gz
+          asset_name: nexus2.tar.gz
           asset_content_type: application/octet-stream
