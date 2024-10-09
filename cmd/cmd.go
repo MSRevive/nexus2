@@ -199,10 +199,11 @@ func Run(args []string) (error) {
 			})
 		})
 
-		r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-			response.OK(w, true)
-		})
 		if flags.debug {
+			r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+				response.OK(w, true)
+			})
+
 			r.Mount("/debug", cmw.Profiler())
 		}
 	})
@@ -210,6 +211,10 @@ func Run(args []string) (error) {
 	// Let the game server know that's it's trying to use the old API.
 	router.Route(static.OldAPIVersion, func(r chi.Router) {
 		r.Route("/", func(r chi.Router) {
+			if !flags.debug {
+				r.Use(mw.InternalAuth)
+			}
+
 			r.Get("/sc/{hash}", con.DepreciatedAPIVersion)
 			r.Get("/ban/{steamid:[0-9]+}", con.DepreciatedAPIVersion)
 			r.Get("/map/{name}/{hash}", con.DepreciatedAPIVersion)
