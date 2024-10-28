@@ -20,6 +20,7 @@ import (
 func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 	var char payload.Character
 	if err := json.NewDecoder(r.Body).Decode(&char); err != nil {
+		c.logger.Debug("post character body sent", "data", r.Body)
 		var buf bytes.Buffer
 
 		if size, err := io.Copy(&buf, r.Body); err != nil {
@@ -70,6 +71,7 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 
 	var char payload.Character
 	if err := json.NewDecoder(r.Body).Decode(&char); err != nil {
+		c.logger.Debug("post character body sent", "data", r.Body)
 		var buf bytes.Buffer
 
 		if size, err := io.Copy(&buf, r.Body); err != nil {
