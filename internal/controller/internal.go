@@ -33,8 +33,7 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 		c.logger.Debug("character data sent", "data", data)
 		var errln error
 		if jsonErr, ok := err.(*json.SyntaxError); ok {
-			problemPart := data[jsonErr.Offset-10 : jsonErr.Offset+10]
-			errln = fmt.Errorf("%w ~ error near '%s' (offset %d)", err, problemPart, jsonErr.Offset)
+			errln = fmt.Errorf("%w ~ error near '%s' (offset %d)", err, string(jsonErr.input[jsonErr.Offset-1:]), jsonErr.Offset)
 		}
 
 		c.logger.Error("failed to parse data", "error", errln)
@@ -84,8 +83,7 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 		c.logger.Debug("character data sent", "data", data)
 		var errln error
 		if jsonErr, ok := err.(*json.SyntaxError); ok {
-			problemPart := data[jsonErr.Offset-10 : jsonErr.Offset+10]
-			errln = fmt.Errorf("%w ~ error near '%s' (offset %d)", err, problemPart, jsonErr.Offset)
+			errln = fmt.Errorf("%w ~ error near '%s' (offset %d)", err, string(jsonErr.input[jsonErr.Offset-1:]), jsonErr.Offset)
 		}
 
 		c.logger.Error("failed to parse data", "error", errln)
