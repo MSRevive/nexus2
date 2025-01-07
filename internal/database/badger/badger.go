@@ -4,6 +4,7 @@ import (
 	"github.com/msrevive/nexus2/internal/database"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/dgraph-io/badger/v4/options"
 )
 
 // The smaller the key prefix the better?
@@ -21,16 +22,23 @@ func New() *badgerDB {
 }
 
 func (d *badgerDB) Connect(cfg database.Config, opts database.Options) error {
-	dOpts := badger.DefaultOptions(cfg.Badger.Directory)
-	// opts.ValueLogFileSize = 256 * 1024 * 1024 // 256 MB
-	// opts.LevelFanout = 10
-	// opts.LevelFringeSize = 100
-	// opts.BloomFalsePositive = 0.01
-	// opts.Compression = badger.Snappy
-	// opts.SyncWrites = false
-	opts.Logger = opts.Logger
+	bOpts := badger.DefaultOptions(cfg.Badger.Directory)
+	bOpts.WithCompression(options.None)
+	bOpts.WithBlockSize(0)
+	bOpts.WithBlockCacheSize(0)
+	bOpts.WithMemTableSize(4 << 20)
 
-	db, err := badger.Open(dOpts)
+	// opts.MemTableSize = 1 << 20
+	// opts.BaseTableSize = 1 << 20
+	// //opts.NumCompactors = 2
+	// opts.NumLevelZeroTables = 1
+	// opts.NumLevelZeroTablesStall = 2
+	// opts.BlockCacheSize = 10 << 20
+	// //opts.NumMemtables = 1
+	// opts.ValueThreshold = 1 << 10
+	//bOpts.Logger = opts.Logger
+
+	db, err := badger.Open(bOpts)
 	if err != nil {
 		return err
 	}
