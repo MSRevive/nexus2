@@ -4,7 +4,6 @@ import (
 	"github.com/msrevive/nexus2/internal/database"
 
 	"github.com/dgraph-io/badger/v4"
-	"github.com/dgraph-io/badger/v4/options"
 )
 
 // The smaller the key prefix the better?
