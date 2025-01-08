@@ -15,4 +15,8 @@ type Config struct {
 	Badger struct {
 		Directory string
 	}
+	SQLite struct {
+		Conn string
+		Timeout int
+	}
 }
