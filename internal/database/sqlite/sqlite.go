@@ -12,7 +12,7 @@ import (
 	"zombiezen.com/go/sqlite/sqlitex"
 )
 
-//go:embed runtime/sqlite.sql
+//go:embed sqlite.sql
 
 type sqliteDB struct {
 	db *sqlite.Conn
@@ -32,7 +32,7 @@ func (d *sqliteDB) Connect(cfg database.Config, opts database.Options) error {
 	defer cancel()
 	db.SetInterrupt(ctx.Done())
 
-	if err := sqlitex.ExecuteScriptFS(db, embed.FS, "runtime/sqlite.sql", nil); err != nil {
+	if err := sqlitex.ExecuteScriptFS(db, embed.FS, "sqlite.sql", nil); err != nil {
 		return err
 	}
 
