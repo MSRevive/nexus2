@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `character_versions` (
 
 CREATE TABLE IF NOT EXISTS `deleted_characters` (
 	'id' TEXT KEY NOT NULL UNIQUE,
-	'expired' TEXT NOT NULL,
+	'expired' REAL NOT NULL,
 	FOREIGN KEY ('id')
 		REFERENCES `characters` ('id')
 			ON UPDATE NO ACTION
