@@ -1,10 +1,19 @@
+CREATE TABLE IF NOT EXISTS `users` (
+	'steamid' TEXT PRIMARY KEY,
+	'flags' INTEGER NOT NULL
+)
+
 CREATE TABLE IF NOT EXISTS `characters` (
 	'id' TEXT PRIMARY KEY,
 	'steamid' TEXT KEY NOT NULL,
 	'slot' INTEGER KEY NOT NULL,
 	'created_at' TEXT NOT NULL,
 	'deleted_at' TEXT,
-	'data' BLOB NOT NULL
+	'data' BLOB NOT NULL,
+	FOREIGN KEY ('steamid')
+		REFERENCES `users` ('steamid')
+			ON UPDATE NO ACTION
+			ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS `character_versions` (
