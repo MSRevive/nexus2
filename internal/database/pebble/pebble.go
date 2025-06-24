@@ -1,6 +1,10 @@
 package pebble
 
 import (
+	"time"
+	"io"
+	"encoding/binary"
+
 	"github.com/msrevive/nexus2/internal/database"
 
 	"github.com/cockroachdb/pebble/v2"
@@ -39,13 +43,80 @@ func (d *pebbleDB) Disconnect() error {
 
 func (d *pebbleDB) SyncToDisk() error {
 	//return d.db.Flush()
-	
+
 	// this should be the most optimal way to sync the data in memory https://github.com/cockroachdb/pebble/issues/4598
 	return d.db.LogData(nil, pebble.Sync)
 }
 
 func (d *pebbleDB) RunGC() error {
+	it, err := d.db.NewIter(nil)
+	if err != nil {
+		return err
+	}
+	defer it.Close()
+
+	batch := d.db.NewBatch()
+	defer batch.Close()
+
+	for it.First(); it.Valid(); it.Next() {
+		value := it.Value()
+		if len(value) >= timestampSize {
+			expiration := int64(binary.BigEndian.Uint64(value))
+
+			if time.Now().Unix() > expiration {
+				if err := batch.Delete(it.Key(), nil); err != nil {
+					return err
+				}
+
+				// if we have a lot to delete then we commit in batches.
+				if batch.Count() >= 1000 {
+					if err := batch.Commit(pebble.Sync); err != nil {
+						return err
+					}
+					batch.Reset()
+				}
+			}
+		}
+	}
+
+	if batch.Count() > 0 {
+		if err := batch.Commit(pebble.Sync); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+/*
+	Helper functions
+	- functions to implement our own TTL implementation and prefix handling for iterators.
+*/
+//8 bytes for a Unix timestamp
+const timestampSize = 8
+
+func (d *pebbleDB) setWithTTL(key, value []byte, ttl time.Duration, opts *pebble.WriteOptions) error {
+	expiration := time.Now().Add(ttl).Unix()
+	buf := make([]byte, timestampSize+len(value)) //8 bytes for a Unix timestamp
+	binary.BigEndian.PutUint64(buf, uint64(expiration))
+	copy(buf[timestampSize:], value)
+
+	return d.db.Set(key, value, opts)
+}
+
+func (d *pebbleDB) get(key []byte) ([]byte, io.Closer, error) {
+	value, closer, err := d.db.Get(key)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// if there's no timestamp then just return.
+	if len(value) < timestampSize {
+		return value, closer, nil
+	}
+
+	// we don't check if the entry is expired because we don't need to for this.
+	return value[timestampSize:], closer, nil
 }
 
 // keyUpperBound returns the smallest key that is lexicographically greater than the given prefix.
