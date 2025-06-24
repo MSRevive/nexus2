@@ -11,6 +11,7 @@ import (
 	"github.com/msrevive/nexus2/internal/database/mongodb"
 	"github.com/msrevive/nexus2/internal/database/bbolt"
 	"github.com/msrevive/nexus2/internal/database/badger"
+	"github.com/msrevive/nexus2/internal/database/pebble"
 
 	rw "github.com/saintwish/rotatewriter"
 	"github.com/robfig/cron/v3"
@@ -29,6 +30,9 @@ func (a *App) SetupDatabase() (err error) {
 	case "badger":
 		a.Logger.Info("Database set to Badger!")
 		a.DB = badger.New()
+	case "pebble":
+		a.Logger.Info("Database set to Pebble!")
+		a.DB = pebble.New()
 	default:
 		err = fmt.Errorf("database not available.")
 	}
