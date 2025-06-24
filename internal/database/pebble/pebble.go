@@ -7,6 +7,7 @@ import (
 )
 
 // The smaller the key prefix the better?
+// Each time this changes the database needs to be recreated.
 var (
 	UserPrefix = []byte("users:")
 	CharPrefix = []byte("chars:")
@@ -22,10 +23,10 @@ func New() *pebbleDB {
 
 func (d *pebbleDB) Connect(cfg database.Config, opts database.Options) error {
 	db, err := pebble.Open(cfg.Badger.Directory, &pebble.Options{
-		FormatMajorVersion: pebble.FormatDefault
+		FormatMajorVersion: pebble.FormatDefault,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	d.db = db
@@ -38,7 +39,9 @@ func (d *pebbleDB) Disconnect() error {
 
 func (d *pebbleDB) SyncToDisk() error {
 	//return d.db.Flush()
-	return nil
+	
+	// this should be the most optimal way to sync the data in memory https://github.com/cockroachdb/pebble/issues/4598
+	return d.db.LogData(nil, pebble.Sync)
 }
 
 func (d *pebbleDB) RunGC() error {

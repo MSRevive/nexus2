@@ -27,7 +27,7 @@ func (d *pebbleDB) GetAllUsers() ([]*schema.User, error) {
 
 	for it.First(); it.Valid(); it.Next() {
 		var user *schema.User
-		if err := bsoncoder.Decode(it.Value, &user); err != nil {
+		if err := bsoncoder.Decode(it.Value(), &user); err != nil {
 			return nil, fmt.Errorf("bson: failed to unmarshal %v", err)
 		}
 
@@ -41,7 +41,7 @@ func (d *pebbleDB) GetUser(steamid string) (*schema.User, error) {
 	var user *schema.User = nil
 	key := append(UserPrefix, []byte(steamid)...)
 
-	data, io, err := p.db.Get(key)
+	data, io, err := d.db.Get(key)
 	if err == pebble.ErrNotFound {
 		return user, database.ErrNoDocument
 	}else if err != nil {

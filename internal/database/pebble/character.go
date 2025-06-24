@@ -12,6 +12,11 @@ import (
 	"github.com/cockroachdb/pebble/v2"
 )
 
+/*
+	With Pebble we can actually just use the interface functions I.E. GetUser() for the intensive frequently called functions
+	because Pebble doesn't use transactions like the others, thus there's no performance penality.
+*/
+
 func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
 	charID := uuid.New()
 	char := schema.Character{
@@ -48,41 +53,36 @@ func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string)
 		}
 
 		//commit new user to DB
-		if err := d.db.Set(userKey, userData); err != nil {
+		if err := d.db.Set(userKey, userData, pebble.NoSync); err != nil {
 			return uuid.Nil, err
 		}
 
 		//commit new character to DB
-		if err := d.db.Set(charKey, charData); err != nil {
+		if err := d.db.Set(charKey, charData, pebble.NoSync); err != nil {
 			return uuid.Nil, err
 		}
 
 	}else{ //user does exists so just create character.
-		var user *schema.User
-		if err := bsoncoder.Decode(data, &user); err != nil {
-			return uuid.Nil, fmt.Errorf("bson: failed to unmarshal %v", err)
-		}
-
 		user.Characters[slot] = charID
 
 		// we new have to encode the new userdata, this seems like such a waste...
 		userData, err := bsoncoder.Encode(&user)
 		if err != nil {
-			return fmt.Errorf("bson: failed to marshal user %v", err)
+			return uuid.Nil, fmt.Errorf("bson: failed to marshal user %v", err)
 		}
 
 		charData, err := bsoncoder.Encode(&char)
 		if err != nil {
-			return fmt.Errorf("bson: failed to marshal character %v", err)
+			return uuid.Nil, fmt.Errorf("bson: failed to marshal character %v", err)
 		}
 
 		//commit new user to DB
-		if err := d.db.Set(userKey, userData); err != nil {
+		if err := d.db.Set(userKey, userData, pebble.NoSync); err != nil {
 			return uuid.Nil, err
 		}
 
 		//commit new character to DB
-		if err := d.db.Set(charKey, charData); err != nil {
+		if err := d.db.Set(charKey, charData, pebble.NoSync); err != nil {
 			return uuid.Nil, err
 		}
 	}
@@ -93,8 +93,8 @@ func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string)
 func (d *pebbleDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
 	key := append(CharPrefix, []byte(id.String())...)
 
-	char, io, err := p.db.Get(key)
-	if err == badger.ErrNotFound {
+	val, io, err := d.db.Get(key)
+	if err == pebble.ErrNotFound {
 		return database.ErrNoDocument
 	}else if err != nil {
 		return err
@@ -148,7 +148,7 @@ func (d *pebbleDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	var char *schema.Character = nil
 	key := append(CharPrefix, []byte(id.String())...)
 
-	data, io, err := p.db.Get(key)
+	data, io, err := d.db.Get(key)
 	if err == pebble.ErrNotFound {
 		return char, database.ErrNoDocument
 	}else if err != nil {
@@ -379,11 +379,11 @@ func (d *pebbleDB) RestoreCharacter(id uuid.UUID) error {
 	}
 
 	if err := d.db.Set(userKey, userData, pebble.Sync); err != nil {
-		return uuid.Nil, fmt.Errorf("pebble: failed to set user %v", err)
+		return fmt.Errorf("pebble: failed to set user %v", err)
 	}
 
 	if err := d.db.Set(charKey, charData, pebble.Sync); err != nil {
-		return uuid.Nil, fmt.Errorf("pebble: failed to set character %v", err)
+		return fmt.Errorf("pebble: failed to set character %v", err)
 	}
 
 	return nil
