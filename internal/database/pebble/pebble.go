@@ -44,3 +44,17 @@ func (d *pebbleDB) SyncToDisk() error {
 func (d *pebbleDB) RunGC() error {
 	return nil
 }
+
+// keyUpperBound returns the smallest key that is lexicographically greater than the given prefix.
+// This is used to define the exclusive upper bound for a prefix iteration.
+func keyUpperBound(b []byte) []byte {
+	end := make([]byte, len(b))
+	copy(end, b)
+	for i := len(end) - 1; i >= 0; i-- {
+		end[i]++
+		if end[i] != 0 {
+			return end[:i+1]
+		}
+	}
+	return nil // The prefix is all 0xFF bytes, which is the end of the key space.
+}
