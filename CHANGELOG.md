@@ -2,8 +2,12 @@
 
 ## v2.0.0
 ### Changed
-* The database is now MongoDB instead of SQLite.
-  * The database system is now modular so it's easier to add new databases.
+* Added several database options including MongoDB for non-internal database.
+  * The database system is now modular so it's easier to add new databases. Here are the current DB options:
+    * badger
+    * bbolt
+    * mongodb
+    * pebble
 * Switched to slog instead of using auralog, no more thirdparty dependency for logging!
 
 ### Added
