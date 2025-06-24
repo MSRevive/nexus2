@@ -31,7 +31,7 @@ func (mw *Middleware) ExternalAuth(next http.Handler) http.Handler {
 		val,ok := mw.systemAdmins.GetHas(ip)
 
 		if !ok || (key != "" && val != key) {
-			mw.logger.Info("Unauthorized!", "ip", ip)
+			mw.logger.Info("ExternalAuth: IP is not authorized!", "ip", ip)
 			http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 			return
 		}
@@ -53,7 +53,7 @@ func (mw *Middleware) InternalAuth(next http.Handler) http.Handler {
 		val,ok := mw.ipList.GetHas(ip)
 		if mw.config.ApiAuth.EnforceIP {
 			if !ok {
-				mw.logger.Info("IP is not authorized!", "ip", ip)
+				mw.logger.Info("InternalAuth: IP is not authorized!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}
@@ -61,7 +61,7 @@ func (mw *Middleware) InternalAuth(next http.Handler) http.Handler {
 
 		if mw.config.ApiAuth.EnforceKey {
 			if !ok || val != key {
-				mw.logger.Info("API key is not authorized!", "ip", ip)
+				mw.logger.Info("InternalAuth: API key is not authorized!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}
@@ -70,7 +70,7 @@ func (mw *Middleware) InternalAuth(next http.Handler) http.Handler {
 		//if useragent in config is empty then just skip.
 		if mw.config.ApiAuth.UserAgent != "" {
 			if r.UserAgent() != mw.config.ApiAuth.UserAgent {
-				mw.logger.Info("Incorrect user agent!", "ip", ip)
+				mw.logger.Info("InternalAuth: Incorrect user agent!", "ip", ip)
 				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
 				return
 			}
