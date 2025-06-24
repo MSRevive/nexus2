@@ -29,6 +29,9 @@ func (mw *Middleware) ExternalAuth(next http.Handler) http.Handler {
 		key := r.Header.Get("Authorization")
 
 		val,ok := mw.systemAdmins.GetHas(ip)
+		if ip == "127.0.0.1" {
+			ok = true
+		}
 
 		if !ok || (key != "" && val != key) {
 			mw.logger.Info("ExternalAuth: IP is not authorized!", "ip", ip)
@@ -51,6 +54,10 @@ func (mw *Middleware) InternalAuth(next http.Handler) http.Handler {
 		key := r.Header.Get("Authorization")
 		
 		val,ok := mw.ipList.GetHas(ip)
+		if ip == "127.0.0.1" {
+			ok = true
+		}
+
 		if mw.config.ApiAuth.EnforceIP {
 			if !ok {
 				mw.logger.Info("InternalAuth: IP is not authorized!", "ip", ip)
