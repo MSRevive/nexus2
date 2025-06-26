@@ -14,7 +14,10 @@ import (
 func (d *pebbleDB) GetAllUsers() ([]*schema.User, error) {
 	var users []*schema.User
 
-	it, err := d.db.NewIter(&pebble.IterOptions{
+	// better to use contexts https://github.com/cockroachdb/pebble/issues/1609
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	it, err := d.db.NewIterWithContext(ctx, &pebble.IterOptions{
 		LowerBound: UserPrefix,
 		UpperBound: keyUpperBound(UserPrefix),
 	})

@@ -2,21 +2,23 @@ core:
   address: 127.0.0.1 # The IP the FN server should be on.
   port: 1337 # The port the FN server should listen on.
   timeout: 60 # The HTTP failure timeout.
-  dbtype: "bbolt" # The type of database the FN should store characters.
+  dbtype: "pebble" # The type of database the FN should store characters.
 database:
   mongodb:
     connection: "" # The MongoDB connection link to connect to the MongoDB
-  bbolt: # Slower than badger, but uses less disk space and is a single file.
+  bbolt: # A lot slower, but uses less disk space, is a single file, least amount of RAM.
     file: ./runtime/game/database/characters.db # The location for database file.
     timeout: 0 # The timeout for opening of the database file.
-  badger: # The fastest option, but uses more diskspace at runtime.
-    directory: "" # Where the database should be contained.
+  badger: # The fastest option, but uses more diskspace at runtime and the most amount of RAM.
+    directory: ./runtime/game/database # Where the database should be contained.
+  pebble: # A little bit slower, but uses less RAM and less disk space than badger.
+    directory: ./runtime/game/database # Where the database should be contained.
 ratelimit:
   maxrequests: 0 # Max amount of requests in time range of MaxAge
   maxage: "" # Max age of ratelimiter bucket in minutes
 cert:
   enable: false # Disable HTTPs certificate.
-  domain: "" # The domain the system should try load certificate for.
+  domain: "" # The domain the system should try load the certificate for.
 apiauth:
   systemadmins: ./runtime/systemadmins.json # System admins IP list.
   iplistfile: ./runtime/ipwhitelist.json # Game server IP whitelist.
@@ -36,7 +38,7 @@ verify:
 char:
   maxbackups: 10 # The maximum number of character backups, when limit is reach it will replace the older backup.
   backuptime: 1h # How often should the system make a backup of character data.
-  deletedexpiretime: 0 # How long should the databse keep deleted characters? 0 is forver.
+  deletedexpiretime: 43200m # How long should the databse keep deleted characters? 0 is forver.
 log:
   level: debug # Logging level.
   dir: ./runtime/logs/ # The directory we should keep all the log files for the FN.

@@ -28,7 +28,7 @@ func New() *pebbleDB {
 }
 
 func (d *pebbleDB) Connect(cfg database.Config, opts database.Options) error {
-	db, err := pebble.Open(cfg.Badger.Directory, &pebble.Options{
+	db, err := pebble.Open(cfg.Pebble.Directory, &pebble.Options{
 		FormatMajorVersion: pebble.FormatDefault,
 	})
 	if err != nil {
@@ -55,7 +55,10 @@ func (d *pebbleDB) SyncToDisk() error {
 }
 
 func (d *pebbleDB) RunGC() error {
-	it, err := d.db.NewIter(nil)
+	// better to use contexts https://github.com/cockroachdb/pebble/issues/1609
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	it, err := d.db.NewIterWithContext(ctx, nil)
 	if err != nil {
 		return err
 	}

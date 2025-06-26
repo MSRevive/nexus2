@@ -15,4 +15,7 @@ type Config struct {
 	Badger struct {
 		Directory string
 	}
+	Pebble struct {
+		Directory string
+	}
 }
