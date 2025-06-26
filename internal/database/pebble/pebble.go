@@ -77,9 +77,9 @@ func (d *pebbleDB) RunGC() error {
 			fmt.Println("has TTL")
 			if time.Now().Unix() > exTime {
 				fmt.Printf("key whipped %s\n", it.Key())
-				// if err := d.batch.Delete(it.Key(), nil); err != nil {
-				// 	return err
-				// }
+				if err := d.batch.Delete(it.Key(), nil); err != nil {
+					return err
+				}
 			}
 		}
 	}
