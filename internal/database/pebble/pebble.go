@@ -3,6 +3,7 @@ package pebble
 import (
 	"time"
 	"io"
+	"fmt"
 	"encoding/binary"
 
 	"github.com/msrevive/nexus2/internal/database"
@@ -19,6 +20,7 @@ var (
 
 type pebbleDB struct {
 	db *pebble.DB
+	batch *pebble.Batch
 }
 
 func New() *pebbleDB {
@@ -33,12 +35,16 @@ func (d *pebbleDB) Connect(cfg database.Config, opts database.Options) error {
 		return err
 	}
 
+	d.batch = db.NewBatch()
+
 	d.db = db
 	return nil
 }
 
-func (d *pebbleDB) Disconnect() error {
-	return d.db.Close()
+func (d *pebbleDB) Disconnect() (err error) {
+	err = d.batch.Close()
+	err = d.db.Close()
+	return
 }
 
 func (d *pebbleDB) SyncToDisk() error {
@@ -55,33 +61,26 @@ func (d *pebbleDB) RunGC() error {
 	}
 	defer it.Close()
 
-	batch := d.db.NewBatch()
-	defer batch.Close()
+	if d.batch.Count() > 0 {
+		if err := d.batch.Commit(pebble.Sync); err != nil {
+			return err
+		}
+	}
+	d.batch.Reset()
 
 	for it.First(); it.Valid(); it.Next() {
 		value := it.Value()
-		if len(value) >= timestampSize {
-			expiration := int64(binary.BigEndian.Uint64(value))
+		exTime := int64(binary.BigEndian.Uint64(value[:timestampSize])) // unix is int64 so this needs to be int64
+		fmt.Printf("key %s, expire: %d\n", it.Key(), exTime)
 
-			if time.Now().Unix() > expiration {
-				if err := batch.Delete(it.Key(), nil); err != nil {
-					return err
-				}
-
-				// if we have a lot to delete then we commit in batches.
-				if batch.Count() >= 1000 {
-					if err := batch.Commit(pebble.Sync); err != nil {
-						return err
-					}
-					batch.Reset()
-				}
+		if (len(value) >= timestampSize) && (exTime > 0) {
+			fmt.Println("has TTL")
+			if time.Now().Unix() > exTime {
+				fmt.Printf("key whipped %s\n", it.Key())
+				// if err := d.batch.Delete(it.Key(), nil); err != nil {
+				// 	return err
+				// }
 			}
-		}
-	}
-
-	if batch.Count() > 0 {
-		if err := batch.Commit(pebble.Sync); err != nil {
-			return err
 		}
 	}
 
@@ -97,25 +96,28 @@ const timestampSize = 8
 
 func (d *pebbleDB) setWithTTL(key, value []byte, ttl time.Duration, opts *pebble.WriteOptions) error {
 	expiration := time.Now().Add(ttl).Unix()
+	fmt.Println(uint64(expiration))
 	buf := make([]byte, timestampSize+len(value)) //8 bytes for a Unix timestamp
 	binary.BigEndian.PutUint64(buf, uint64(expiration))
 	copy(buf[timestampSize:], value)
 
-	return d.db.Set(key, value, opts)
+	return d.db.Set(key, buf, opts)
 }
 
 func (d *pebbleDB) get(key []byte) ([]byte, io.Closer, error) {
 	value, closer, err := d.db.Get(key)
+	exTime := binary.BigEndian.Uint64(value[:timestampSize])
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// if there's no timestamp then just return.
-	if len(value) < timestampSize {
+	if (len(value) < timestampSize) || (exTime == 0) {
 		return value, closer, nil
 	}
 
 	// we don't check if the entry is expired because we don't need to for this.
+	// we need to get everything after the first timestamp size.
 	return value[timestampSize:], closer, nil
 }
 

@@ -3,6 +3,7 @@ package pebble
 import (
 	"fmt"
 	"time"
+	//"encoding/binary"
 	
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
@@ -35,6 +36,7 @@ func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string)
 	charKey := append(CharPrefix, []byte(charID.String())...)
 
 	user, err := d.GetUser(steamid)
+	// new user
 	if err == database.ErrNoDocument {
 		user = &schema.User{
 			ID: steamid,
@@ -62,7 +64,7 @@ func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string)
 			return uuid.Nil, err
 		}
 
-	}else{ //user does exists so just create character.
+	}else{ // user does exists so just create character.
 		user.Characters[slot] = charID
 
 		// we new have to encode the new userdata, this seems like such a waste...
@@ -80,6 +82,16 @@ func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string)
 		if err := d.db.Set(userKey, userData, pebble.NoSync); err != nil {
 			return uuid.Nil, err
 		}
+
+		// fmt.Printf("char size: %d\n", len(charData))
+		// buf := make([]byte, timestampSize+len(charData)) //8 bytes for a Unix timestamp
+		// //binary.BigEndian.PutUint64(buf, uint64(1750813934))
+		// //copy(buf[timestampSize:], charData)
+		// //buf := make([]byte, timestampSize+len(charData))
+		// //binary.BigEndian.PutUint64(buf, uint64(1750813934))
+		// copy(buf[timestampSize:], charData)
+		// fmt.Printf("char size: %d, timestamp: %v\n", len(buf), binary.BigEndian.Uint64(buf[:8])) //buf[len(buf)-8:] buf[:8]
+		// fmt.Printf("buffer: %s\n", buf)
 
 		//commit new character to DB
 		if err := d.db.Set(charKey, charData, pebble.NoSync); err != nil {
@@ -226,7 +238,7 @@ func (d *pebbleDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 		return fmt.Errorf("pebble: failed to set user %v", err)
 	}
 
-	if err := d.db.Set(charKey, charData, pebble.NoSync); err != nil {
+	if err := d.setWithTTL(charKey, charData, expiration, pebble.NoSync); err != nil {
 		return fmt.Errorf("pebble: failed to set character %v", err)
 	}
 
