@@ -71,12 +71,9 @@ func (d *pebbleDB) RunGC() error {
 	for it.First(); it.Valid(); it.Next() {
 		value := it.Value()
 		exTime := int64(binary.BigEndian.Uint64(value[:timestampSize])) // unix is int64 so this needs to be int64
-		fmt.Printf("key %s, expire: %d\n", it.Key(), exTime)
 
 		if (len(value) >= timestampSize) && (exTime > 0) {
-			fmt.Println("has TTL")
 			if time.Now().Unix() > exTime {
-				fmt.Printf("key whipped %s\n", it.Key())
 				if err := d.batch.Delete(it.Key(), nil); err != nil {
 					return err
 				}
