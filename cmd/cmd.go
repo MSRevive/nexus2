@@ -135,7 +135,7 @@ func Run(args []string) (error) {
 				r.Put("/{uuid}", con.PutCharacter)
 				r.Delete("/{uuid}", con.SoftDeleteCharacter)
 
-				r.Get("/{steamid:[0-9]+}/{slot:[0-9]}", con.GetCharacter)
+				r.Get("/{steamid:[0-9]+}/{slot:[0-9]+}", con.GetCharacter)
 			})
 		})
 
@@ -145,7 +145,7 @@ func Run(args []string) (error) {
 			}
 
 			r.Route("/character", func(r chi.Router) {
-				r.Get("/lookup/{steamid:[0-9]+}/{slot:[0-9]}", con.LookUpCharacterID)
+				r.Get("/lookup/{steamid:[0-9]+}/{slot:[0-9]+}", con.LookUpCharacterID)
 				r.Get("/deleted/{steamid:[0-9]+}", con.GetDeletedCharacters)
 				r.Get("/{steamid:[0-9]+}", con.GetCharacters)
 				r.Get("/{uuid}", con.GetCharacterByIDExternal)
@@ -161,8 +161,8 @@ func Run(args []string) (error) {
 			})
 
 			r.Route("/unsafe/character", func(r chi.Router) {
-				r.Patch("/move/{uuid}/to/{steamid:[0-9]+}/{slot:[0-9]}", con.UnsafeMoveCharacter)
-				r.Patch("/copy/{uuid}/to/{steamid:[0-9]+}/{slot:[0-9]}", con.UnsafeCopyCharacter)
+				r.Patch("/move/{uuid}/to/{steamid:[0-9]+}/{slot:[0-9]+}", con.UnsafeMoveCharacter)
+				r.Patch("/copy/{uuid}/to/{steamid:[0-9]+}/{slot:[0-9]+}", con.UnsafeCopyCharacter)
 				r.Delete("/delete/{uuid}", con.UnsafeDeleteCharacter)
 			})
 
