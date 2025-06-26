@@ -4,6 +4,7 @@ import (
 	"time"
 	"io"
 	"fmt"
+	"context"
 	"encoding/binary"
 
 	"github.com/msrevive/nexus2/internal/database"
