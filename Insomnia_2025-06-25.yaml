@@ -1,0 +1,464 @@
+type: collection.insomnia.rest/5.0
+name: Scratch Pad
+meta:
+  id: wrk_scratchpad
+  created: 1750805884848
+  modified: 1750805884848
+  description: ""
+collection:
+  - name: Internal
+    meta:
+      id: fld_3159eb11f7294b9199cf40ce3b1ec5f3
+      created: 1702091260653
+      modified: 1702091260653
+      sortKey: -1702091260653
+      description: ""
+    children:
+      - url: http://127.0.0.1:1337/api/v2/internal/map/edana/1273
+        name: Map Verify
+        meta:
+          id: req_777bfe1f5a79487b8900774313468de8
+          created: 1701386023339
+          modified: 1702091287346
+          isPrivate: false
+          description: ""
+          sortKey: -1702091267135
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/internal/character/
+        name: New Character
+        meta:
+          id: req_9d205813904d4fefac747ba94f21be20
+          created: 1701668372562
+          modified: 1750892580110
+          isPrivate: false
+          description: ""
+          sortKey: -1702091266935
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"steamid": "1337",
+            	"slot": 1,
+            	"size": 180,
+            	"data": "THIS_TEST_DATA2J____DJHDHJFJK ALTERNATE"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/internal/ban/21743647643
+        name: Ban Verify
+        meta:
+          id: req_9cb08d62e2234fdbac083dfb56afb847
+          created: 1701720818712
+          modified: 1702091289643
+          isPrivate: false
+          description: ""
+          sortKey: -1702091267235
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/internal/character/531cdaaf-8368-47ca-b663-517af82d5ac6
+        name: Update Character
+        meta:
+          id: req_461281e9c7f34c1497e04d13264a5d66
+          created: 1701855673965
+          modified: 1750806152058
+          isPrivate: false
+          description: ""
+          sortKey: -1702091267035
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+            	"size": 1,
+            	"data": "UwU2"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/internal/character/1337/65
+        name: Get Character
+        meta:
+          id: req_29b4de3833cd451bb96dbfabff8c75f3
+          created: 1702000504553
+          modified: 1750896147253
+          isPrivate: false
+          description: ""
+          sortKey: -1702091266635
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/internal/character/f69ffd70-6fdb-443c-a071-7f17565291ad
+        name: Delete Character
+        meta:
+          id: req_49f5dccb45464f7dbcdf405c0adc623a
+          created: 1702014924846
+          modified: 1750893194066
+          isPrivate: false
+          description: ""
+          sortKey: -1702091266885
+        method: DELETE
+        headers:
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: External
+    meta:
+      id: fld_e7ca6945525a4e48aef91dd05982ab8e
+      created: 1702091446572
+      modified: 1702091446572
+      sortKey: -1702091446572
+      description: ""
+    children:
+      - url: http://127.0.0.1:1337/api/v2/character/7e094142-841d-48b3-b329-633c2707a593
+        name: Get Character By ID
+        meta:
+          id: req_7fc6321551ee4ab69d8b84ad107051fc
+          created: 1701720160986
+          modified: 1750892516657
+          isPrivate: false
+          description: ""
+          sortKey: -1702091526359
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/character/1337
+        name: Get Characters
+        meta:
+          id: req_4dec80d0d35c4d73ae3dcdc18077cf8e
+          created: 1702086161941
+          modified: 1750806429298
+          isPrivate: false
+          description: ""
+          sortKey: -1702091526459
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/character/deleted/1337
+        name: Get Deleted Characters
+        meta:
+          id: req_689e4ef6684544de881dd8cbf812bad0
+          created: 1702087289073
+          modified: 1706317029283
+          isPrivate: false
+          description: ""
+          sortKey: -1702091526559
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/character/lookup/21743647643/1
+        name: Lookup Character ID
+        meta:
+          id: req_a34d6bfabace4bdf8f5a1aaff22a5463
+          created: 1702092100803
+          modified: 1702092128443
+          isPrivate: false
+          description: ""
+          sortKey: -1702091526659
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/unsafe/character/move/c5077373-ea54-4f37-a47d-5ab5dc140ff2/to/1234/2
+        name: Move Character
+        meta:
+          id: req_6c1c5b72762845e4a90938705f8c8cc1
+          created: 1702096471985
+          modified: 1706398471300
+          isPrivate: false
+          description: ""
+          sortKey: -1702091526609
+        method: PATCH
+        headers:
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/unsafe/character/copy/3a362194-5783-487c-a76d-49d2c2652d21/to/1337/2
+        name: Copy Character
+        meta:
+          id: req_17255148af42494fbe6371dcef3e1472
+          created: 1702096766384
+          modified: 1706398421538
+          isPrivate: false
+          description: ""
+          sortKey: -1702091526584
+        method: PATCH
+        headers:
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/character/restore/f69ffd70-6fdb-443c-a071-7f17565291ad
+        name: Restore Character
+        meta:
+          id: req_59b939ba33d5460981d6da5c9bcdf48d
+          created: 1702165085087
+          modified: 1750895319533
+          isPrivate: false
+          description: ""
+          sortKey: -1702091526759
+        method: PATCH
+        headers:
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/character/504a7f9e-f7f3-47dc-9a2d-5b2f04d5fc54
+        name: Get Character By ID
+        meta:
+          id: req_036feda3bf1f4037905aff008c29b8f9
+          created: 1708814692952
+          modified: 1727673808306
+          isPrivate: false
+          description: ""
+          sortKey: -1708814692952
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/8.6.1
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/user/list
+        name: Get All Users
+        meta:
+          id: req_fff03a9ede964b13aed660c70a89916f
+          created: 1727569473310
+          modified: 1727569546238
+          isPrivate: false
+          description: ""
+          sortKey: -1727569473311
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/10.0.0
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/user/admin/1337
+        name: Admin Steam ID
+        meta:
+          id: req_5be4ea11f82f402d8d8ae3799c3bd8f9
+          created: 1727729676928
+          modified: 1727729784226
+          isPrivate: false
+          description: ""
+          sortKey: -1727729676928
+        method: PATCH
+        headers:
+          - name: User-Agent
+            value: insomnia/10.0.0
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/user/isdonor/1337
+        name: Is Donor SteamID
+        meta:
+          id: req_f74a697f4ec84b6d86dcae9ef3d7bb49
+          created: 1727730248138
+          modified: 1727730392231
+          isPrivate: false
+          description: ""
+          sortKey: -1727730248138
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/10.0.0
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/user/1337
+        name: Get User
+        meta:
+          id: req_d28bcd23e95e430eba1bd0b1189ebbea
+          created: 1727730684341
+          modified: 1727730713639
+          isPrivate: false
+          description: ""
+          sortKey: -1727730684341
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/10.0.0
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Rollback
+    meta:
+      id: fld_b07124d8afaf476eba0569c78d52217b
+      created: 1702169927186
+      modified: 1702169927186
+      sortKey: -1702169927187
+      description: ""
+    children:
+      - url: http://127.0.0.1:1337/api/v2/rollback/character/1ef7ffb5-a353-4fed-884c-49c191a78bdd
+        name: Character Versions
+        meta:
+          id: req_e5f9fccff7d645049438ac8f9af6cc59
+          created: 1702169943633
+          modified: 1708813512893
+          isPrivate: false
+          description: ""
+          sortKey: -1702169943633
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_99d30891da4bdcebc63947a8fc17f076de878684
+    created: 1750805916193
+    modified: 1750805916193
+environments:
+  name: Base Environment
+  meta:
+    id: env_99d30891da4bdcebc63947a8fc17f076de878684
+    created: 1750805916130
+    modified: 1750805916130
+    isPrivate: false
