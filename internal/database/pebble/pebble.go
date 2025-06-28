@@ -30,7 +30,7 @@ func New() *pebbleDB {
 
 func (d *pebbleDB) Connect(cfg database.Config, opts database.Options) error {
 	db, err := pebble.Open(cfg.Pebble.Directory, &pebble.Options{
-		FormatMajorVersion: pebble.FormatDefault,
+		FormatMajorVersion: pebble.FormatColumnarBlocks,
 	})
 	if err != nil {
 		return err

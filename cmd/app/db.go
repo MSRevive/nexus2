@@ -43,7 +43,7 @@ func (a *App) SetupDatabase() (err error) {
 // This is for databases that we use a cache to make writing faster.
 func (a *App) SetupDatabaseAutoSave() {
 	syncCron := cron.New()
-	syncCron.AddFunc("*/30 * * * *", func(){ //This runs every 30 minutes.
+	syncCron.AddFunc(a.Config.Database.Sync, func() {
 		go func() {
 			a.Logger.Info("Syncing data to disk")
 			t1 := time.Now()
@@ -57,7 +57,7 @@ func (a *App) SetupDatabaseAutoSave() {
 	syncCron.Start()
 
 	gcCron := cron.New()
-	gcCron.AddFunc("*/10 * * * *", func(){ //This runs on the 10th minute
+	gcCron.AddFunc(a.Config.Database.GarbageCollection, func() { //This runs on the 10th minute
 		go func() {
 			a.Logger.Info("Running database garbage collection")
 			t1 := time.Now()

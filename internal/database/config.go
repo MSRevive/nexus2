@@ -18,4 +18,6 @@ type Config struct {
 	Pebble struct {
 		Directory string
 	}
+	Sync string
+	GarbageCollection string
 }

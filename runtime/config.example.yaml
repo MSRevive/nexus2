@@ -13,6 +13,8 @@ database:
     directory: ./runtime/game/database # Where the database should be contained.
   pebble: # A little bit slower, but uses less RAM and less disk space than badger.
     directory: ./runtime/game/database # Where the database should be contained.
+  sync: "/30 * * * *" # How often the database should sync to disk from memory using crontabs
+  garbagecollection: "*/10 * * * *" # How often the database garbage collection should run using crontabs.
 ratelimit:
   maxrequests: 0 # Max amount of requests in time range of MaxAge
   maxage: "" # Max age of ratelimiter bucket in minutes
