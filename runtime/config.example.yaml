@@ -34,9 +34,9 @@ verify:
   maplistfile: ./runtime/game/maps.json # The map list that contains map name and CRC hash.
   banlistfile: ./runtime/game/bans.json # The ban list of FN bans.
   adminlistfile: ./runtime/game/admins.json # The admin list list for FN game masters.
-  serverunixbin: 0 # The location of the Windows binary for game servers. Should be a IEEE CRC32
-  serverwinbin: 0 # The location of the Linux binary for game servers. Should be a IEEE CRC32
-  scriptspak: 0 # The location of the scripts file for game servers. Should be a IEEE CRC32
+  serverunixhash: 0 # The location of the Windows binary for game servers. Should be a IEEE CRC32
+  serverwinhash: 0 # The location of the Linux binary for game servers. Should be a IEEE CRC32
+  scriptshash: 0 # The location of the scripts file for game servers. Should be a IEEE CRC32
 char:
   maxbackups: 10 # The maximum number of character backups, when limit is reach it will replace the older backup.
   backuptime: 1h # How often should the system make a backup of character data.
