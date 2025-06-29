@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"strconv"
 	"crypto/tls"
-	"hash/crc32"
 
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/config"
@@ -32,11 +31,6 @@ type App struct {
 		IP *ccmap.Cache[string, string]
 		Map *ccmap.Cache[string, uint32]
 	}
-	Hashes struct {
-		ServerWin uint32
-		ServerUnix uint32
-		Scripts uint32
-	}
 
 	httpServer *http.Server
 }
@@ -50,6 +44,7 @@ func New() (app *App) {
 	return
 }
 
+/*
 func (a *App) CalcHashes() error {
 	if (!a.Config.Verify.EnforceBins) {
 		return nil
@@ -95,7 +90,7 @@ func (a *App) CalcHashes() error {
 	a.Hashes.Scripts = hasher.Sum32()
 
 	return nil
-}
+}*/
 
 func (a *App) LoadConfig(path string) (err error) {
 	a.Config, err = config.Load(path)

@@ -73,10 +73,6 @@ func Run(args []string) (error) {
 		a.Logger.Warn("Failed to load list(s)!", "error", err)
 	}
 
-	if err := a.CalcHashes(); err != nil {
-		a.Logger.Warn("Failed to calculate hash!", "error", err)
-	}
-
 	/////////////////////////
 	//Middleware
 	/////////////////////////
@@ -107,9 +103,6 @@ func Run(args []string) (error) {
 	service := service.New(a.DB, a.Config)
 	con := controller.New(service, a.Logger, a.Config, controller.Options{
 		MapList: a.List.Map,
-		ServerWinHash: a.Hashes.ServerWin,
-		ServerUnixHash: a.Hashes.ServerUnix,
-		ScriptsHash: a.Hashes.Scripts,
 	})
 
 	// API version 2
@@ -185,11 +178,6 @@ func Run(args []string) (error) {
 
 			r.Get("/refresh", func(w http.ResponseWriter, r *http.Request) {
 				if err := a.LoadLists(); err != nil {
-					response.Error(w, err)
-					return
-				}
-
-				if err := a.CalcHashes(); err != nil {
 					response.Error(w, err)
 					return
 				}

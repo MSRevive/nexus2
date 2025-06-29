@@ -16,9 +16,6 @@ import (
 
 type Options struct {
 	MapList *ccmap.Cache[string, uint32]
-	ServerWinHash uint32
-	ServerUnixHash uint32
-	ScriptsHash uint32
 }
 
 type Controller struct {
@@ -26,10 +23,6 @@ type Controller struct {
 	config *config.Config
 	service *service.Service
 	mapList *ccmap.Cache[string, uint32]
-
-	serverWinHash uint32
-	serverUnixHash uint32
-	scriptsHash uint32
 }
 
 func New(service *service.Service, log *slog.Logger, cfg *config.Config, opts Options) *Controller {
@@ -38,10 +31,6 @@ func New(service *service.Service, log *slog.Logger, cfg *config.Config, opts Op
 		service: service,
 		config: cfg,
 		mapList: opts.MapList,
-
-		serverWinHash: opts.ServerWinHash,
-		serverUnixHash: opts.ServerUnixHash,
-		scriptsHash: opts.ScriptsHash,
 	}
 }
 
@@ -87,8 +76,13 @@ func (c *Controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
 		response.BadRequest(w, err)
 		return
 	}
+
+	if !c.config.Verify.EnforceBins {
+		response.Result(w, true)
+		return
+	}
 	
-	if (c.scriptsHash == 0) || (uint32(hash) == c.scriptsHash) {
+	if (c.config.Verify.ScriptsHash == 0) || (uint32(hash) == c.config.Verify.ScriptsHash) {
 		response.Result(w, true)
 		return
 	}
@@ -106,7 +100,12 @@ func (c *Controller) GetServerVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if ((c.serverUnixHash == 0) || (c.serverWinHash == 0)) || ((uint32(hash) == c.serverUnixHash) || (uint32(hash) == c.serverWinHash)) {
+	if !c.config.Verify.EnforceBins {
+		response.Result(w, true)
+		return
+	}
+
+	if ((c.config.Verify.ServerUnixHash == 0) || (c.config.Verify.ServerWinHash == 0)) || ((uint32(hash) == c.config.Verify.ServerUnixHash) || (uint32(hash) == c.config.Verify.ServerWinHash)) {
 		response.Result(w, true)
 		return
 	}

@@ -30,13 +30,13 @@ apiauth:
 verify:
   enforceban: false # Should we enforce FN bans?
   enforcemap: false # Should we enforce FN verification of maps.
-  enforcebins: false # Should we enforce same version of bins for game server.
+  enforcebins: false # Should we enforce same version of bins and scripts for game server.
   maplistfile: ./runtime/game/maps.json # The map list that contains map name and CRC hash.
   banlistfile: ./runtime/game/bans.json # The ban list of FN bans.
   adminlistfile: ./runtime/game/admins.json # The admin list list for FN game masters.
-  serverunixbin: ./runtime/game/ms.dll # The location of the Windows binary for game servers.
-  serverwinbin: ./runtime/game/ms.so # The location of the Linux binary for game servers.
-  scriptsbin: ./runtime/game/sc.dll # The location of the scripts file for game servers.
+  serverunixbin: 0 # The location of the Windows binary for game servers. Should be a IEEE CRC32
+  serverwinbin: 0 # The location of the Linux binary for game servers. Should be a IEEE CRC32
+  scriptspak: 0 # The location of the scripts file for game servers. Should be a IEEE CRC32
 char:
   maxbackups: 10 # The maximum number of character backups, when limit is reach it will replace the older backup.
   backuptime: 1h # How often should the system make a backup of character data.
