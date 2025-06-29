@@ -49,12 +49,12 @@ type Config struct {
 	Char struct {
 		MaxBackups int
 		BackupTime time.Duration
-		DeletedExpireTime time.Duration
+		DeletedExpireTime string
 	}
 	Log struct {
 		Level string
 		Dir string
-		ExpireTime time.Duration
+		ExpireTime string
 	}
 }
   

@@ -16,6 +16,7 @@ import (
 	"github.com/msrevive/nexus2/internal/config"
 	"github.com/msrevive/nexus2/internal/static"
 	"github.com/msrevive/nexus2/pkg/loghandler"
+	"github.com/msrevive/nexus2/pkg/utils"
 
 	"github.com/saintwish/kv/ccmap"
 	rw "github.com/saintwish/rotatewriter"
@@ -105,10 +106,15 @@ func (a *App) LoadConfig(path string) (err error) {
 func (a *App) InitializeLogger() (err error) {
 	err = os.MkdirAll(a.Config.Log.Dir, os.ModePerm)
 
+	logExpire, err := utils.ParseDuration(a.Config.Log.ExpireTime)
+	if err != nil {
+		return
+	}
+
 	iow := io.MultiWriter(os.Stdout, &rw.RotateWriter{
 		Dir: a.Config.Log.Dir,
 		Filename: "server.log",
-		ExpireTime: a.Config.Log.ExpireTime,
+		ExpireTime: logExpire,
 		MaxSize: 5 * rw.Megabyte,
 	})
 

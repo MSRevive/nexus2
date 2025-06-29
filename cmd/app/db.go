@@ -12,6 +12,7 @@ import (
 	"github.com/msrevive/nexus2/internal/database/bbolt"
 	"github.com/msrevive/nexus2/internal/database/badger"
 	"github.com/msrevive/nexus2/internal/database/pebble"
+	"github.com/msrevive/nexus2/pkg/utils"
 
 	rw "github.com/saintwish/rotatewriter"
 	"github.com/robfig/cron/v3"
@@ -81,10 +82,16 @@ func (a *App) SetUpDatabaseLogger() *log.Logger {
 		return nil
 	}
 
+	logExpire, err := utils.ParseDuration(a.Config.Log.ExpireTime)
+	if err != nil {
+		fmt.Println(fmt.Errorf("database error: failed to parse log duration %s : %v", a.Config.Log.ExpireTime, err))
+		return nil
+	}
+
 	iow := io.MultiWriter(os.Stdout, &rw.RotateWriter{
 		Dir: a.Config.Log.Dir+"database/",
 		Filename: "database.log",
-		ExpireTime: a.Config.Log.ExpireTime,
+		ExpireTime: logExpire,
 		MaxSize: 5 * rw.Megabyte,
 	})
 

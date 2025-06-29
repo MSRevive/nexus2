@@ -2,11 +2,11 @@ package service
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/msrevive/nexus2/internal/bitmask"
 	"github.com/msrevive/nexus2/internal/payload"
 	"github.com/msrevive/nexus2/pkg/database/schema"
+	"github.com/msrevive/nexus2/pkg/utils"
 
 	"github.com/google/uuid"
 )
@@ -85,8 +85,13 @@ func (s *Service) GetDeletedCharacters(steamid string) (map[int]uuid.UUID, error
 	return user.DeletedCharacters, nil
 }
 
-func (s *Service) SoftDeleteCharacter(uid uuid.UUID, expiration time.Duration) error {
-	if err := s.db.SoftDeleteCharacter(uid, expiration); err != nil {
+func (s *Service) SoftDeleteCharacter(uid uuid.UUID, expiration string) error {
+	expire, err := utils.ParseDuration(expiration)
+	if err != nil {
+		return err
+	}
+
+	if err := s.db.SoftDeleteCharacter(uid, expire); err != nil {
 		return err
 	}
 
