@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/msrevive/nexus2/internal/database/mongodb"
 	"github.com/msrevive/nexus2/internal/database/bbolt"
 	"github.com/msrevive/nexus2/internal/database/badger"
 	"github.com/msrevive/nexus2/internal/database/pebble"
@@ -20,9 +19,6 @@ import (
 
 func (a *App) SetupDatabase() (err error) {
 	switch a.Config.Core.DBType {
-	case "mongodb":
-		a.Logger.Info("Database set to MongoDB!")
-		a.DB = mongodb.New()
 	case "bbolt":
 		a.Logger.Info("Database set to BBolt!")
 		// This is needed because BBolt doesn't automatically create the directory.
