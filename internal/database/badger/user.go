@@ -5,10 +5,10 @@ import (
 	
 	"github.com/msrevive/nexus2/internal/bitmask"
 	"github.com/msrevive/nexus2/internal/database"
-	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/fxamacker/cbor/v2"
 )
 
 func (d *badgerDB) GetAllUsers() ([]*schema.User, error) {
@@ -24,8 +24,8 @@ func (d *badgerDB) GetAllUsers() ([]*schema.User, error) {
 
 			item.Value(func(v []byte) error {
 				var user *schema.User
-				if err := bsoncoder.Decode(v, &user); err != nil {
-					return fmt.Errorf("bson: failed to unmarshal %v", err)
+				if err := cbor.Unmarshal(v, &user); err != nil {
+					return fmt.Errorf("failed to unmarshal %v", err)
 				}
 
 				users = append(users, user)
@@ -58,8 +58,8 @@ func (d *badgerDB) GetUser(steamid string) (user *schema.User, err error) {
 			return fmt.Errorf("badger: failed to get value from item")
 		}
 
-		if err := bsoncoder.Decode(data, &user); err != nil {
-			return fmt.Errorf("bson: failed to unmarshal %v", err)
+		if err := cbor.Unmarshal(data, &user); err != nil {
+			return fmt.Errorf("failed to unmarshal %v", err)
 		}
 
 		return nil
@@ -79,9 +79,9 @@ func (d *badgerDB) SetUserFlags(steamid string, flags bitmask.Bitmask) (error) {
 	if err = d.db.Update(func(txn *badger.Txn) error {
 		user.Flags = uint32(flags) // cast it to a uint32 to make the database behave.
 
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := cbor.Marshal(&user)
 		if err != nil {
-			return fmt.Errorf("bson: failed to marshal user %v", err)
+			return fmt.Errorf("failed to marshal user %v", err)
 		}
 
 		key := append(UserPrefix, []byte(steamid)...)

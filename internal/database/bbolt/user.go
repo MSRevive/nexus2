@@ -5,10 +5,10 @@ import (
 	
 	"github.com/msrevive/nexus2/internal/bitmask"
 	"github.com/msrevive/nexus2/internal/database"
-	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"go.etcd.io/bbolt"
+	"github.com/fxamacker/cbor/v2"
 )
 
 func (d *bboltDB) GetAllUsers() ([]*schema.User, error) {
@@ -20,8 +20,8 @@ func (d *bboltDB) GetAllUsers() ([]*schema.User, error) {
 		if err := b.ForEach(func(k, v []byte) error {
 			var user *schema.User
 
-			if err := bsoncoder.Decode(v, &user); err != nil {
-				return fmt.Errorf("bson: failed to unmarshal %v", err)
+			if err := cbor.Unmarshal(v, &user); err != nil {
+				return fmt.Errorf("failed to unmarshal %v", err)
 			}
 
 			users = append(users, user)
@@ -48,8 +48,8 @@ func (d *bboltDB) GetUser(steamid string) (user *schema.User, err error) {
 			return database.ErrNoDocument
 		}
 
-		if err := bsoncoder.Decode(data, &user); err != nil {
-			return fmt.Errorf("bson: failed to unmarshal %v", err)
+		if err := cbor.Unmarshal(data, &user); err != nil {
+			return fmt.Errorf("failed to unmarshal %v", err)
 		}
 
 		return nil
@@ -69,9 +69,9 @@ func (d *bboltDB) SetUserFlags(steamid string, flags bitmask.Bitmask) (error) {
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
 		user.Flags = uint32(flags) // cast it to a uint32 to make the database behave.
 
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := cbor.Marshal(&user)
 		if err != nil {
-			return fmt.Errorf("bson: failed to marshal user %v", err)
+			return fmt.Errorf("failed to marshal user %v", err)
 		}
 
 		bUser := tx.Bucket(UserBucket)

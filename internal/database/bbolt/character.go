@@ -5,11 +5,11 @@ import (
 	"time"
 	
 	"github.com/msrevive/nexus2/internal/database"
-	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
+	"github.com/fxamacker/cbor/v2"
 )
 
 func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
@@ -35,14 +35,14 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 			}
 			user.Characters[slot] = charID
 
-			userData, err := bsoncoder.Encode(&user)
+			userData, err := cbor.Marshal(&user)
 			if err != nil {
-				return fmt.Errorf("bson: failed to marshal user %v", err)
+				return fmt.Errorf("failed to marshal user %v", err)
 			}
 
-			charData, err := bsoncoder.Encode(&char)
+			charData, err := cbor.Marshal(&char)
 			if err != nil {
-				return fmt.Errorf("bson: failed to marshal character %v", err)
+				return fmt.Errorf("failed to marshal character %v", err)
 			}
 
 			bUser := tx.Bucket(UserBucket)
@@ -68,14 +68,14 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 		if err = d.db.Update(func(tx *bbolt.Tx) error {
 			user.Characters[slot] = charID
 	
-			userData, err := bsoncoder.Encode(&user)
+			userData, err := cbor.Marshal(&user)
 			if err != nil {
-				return fmt.Errorf("bson: failed to marshal user %v", err)
+				return fmt.Errorf("failed to marshal user %v", err)
 			}
 	
-			charData, err := bsoncoder.Encode(&char)
+			charData, err := cbor.Marshal(&char)
 			if err != nil {
-				return fmt.Errorf("bson: failed to marshal character %v", err)
+				return fmt.Errorf("failed to marshal character %v", err)
 			}
 	
 			bUser := tx.Bucket(UserBucket)
@@ -110,8 +110,8 @@ func (d *bboltDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 
 		// Decode the data
 		var char *schema.Character
-		if err := bsoncoder.Decode(item, &char); err != nil {
-			return fmt.Errorf("bson: failed to unmarshal %v", err)
+		if err := cbor.Unmarshal(item, &char); err != nil {
+			return fmt.Errorf("failed to unmarshal %v", err)
 		}
 
 		// Handle backups for characters
@@ -142,7 +142,7 @@ func (d *bboltDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 			Data: data,
 		}
 
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -168,7 +168,7 @@ func (d *bboltDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error)
 			return database.ErrNoDocument
 		}
 
-		if err := bsoncoder.Decode(data, &char); err != nil {
+		if err := cbor.Unmarshal(data, &char); err != nil {
 			return fmt.Errorf("bson: failed to decode %v", err)
 		}
 
@@ -227,12 +227,12 @@ func (d *bboltDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) er
 	char.DeletedAt = &timeNow
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := cbor.Marshal(&user)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode user %v", err)
 		}
 
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -281,7 +281,7 @@ func (d *bboltDB) DeleteCharacterReference(steamid string, slot int) error {
 	delete(user.Characters, slot)
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := cbor.Marshal(&user)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode user %v", err)
 		}
@@ -324,12 +324,12 @@ func (d *bboltDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 	char.Slot = slot
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := cbor.Marshal(&user)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode user %v", err)
 		}
 
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -375,12 +375,12 @@ func (d *bboltDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UU
 	char.CreatedAt = time.Now().UTC()
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
-		userData, err := bsoncoder.Encode(&targetUser)
+		userData, err := cbor.Marshal(&targetUser)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode user %v", err)
 		}
 
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -421,12 +421,12 @@ func (d *bboltDB) RestoreCharacter(id uuid.UUID) error {
 	char.DeletedAt = nil
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := cbor.Marshal(&user)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode user %v", err)
 		}
 
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -465,7 +465,7 @@ func (d *bboltDB) RollbackCharacter(id uuid.UUID, ver int) error {
 	}
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -499,7 +499,7 @@ func (d *bboltDB) RollbackCharacterToLatest(id uuid.UUID) error {
 	}
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -527,7 +527,7 @@ func (d *bboltDB) DeleteCharacterVersions(id uuid.UUID) error {
 	char.Versions = nil
 
 	if err = d.db.Update(func(tx *bbolt.Tx) error {
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode char %v", err)
 		}

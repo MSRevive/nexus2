@@ -6,11 +6,11 @@ import (
 	//"encoding/binary"
 	
 	"github.com/msrevive/nexus2/internal/database"
-	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/google/uuid"
 	"github.com/cockroachdb/pebble/v2"
+	"github.com/fxamacker/cbor/v2"
 )
 
 /*
@@ -44,14 +44,14 @@ func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string)
 		}
 		user.Characters[slot] = charID
 
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := cbor.Marshal(&user)
 		if err != nil {
-			return uuid.Nil, fmt.Errorf("bson: failed to marshal user %v", err)
+			return uuid.Nil, fmt.Errorf("failed to marshal user %v", err)
 		}
 
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
-			return uuid.Nil, fmt.Errorf("bson: failed to marshal character %v", err)
+			return uuid.Nil, fmt.Errorf("failed to marshal character %v", err)
 		}
 
 		//commit new user to DB
@@ -68,14 +68,14 @@ func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string)
 		user.Characters[slot] = charID
 
 		// we new have to encode the new userdata, this seems like such a waste...
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := cbor.Marshal(&user)
 		if err != nil {
-			return uuid.Nil, fmt.Errorf("bson: failed to marshal user %v", err)
+			return uuid.Nil, fmt.Errorf("failed to marshal user %v", err)
 		}
 
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
-			return uuid.Nil, fmt.Errorf("bson: failed to marshal character %v", err)
+			return uuid.Nil, fmt.Errorf("failed to marshal character %v", err)
 		}
 
 		//commit new user to DB
@@ -115,8 +115,8 @@ func (d *pebbleDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMa
 	defer io.Close()
 
 	var char *schema.Character
-	if err := bsoncoder.Decode(val, &char); err != nil {
-		return fmt.Errorf("bson: failed to unmarshal %v", err)
+	if err := cbor.Unmarshal(val, &char); err != nil {
+		return fmt.Errorf("failed to unmarshal %v", err)
 	}
 
 	//handle character backups for rollback system.
@@ -148,7 +148,7 @@ func (d *pebbleDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMa
 	}
 
 	//commit updated character to DB
-	charData, err := bsoncoder.Encode(&char)
+	charData, err := cbor.Marshal(&char)
 	if err != nil {
 		return fmt.Errorf("bson: failed to encode character %v", err)
 	}
@@ -169,8 +169,8 @@ func (d *pebbleDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 
 	defer io.Close()
 
-	if err := bsoncoder.Decode(data, &char); err != nil {
-		return char, fmt.Errorf("bson: failed to unmarshal %v", err)
+	if err := cbor.Unmarshal(data, &char); err != nil {
+		return char, fmt.Errorf("failed to unmarshal %v", err)
 	}
 
 	return char, nil
@@ -224,12 +224,12 @@ func (d *pebbleDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 	userKey := append(UserPrefix, []byte(char.SteamID)...)
 	charKey := append(CharPrefix, []byte(id.String())...)
 
-	userData, err := bsoncoder.Encode(&user)
+	userData, err := cbor.Marshal(&user)
 	if err != nil {
 		return fmt.Errorf("bson: failed to encode user %v", err)
 	}
 
-	charData, err := bsoncoder.Encode(&char)
+	charData, err := cbor.Marshal(&char)
 	if err != nil {
 		return fmt.Errorf("bson: failed to encode character %v", err)
 	}
@@ -259,7 +259,7 @@ func (d *pebbleDB) DeleteCharacterReference(steamid string, slot int) error {
 	delete(user.Characters, slot)
 	key := append(UserPrefix, []byte(steamid)...)
 
-	userData, err := bsoncoder.Encode(&user)
+	userData, err := cbor.Marshal(&user)
 	if err != nil {
 		return fmt.Errorf("bson: failed to encode user %v", err)
 	}
@@ -296,12 +296,12 @@ func (d *pebbleDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 	userKey := append(UserPrefix, []byte(steamid)...)
 	charKey := append(CharPrefix, []byte(id.String())...)
 
-	userData, err := bsoncoder.Encode(&user)
+	userData, err := cbor.Marshal(&user)
 	if err != nil {
 		return fmt.Errorf("bson: failed to encode user %v", err)
 	}
 
-	charData, err := bsoncoder.Encode(&char)
+	charData, err := cbor.Marshal(&char)
 	if err != nil {
 		return fmt.Errorf("bson: failed to encode character %v", err)
 	}
@@ -341,12 +341,12 @@ func (d *pebbleDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.U
 	userKey := append(UserPrefix, []byte(steamid)...)
 	charKey := append(CharPrefix, []byte(charID.String())...)
 
-	userData, err := bsoncoder.Encode(&targetUser)
+	userData, err := cbor.Marshal(&targetUser)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("bson: failed to encode user %v", err)
 	}
 
-	charData, err := bsoncoder.Encode(&char)
+	charData, err := cbor.Marshal(&char)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("bson: failed to encode character %v", err)
 	}
@@ -380,12 +380,12 @@ func (d *pebbleDB) RestoreCharacter(id uuid.UUID) error {
 
 	userKey := append(UserPrefix, []byte(char.SteamID)...)
 	charKey := append(CharPrefix, []byte(id.String())...)
-	userData, err := bsoncoder.Encode(&user)
+	userData, err := cbor.Marshal(&user)
 	if err != nil {
 		return fmt.Errorf("bson: failed to encode user %v", err)
 	}
 
-	charData, err := bsoncoder.Encode(&char)
+	charData, err := cbor.Marshal(&char)
 	if err != nil {
 		return fmt.Errorf("bson: failed to encode character %v", err)
 	}
@@ -416,7 +416,7 @@ func (d *pebbleDB) RollbackCharacter(id uuid.UUID, ver int) error {
 	}
 
 	key := append(CharPrefix, []byte(id.String())...)
-	charData, err := bsoncoder.Encode(&char)
+	charData, err := cbor.Marshal(&char)
 	if err != nil {
 		return fmt.Errorf("bson: failed to encode character %v", err)
 	}
@@ -443,7 +443,7 @@ func (d *pebbleDB) RollbackCharacterToLatest(id uuid.UUID) error {
 	}
 
 	key := append(CharPrefix, []byte(id.String())...)
-	charData, err := bsoncoder.Encode(&char)
+	charData, err := cbor.Marshal(&char)
 	if err != nil {
 		return fmt.Errorf("bson: failed to encode character %v", err)
 	}
@@ -464,7 +464,7 @@ func (d *pebbleDB) DeleteCharacterVersions(id uuid.UUID) error {
 	char.Versions = nil
 
 	key := append(CharPrefix, []byte(id.String())...)
-	charData, err := bsoncoder.Encode(&char)
+	charData, err := cbor.Marshal(&char)
 	if err != nil {
 		return fmt.Errorf("bson: failed to encode character %v", err)
 	}

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 	
-	"github.com/msrevive/nexus2/pkg/database/bsoncoder"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 	"github.com/msrevive/nexus2/internal/database"
 
 	"github.com/google/uuid"
 	"github.com/dgraph-io/badger/v4"
+	"github.com/fxamacker/cbor/v2"
 )
 
 func (d *badgerDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
@@ -40,14 +40,14 @@ func (d *badgerDB) NewCharacter(steamid string, slot int, size int, data string)
 			}
 			user.Characters[slot] = charID
 
-			userData, err := bsoncoder.Encode(&user)
+			userData, err := cbor.Marshal(&user)
 			if err != nil {
-				return fmt.Errorf("bson: failed to marshal user %v", err)
+				return fmt.Errorf("failed to marshal user %v", err)
 			}
 
-			charData, err := bsoncoder.Encode(&char)
+			charData, err := cbor.Marshal(&char)
 			if err != nil {
-				return fmt.Errorf("bson: failed to marshal character %v", err)
+				return fmt.Errorf("failed to marshal character %v", err)
 			}
 
 			//commit new user to DB
@@ -68,21 +68,21 @@ func (d *badgerDB) NewCharacter(steamid string, slot int, size int, data string)
 			}
 
 			var user *schema.User
-			if err := bsoncoder.Decode(data, &user); err != nil {
-				return fmt.Errorf("bson: failed to unmarshal %v", err)
+			if err := cbor.Unmarshal(data, &user); err != nil {
+				return fmt.Errorf("failed to unmarshal %v", err)
 			}
 
 			user.Characters[slot] = charID
 
 			// we new have to encode the new userdata, this seems like such a waste...
-			userData, err := bsoncoder.Encode(&user)
+			userData, err := cbor.Marshal(&user)
 			if err != nil {
-				return fmt.Errorf("bson: failed to marshal user %v", err)
+				return fmt.Errorf("failed to marshal user %v", err)
 			}
 
-			charData, err := bsoncoder.Encode(&char)
+			charData, err := cbor.Marshal(&char)
 			if err != nil {
-				return fmt.Errorf("bson: failed to marshal character %v", err)
+				return fmt.Errorf("failed to marshal character %v", err)
 			}
 
 			//commit new user to DB
@@ -121,8 +121,8 @@ func (d *badgerDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMa
 		}
 
 		var char *schema.Character
-		if err := bsoncoder.Decode(val, &char); err != nil {
-			return fmt.Errorf("bson: failed to unmarshal %v", err)
+		if err := cbor.Unmarshal(val, &char); err != nil {
+			return fmt.Errorf("failed to unmarshal %v", err)
 		}
 
 		//handle character backups for rollback system.
@@ -154,7 +154,7 @@ func (d *badgerDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMa
 		}
 
 		//commit updated character to DB
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -187,8 +187,8 @@ func (d *badgerDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error
 			return fmt.Errorf("badger: failed to get value from item")
 		}
 
-		if err := bsoncoder.Decode(data, &char); err != nil {
-			return fmt.Errorf("bson: failed to unmarshal %v", err)
+		if err := cbor.Unmarshal(data, &char); err != nil {
+			return fmt.Errorf("failed to unmarshal %v", err)
 		}
 
 		return nil
@@ -249,12 +249,12 @@ func (d *badgerDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 	userKey := append(UserPrefix, []byte(char.SteamID)...)
 	charKey := append(CharPrefix, []byte(id.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := cbor.Marshal(&user)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode user %v", err)
 		}
 
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -302,7 +302,7 @@ func (d *badgerDB) DeleteCharacterReference(steamid string, slot int) error {
 
 	key := append(UserPrefix, []byte(steamid)...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := cbor.Marshal(&user)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode user %v", err)
 		}
@@ -344,12 +344,12 @@ func (d *badgerDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 	userKey := append(UserPrefix, []byte(steamid)...)
 	charKey := append(CharPrefix, []byte(id.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := cbor.Marshal(&user)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode user %v", err)
 		}
 
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -394,12 +394,12 @@ func (d *badgerDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.U
 	userKey := append(UserPrefix, []byte(steamid)...)
 	charKey := append(CharPrefix, []byte(charID.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
-		userData, err := bsoncoder.Encode(&targetUser)
+		userData, err := cbor.Marshal(&targetUser)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode user %v", err)
 		}
 
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -439,12 +439,12 @@ func (d *badgerDB) RestoreCharacter(id uuid.UUID) error {
 	userKey := append(UserPrefix, []byte(char.SteamID)...)
 	charKey := append(CharPrefix, []byte(id.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
-		userData, err := bsoncoder.Encode(&user)
+		userData, err := cbor.Marshal(&user)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode user %v", err)
 		}
 
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -481,7 +481,7 @@ func (d *badgerDB) RollbackCharacter(id uuid.UUID, ver int) error {
 
 	key := append(CharPrefix, []byte(id.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -514,7 +514,7 @@ func (d *badgerDB) RollbackCharacterToLatest(id uuid.UUID) error {
 
 	key := append(CharPrefix, []byte(id.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode character %v", err)
 		}
@@ -541,7 +541,7 @@ func (d *badgerDB) DeleteCharacterVersions(id uuid.UUID) error {
 
 	key := append(CharPrefix, []byte(id.String())...)
 	if err = d.db.Update(func(txn *badger.Txn) error {
-		charData, err := bsoncoder.Encode(&char)
+		charData, err := cbor.Marshal(&char)
 		if err != nil {
 			return fmt.Errorf("bson: failed to encode char %v", err)
 		}
