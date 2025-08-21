@@ -217,9 +217,6 @@ func (a *App) Start(mux chi.Router) error {
 		},
 	}
 
-	a.Logger.Info("Setting up database autosave")
-	a.SetupDatabaseAutoSave()
-
 	if a.Config.Cert.Enable {
 		a.Logger.Info("Starting HTTPS server with cert")
 		return a.StartHTTPWithCert()

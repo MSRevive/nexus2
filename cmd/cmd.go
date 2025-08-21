@@ -47,13 +47,13 @@ func Run(args []string) (error) {
 		fmt.Println("!!! Running in Debug mode, do not use in production! !!!")
 	}
 
-	//Max threads allowed.
+	// Max threads allowed.
 	if flags.threads != 0 {
 		runtime.GOMAXPROCS(flags.threads)
 	}
 
 	/////////////////////////
-	//Application Stuff
+	// Application Stuff
 	/////////////////////////
 	a := app.New();
 
@@ -74,12 +74,12 @@ func Run(args []string) (error) {
 	}
 
 	/////////////////////////
-	//Middleware
+	// Middleware
 	/////////////////////////
 	mw := middleware.New(a.Logger, a.Config, a.List.IP, a.List.SystemAdmin)
 
 	/////////////////////////
-	//Routing
+	// Routing
 	/////////////////////////
 	router := chi.NewRouter()
 	router.Use(cmw.RealIP)
@@ -219,13 +219,16 @@ func Run(args []string) (error) {
 	})
 
 	/////////////////////////
-	//Auto certificate
+	// Application Startup
 	/////////////////////////
 	if err := a.Start(router); err != nil {
 		a.Logger.Error("Failed to start application", "error", err)
 		return err
 	}
 
+	/////////////////////////
+	// Core
+	/////////////////////////
 	fmt.Println("\nNexus2 is now running. Press CTRL-C to exit.\n")
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, syscall.SIGINT, syscall.SIGTERM)

@@ -92,7 +92,7 @@ func (d *pebbleDB) RunGC() error {
 	Helper functions
 	- functions to implement our own TTL implementation and prefix handling for iterators.
 */
-//8 bytes for a Unix timestamp
+//8 bytes for a Unix timestamp, this is cause in 2032 8 bytes will be needed to store unix timestamp
 const timestampSize = 8
 
 func (d *pebbleDB) setWithTTL(key, value []byte, ttl time.Duration, opts *pebble.WriteOptions) error {

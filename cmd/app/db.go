@@ -34,11 +34,7 @@ func (a *App) SetupDatabase() (err error) {
 		err = fmt.Errorf("database not available.")
 	}
 
-	return err
-}
-
-// This is for databases that we use a cache to make writing faster.
-func (a *App) SetupDatabaseAutoSave() {
+	// Setup database sync
 	syncCron := cron.New()
 	syncCron.AddFunc(a.Config.Database.Sync, func() {
 		go func() {
@@ -53,6 +49,7 @@ func (a *App) SetupDatabaseAutoSave() {
 	})
 	syncCron.Start()
 
+	// Setup database garbage collection
 	gcCron := cron.New()
 	gcCron.AddFunc(a.Config.Database.GarbageCollection, func() { //This runs on the 10th minute
 		go func() {
@@ -65,6 +62,8 @@ func (a *App) SetupDatabaseAutoSave() {
 		}()
 	})
 	gcCron.Start()
+
+	return err
 }
 
 // TODO: Move this to database package.

@@ -24,3 +24,12 @@ type User struct {
 	Characters map[int]uuid.UUID `bson:"characters" json:"characters"` //Slot => reference Character by ID
 	DeletedCharacters map[int]uuid.UUID `bson:"deleted_characters" json:"deleted_characters"`
 }
+
+//
+//	Children Schema
+//
+type CharacterData struct {
+	CreatedAt time.Time `bson:"created_at" json:"created_at"`
+	Size int `bson:"size" json:"size"`
+	Data string `bson:"data" json:"data"`
+}
