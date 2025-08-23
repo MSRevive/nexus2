@@ -7,12 +7,12 @@ import (
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
-	"github.com/google/uuid"
+	"github.com/bwmarrin/snowflake"
 	"go.etcd.io/bbolt"
 	"github.com/fxamacker/cbor/v2"
 )
 
-func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
+func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) (snowflake.ID, error) {
 	charID := uuid.New()
 	char := schema.Character{
 		ID: charID,
@@ -31,7 +31,7 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 		if err = d.db.Update(func(tx *bbolt.Tx) error {
 			user = &schema.User{
 				ID: steamid,
-				Characters: make(map[int]uuid.UUID),
+				Characters: make(map[int]snowflake.ID),
 			}
 			user.Characters[slot] = charID
 
@@ -58,10 +58,10 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 	
 			return nil
 		}); err != nil {
-			return uuid.Nil, err
+			return snowflake.ID, err
 		}
 	}else if err != nil {
-		return uuid.Nil, err
+		return snowflake.ID, err
 	}
 
 	if user != nil {
@@ -91,14 +91,14 @@ func (d *bboltDB) NewCharacter(steamid string, slot int, size int, data string) 
 	
 			return nil
 		}); err != nil {
-			return uuid.Nil, err
+			return snowflake.ID, err
 		}
 	}
 
 	return charID, nil
 }
 
-func (d *bboltDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
+func (d *bboltDB) UpdateCharacter(id snowflake.ID, size int, data string, backupMax int, backupTime time.Duration) error {
 	if err := d.db.Batch(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(CharBucket)
 
@@ -159,7 +159,7 @@ func (d *bboltDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax
 	return nil
 }
 
-func (d *bboltDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error) {
+func (d *bboltDB) GetCharacter(id snowflake.ID) (char *schema.Character, err error) {
 	if err = d.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(CharBucket)
 
@@ -198,17 +198,17 @@ func (d *bboltDB) GetCharacters(steamid string) (map[int]schema.Character, error
 	return chars, nil
 }
 
-func (d *bboltDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
+func (d *bboltDB) LookUpCharacterID(steamid string, slot int) (snowflake.ID, error) {
 	user, err := d.GetUser(steamid)
 	if err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	uuid := user.Characters[slot]
 	return uuid, nil
 }
 
-func (d *bboltDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) error {
+func (d *bboltDB) SoftDeleteCharacter(id snowflake.ID, expiration time.Duration) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -220,7 +220,7 @@ func (d *bboltDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) er
 	}
 
 	delete(user.Characters, char.Slot)
-	user.DeletedCharacters = make(map[int]uuid.UUID, 1)
+	user.DeletedCharacters = make(map[int]snowflake.ID, 1)
 	user.DeletedCharacters[char.Slot] = id
 
 	timeNow := time.Now().UTC()
@@ -256,7 +256,7 @@ func (d *bboltDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) er
 	return nil
 }
 
-func (d *bboltDB) DeleteCharacter(id uuid.UUID) error {
+func (d *bboltDB) DeleteCharacter(id snowflake.ID) error {
 	if err := d.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(CharBucket)
 
@@ -300,7 +300,7 @@ func (d *bboltDB) DeleteCharacterReference(steamid string, slot int) error {
 	return nil
 }
 
-func (d *bboltDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
+func (d *bboltDB) MoveCharacter(id snowflake.ID, steamid string, slot int) error {
 	user, err := d.GetUser(steamid)
 	if err != nil {
 		return err
@@ -353,17 +353,17 @@ func (d *bboltDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 	return nil
 }
 
-func (d *bboltDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+func (d *bboltDB) CopyCharacter(id snowflake.ID, steamid string, slot int) (snowflake.ID, error) {
 	// Create reference to "new" character.
 	targetUser, err := d.GetUser(steamid)
 	if err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	// Insert new character data.
 	char, err := d.GetCharacter(id)
 	if err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	charID := uuid.New()
@@ -398,13 +398,13 @@ func (d *bboltDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UU
 
 		return nil
 	}); err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	return charID, nil
 }
 
-func (d *bboltDB) RestoreCharacter(id uuid.UUID) error {
+func (d *bboltDB) RestoreCharacter(id snowflake.ID) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -450,7 +450,7 @@ func (d *bboltDB) RestoreCharacter(id uuid.UUID) error {
 	return nil
 }
 
-func (d *bboltDB) RollbackCharacter(id uuid.UUID, ver int) error {
+func (d *bboltDB) RollbackCharacter(id snowflake.ID, ver int) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -484,7 +484,7 @@ func (d *bboltDB) RollbackCharacter(id uuid.UUID, ver int) error {
 	return nil
 }
 
-func (d *bboltDB) RollbackCharacterToLatest(id uuid.UUID) error {
+func (d *bboltDB) RollbackCharacterToLatest(id snowflake.ID) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -518,7 +518,7 @@ func (d *bboltDB) RollbackCharacterToLatest(id uuid.UUID) error {
 	return nil
 }
 
-func (d *bboltDB) DeleteCharacterVersions(id uuid.UUID) error {
+func (d *bboltDB) DeleteCharacterVersions(id snowflake.ID) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err

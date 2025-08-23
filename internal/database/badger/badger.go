@@ -4,6 +4,7 @@ import (
 	"github.com/msrevive/nexus2/internal/database"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/bwmarrin/snowflake"
 )
 
 // The smaller the key prefix the better?
@@ -14,10 +15,14 @@ var (
 
 type badgerDB struct {
 	db *badger.DB
+
+	node *snowflake.Node
 }
 
 func New() *badgerDB {
-	return &badgerDB{}
+	return &badgerDB{
+		node: snowflake.NewNode(1)
+	}
 }
 
 func (d *badgerDB) Connect(cfg database.Config, opts database.Options) error {

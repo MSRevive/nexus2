@@ -5,10 +5,10 @@ import (
 
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
-	"github.com/google/uuid"
+	"github.com/bwmarrin/snowflake"
 )
 
-func (s *Service) GetCharacterVersions(uid uuid.UUID) (map[int]schema.CharacterData, error) {
+func (s *Service) GetCharacterVersions(uid snowflake.ID) (map[int]schema.CharacterData, error) {
 	char, err := s.db.GetCharacter(uid)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func (s *Service) GetCharacterVersions(uid uuid.UUID) (map[int]schema.CharacterD
 	return nil, fmt.Errorf("no character versions exist")
 }
 
-func (s *Service) RollbackCharacter(uid uuid.UUID, ver int) error {
+func (s *Service) RollbackCharacter(uid snowflake.ID, ver int) error {
 	err := s.db.RollbackCharacter(uid, ver)
 	if err != nil {
 		return err
@@ -37,7 +37,7 @@ func (s *Service) RollbackCharacter(uid uuid.UUID, ver int) error {
 	return nil
 }
 
-func (s *Service) RollbackCharacterToLatest(uid uuid.UUID) error {
+func (s *Service) RollbackCharacterToLatest(uid snowflake.ID) error {
 	err := s.db.RollbackCharacterToLatest(uid)
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func (s *Service) RollbackCharacterToLatest(uid uuid.UUID) error {
 	return nil
 }
 
-func (s *Service) DeleteCharacterVersions(uid uuid.UUID) error {
+func (s *Service) DeleteCharacterVersions(uid snowflake.ID) error {
 	err := s.db.DeleteCharacterVersions(uid)
 	if err != nil {
 		return err

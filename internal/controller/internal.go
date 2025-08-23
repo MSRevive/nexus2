@@ -13,7 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	json "github.com/goccy/go-json"
-	"github.com/google/uuid"
+	"github.com/bwmarrin/snowflake"
 )
 
 // POST /internal/character/

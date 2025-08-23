@@ -7,6 +7,7 @@ import (
 	"github.com/msrevive/nexus2/internal/database"
 
 	"go.etcd.io/bbolt"
+	"github.com/bwmarrin/snowflake"
 )
 
 var (
@@ -16,6 +17,8 @@ var (
 
 type bboltDB struct {
 	db *bbolt.DB
+
+	node *snowflake.Node
 }
 
 func New() *bboltDB {

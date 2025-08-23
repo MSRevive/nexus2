@@ -7,7 +7,7 @@ import (
 	"github.com/msrevive/nexus2/internal/response"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
+	"github.com/bwmarrin/snowflake"
 )
 
 // GET /rollback/character/{uuid}

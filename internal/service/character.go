@@ -8,24 +8,24 @@ import (
 	"github.com/msrevive/nexus2/pkg/database/schema"
 	"github.com/msrevive/nexus2/pkg/utils"
 
-	"github.com/google/uuid"
+	"github.com/bwmarrin/snowflake"
 )
 
-func (s *Service) NewCharacter(char payload.Character) (uuid.UUID, bitmask.Bitmask, error) {
+func (s *Service) NewCharacter(char payload.Character) (snowflake.ID, bitmask.Bitmask, error) {
 	uid, err := s.db.NewCharacter(char.SteamID, char.Slot, char.Size, char.Data); 
 	if err != nil {
-		return uuid.Nil, 0, err
+		return 0, 0, err
 	}
 
 	flags, err := s.db.GetUserFlags(char.SteamID)
 	if err != nil {
-		return uuid.Nil, 0, err
+		return 0, 0, err
 	}
 
 	return uid, flags, nil
 }
 
-func (s *Service) UpdateCharacter(uuid uuid.UUID, char payload.Character) error {
+func (s *Service) UpdateCharacter(uuid snowflake.ID, char payload.Character) error {
 	if err := s.db.UpdateCharacter(uuid, char.Size, char.Data, s.config.Char.MaxBackups, s.config.Char.BackupTime); err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func (s *Service) UpdateCharacter(uuid uuid.UUID, char payload.Character) error 
 	return nil
 }
 
-func (s *Service) GetCharacterByID(uuid uuid.UUID) (*schema.Character, error) {
+func (s *Service) GetCharacterByID(uuid snowflake.ID) (*schema.Character, error) {
 	char, err := s.db.GetCharacter(uuid); 
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (s *Service) GetCharacters(steamid string) (map[int]schema.Character, bitma
 	return chars, flags, nil
 }
 
-func (s *Service) GetDeletedCharacters(steamid string) (map[int]uuid.UUID, error) {
+func (s *Service) GetDeletedCharacters(steamid string) (map[int]snowflake.ID, error) {
 	user, err := s.db.GetUser(steamid)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (s *Service) GetDeletedCharacters(steamid string) (map[int]uuid.UUID, error
 	return user.DeletedCharacters, nil
 }
 
-func (s *Service) SoftDeleteCharacter(uid uuid.UUID, expiration string) error {
+func (s *Service) SoftDeleteCharacter(uid snowflake.ID, expiration string) error {
 	expire, err := utils.ParseDuration(expiration)
 	if err != nil {
 		return err
@@ -98,33 +98,33 @@ func (s *Service) SoftDeleteCharacter(uid uuid.UUID, expiration string) error {
 	return nil
 }
 
-func (s *Service) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
+func (s *Service) LookUpCharacterID(steamid string, slot int) (snowflake.ID, error) {
 	uid, err := s.db.LookUpCharacterID(steamid, slot)
 	if err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	return uid, nil
 }
 
-func (s *Service) MoveCharacter(uid uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+func (s *Service) MoveCharacter(uid snowflake.ID, steamid string, slot int) (snowflake.ID, error) {
 	if err := s.db.MoveCharacter(uid, steamid, slot); err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	return uid, nil
 }
 
-func (s *Service) CopyCharacter(uid uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+func (s *Service) CopyCharacter(uid snowflake.ID, steamid string, slot int) (snowflake.ID, error) {
 	newUID, err := s.db.CopyCharacter(uid, steamid, slot); 
 	if err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	return newUID, nil
 }
 
-func (s *Service) HardDeleteCharacter(uid uuid.UUID) error {
+func (s *Service) HardDeleteCharacter(uid snowflake.ID) error {
 	char, err := s.db.GetCharacter(uid); 
 	if err != nil {
 		return err
@@ -141,7 +141,7 @@ func (s *Service) HardDeleteCharacter(uid uuid.UUID) error {
 	return nil
 }
 
-func (s *Service) RestoreCharacter(uid uuid.UUID) error {
+func (s *Service) RestoreCharacter(uid snowflake.ID) error {
 	if err := s.db.RestoreCharacter(uid); err != nil {
 		return err
 	}

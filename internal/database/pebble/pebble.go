@@ -10,6 +10,7 @@ import (
 	"github.com/msrevive/nexus2/internal/database"
 
 	"github.com/cockroachdb/pebble/v2"
+	"github.com/bwmarrin/snowflake"
 )
 
 // The smaller the key prefix the better?
@@ -22,6 +23,8 @@ var (
 type pebbleDB struct {
 	db *pebble.DB
 	batch *pebble.Batch
+
+	node *snowflake.Node
 }
 
 func New() *pebbleDB {

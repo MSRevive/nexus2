@@ -5,11 +5,12 @@ package payload
 
 import (
 	"github.com/msrevive/nexus2/internal/bitmask"
-	"github.com/google/uuid"
+
+	"github.com/bwmarrin/snowflake"
 )
 
 type Character struct {
-	ID uuid.UUID `json:"id"`
+	ID snowflake.ID `json:"id"`
 	SteamID string `json:"steamid"`
 	Slot int `json:"slot"`
 	Size int `json:"size"`
@@ -18,6 +19,6 @@ type Character struct {
 }
 
 type CharacterCreate struct {
-	ID uuid.UUID `json:"id"`
+	ID snowflake.ID `json:"id"`
 	Flags bitmask.Bitmask `json:"flags"`
 }

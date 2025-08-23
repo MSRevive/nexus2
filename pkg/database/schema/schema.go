@@ -3,12 +3,12 @@ package schema
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/bwmarrin/snowflake"
 )
 
 //Characters collection
 type Character struct {
-	ID uuid.UUID `bson:"_id" json:"_id"`
+	ID snowflake.ID `bson:"_id" json:"_id"`
 	SteamID string `bson:"steamid" json:"steamid"`
 	Slot int `bson:"slot" json:"slot"`
 	CreatedAt time.Time `bson:"created_at" json:"created_at"`
@@ -21,8 +21,8 @@ type User struct {
 	ID string `bson:"_id" json:"_id"` //this is the SteamID64
 	Revision int `bson:"revison" json:"revision"` //we store what revision the user is on so in the future we can automagically update users.
 	Flags uint32 `bson:"flags" json:"flags"` //account flags
-	Characters map[int]uuid.UUID `bson:"characters" json:"characters"` //Slot => reference Character by ID
-	DeletedCharacters map[int]uuid.UUID `bson:"deleted_characters" json:"deleted_characters"`
+	Characters map[int]snowflake.ID `bson:"characters" json:"characters"` //Slot => reference Character by ID
+	DeletedCharacters map[int]snowflake.ID `bson:"deleted_characters" json:"deleted_characters"`
 }
 
 //

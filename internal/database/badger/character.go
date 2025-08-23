@@ -7,12 +7,12 @@ import (
 	"github.com/msrevive/nexus2/pkg/database/schema"
 	"github.com/msrevive/nexus2/internal/database"
 
-	"github.com/google/uuid"
+	"github.com/bwmarrin/snowflake"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/fxamacker/cbor/v2"
 )
 
-func (d *badgerDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
+func (d *badgerDB) NewCharacter(steamid string, slot int, size int, data string) (snowflake.ID, error) {
 	charID := uuid.New()
 	char := schema.Character{
 		ID: charID,
@@ -36,7 +36,7 @@ func (d *badgerDB) NewCharacter(steamid string, slot int, size int, data string)
 		if err != nil {
 			user := &schema.User{
 				ID: steamid,
-				Characters: make(map[int]uuid.UUID),
+				Characters: make(map[int]snowflake.ID),
 			}
 			user.Characters[slot] = charID
 
@@ -100,13 +100,13 @@ func (d *badgerDB) NewCharacter(steamid string, slot int, size int, data string)
 
 		return nil
 	}); err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	return charID, nil
 }
 
-func (d *badgerDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
+func (d *badgerDB) UpdateCharacter(id snowflake.ID, size int, data string, backupMax int, backupTime time.Duration) error {
 	key := append(CharPrefix, []byte(id.String())...)
 
 	if err := d.db.Update(func(txn *badger.Txn) error {
@@ -171,7 +171,7 @@ func (d *badgerDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMa
 	return nil
 }
 
-func (d *badgerDB) GetCharacter(id uuid.UUID) (char *schema.Character, err error) {
+func (d *badgerDB) GetCharacter(id snowflake.ID) (char *schema.Character, err error) {
 	key := append(CharPrefix, []byte(id.String())...)
 
 	if err = d.db.View(func(txn *badger.Txn) error {
@@ -217,10 +217,10 @@ func (d *badgerDB) GetCharacters(steamid string) (map[int]schema.Character, erro
 	return chars, nil
 }
 
-func (d *badgerDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
+func (d *badgerDB) LookUpCharacterID(steamid string, slot int) (snowflake.ID, error) {
 	user, err := d.GetUser(steamid)
 	if err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	uuid := user.Characters[slot]
@@ -228,7 +228,7 @@ func (d *badgerDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error
 }
 
 // We remove the character from user's active list and set an expiration.
-func (d *badgerDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) error {
+func (d *badgerDB) SoftDeleteCharacter(id snowflake.ID, expiration time.Duration) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -240,7 +240,7 @@ func (d *badgerDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 	}
 
 	delete(user.Characters, char.Slot)
-	user.DeletedCharacters = make(map[int]uuid.UUID, 1)
+	user.DeletedCharacters = make(map[int]snowflake.ID, 1)
 	user.DeletedCharacters[char.Slot] = id
 
 	timeNow := time.Now().UTC()
@@ -277,7 +277,7 @@ func (d *badgerDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 	return nil
 }
 
-func (d *badgerDB) DeleteCharacter(id uuid.UUID) error {
+func (d *badgerDB) DeleteCharacter(id snowflake.ID) error {
 	key := append(CharPrefix, []byte(id.String())...)
 	if err := d.db.Update(func(txn *badger.Txn) error {
 		if err := txn.Delete(key); err != nil {
@@ -319,7 +319,7 @@ func (d *badgerDB) DeleteCharacterReference(steamid string, slot int) error {
 	return nil
 }
 
-func (d *badgerDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
+func (d *badgerDB) MoveCharacter(id snowflake.ID, steamid string, slot int) error {
 	user, err := d.GetUser(steamid)
 	if err != nil {
 		return err
@@ -370,17 +370,17 @@ func (d *badgerDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 	return nil
 }
 
-func (d *badgerDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+func (d *badgerDB) CopyCharacter(id snowflake.ID, steamid string, slot int) (snowflake.ID, error) {
 	// Create reference to "new" character.
 	targetUser, err := d.GetUser(steamid)
 	if err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	// Insert new character data.
 	char, err := d.GetCharacter(id)
 	if err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	charID := uuid.New()
@@ -414,13 +414,13 @@ func (d *badgerDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.U
 
 		return nil
 	}); err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	return charID, nil
 }
 
-func (d *badgerDB) RestoreCharacter(id uuid.UUID) error {
+func (d *badgerDB) RestoreCharacter(id snowflake.ID) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -465,7 +465,7 @@ func (d *badgerDB) RestoreCharacter(id uuid.UUID) error {
 	return nil
 }
 
-func (d *badgerDB) RollbackCharacter(id uuid.UUID, ver int) error {
+func (d *badgerDB) RollbackCharacter(id snowflake.ID, ver int) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -498,7 +498,7 @@ func (d *badgerDB) RollbackCharacter(id uuid.UUID, ver int) error {
 	return nil
 }
 
-func (d *badgerDB) RollbackCharacterToLatest(id uuid.UUID) error {
+func (d *badgerDB) RollbackCharacterToLatest(id snowflake.ID) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -531,7 +531,7 @@ func (d *badgerDB) RollbackCharacterToLatest(id uuid.UUID) error {
 	return nil
 }
 
-func (d *badgerDB) DeleteCharacterVersions(id uuid.UUID) error {
+func (d *badgerDB) DeleteCharacterVersions(id snowflake.ID) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err

@@ -8,7 +8,7 @@ import (
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
-	"github.com/google/uuid"
+	"github.com/bwmarrin/snowflake"
 	"github.com/cockroachdb/pebble/v2"
 	"github.com/fxamacker/cbor/v2"
 )
@@ -18,7 +18,7 @@ import (
 	because Pebble doesn't use transactions like the others, thus there's no performance penality.
 */
 
-func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
+func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string) (snowflake.ID, error) {
 	charID := uuid.New()
 	char := schema.Character{
 		ID: charID,
@@ -40,28 +40,28 @@ func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string)
 	if err == database.ErrNoDocument {
 		user = &schema.User{
 			ID: steamid,
-			Characters: make(map[int]uuid.UUID),
+			Characters: make(map[int]snowflake.ID),
 		}
 		user.Characters[slot] = charID
 
 		userData, err := cbor.Marshal(&user)
 		if err != nil {
-			return uuid.Nil, fmt.Errorf("failed to marshal user %v", err)
+			return 0, fmt.Errorf("failed to marshal user %v", err)
 		}
 
 		charData, err := cbor.Marshal(&char)
 		if err != nil {
-			return uuid.Nil, fmt.Errorf("failed to marshal character %v", err)
+			return 0, fmt.Errorf("failed to marshal character %v", err)
 		}
 
 		//commit new user to DB
 		if err := d.db.Set(userKey, userData, pebble.NoSync); err != nil {
-			return uuid.Nil, err
+			return 0, err
 		}
 
 		//commit new character to DB
 		if err := d.db.Set(charKey, charData, pebble.NoSync); err != nil {
-			return uuid.Nil, err
+			return 0, err
 		}
 
 	}else{ // user does exists so just create character.
@@ -70,17 +70,17 @@ func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string)
 		// we new have to encode the new userdata, this seems like such a waste...
 		userData, err := cbor.Marshal(&user)
 		if err != nil {
-			return uuid.Nil, fmt.Errorf("failed to marshal user %v", err)
+			return 0, fmt.Errorf("failed to marshal user %v", err)
 		}
 
 		charData, err := cbor.Marshal(&char)
 		if err != nil {
-			return uuid.Nil, fmt.Errorf("failed to marshal character %v", err)
+			return 0, fmt.Errorf("failed to marshal character %v", err)
 		}
 
 		//commit new user to DB
 		if err := d.db.Set(userKey, userData, pebble.NoSync); err != nil {
-			return uuid.Nil, err
+			return 0, err
 		}
 
 		// fmt.Printf("char size: %d\n", len(charData))
@@ -95,14 +95,14 @@ func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string)
 
 		//commit new character to DB
 		if err := d.db.Set(charKey, charData, pebble.NoSync); err != nil {
-			return uuid.Nil, err
+			return 0, err
 		}
 	}
 
 	return charID, nil
 }
 
-func (d *pebbleDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
+func (d *pebbleDB) UpdateCharacter(id snowflake.ID, size int, data string, backupMax int, backupTime time.Duration) error {
 	key := append(CharPrefix, []byte(id.String())...)
 
 	val, io, err := d.db.Get(key)
@@ -156,7 +156,7 @@ func (d *pebbleDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMa
 	return d.db.Set(key, charData, pebble.NoSync)
 }
 
-func (d *pebbleDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
+func (d *pebbleDB) GetCharacter(id snowflake.ID) (*schema.Character, error) {
 	var char *schema.Character = nil
 	key := append(CharPrefix, []byte(id.String())...)
 
@@ -194,17 +194,17 @@ func (d *pebbleDB) GetCharacters(steamid string) (map[int]schema.Character, erro
 	return chars, nil
 }
 
-func (d *pebbleDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
+func (d *pebbleDB) LookUpCharacterID(steamid string, slot int) (snowflake.ID, error) {
 	user, err := d.GetUser(steamid)
 	if err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	uuid := user.Characters[slot]
 	return uuid, nil
 }
 
-func (d *pebbleDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) error {
+func (d *pebbleDB) SoftDeleteCharacter(id snowflake.ID, expiration time.Duration) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -216,7 +216,7 @@ func (d *pebbleDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 	}
 
 	delete(user.Characters, char.Slot)
-	user.DeletedCharacters = make(map[int]uuid.UUID, 1)
+	user.DeletedCharacters = make(map[int]snowflake.ID, 1)
 	user.DeletedCharacters[char.Slot] = id
 
 	timeNow := time.Now().UTC()
@@ -245,7 +245,7 @@ func (d *pebbleDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 	return nil
 }
 
-func (d *pebbleDB) DeleteCharacter(id uuid.UUID) error {
+func (d *pebbleDB) DeleteCharacter(id snowflake.ID) error {
 	key := append(CharPrefix, []byte(id.String())...)
 	return d.db.Delete(key, pebble.Sync)
 }
@@ -271,7 +271,7 @@ func (d *pebbleDB) DeleteCharacterReference(steamid string, slot int) error {
 	return nil
 }
 
-func (d *pebbleDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
+func (d *pebbleDB) MoveCharacter(id snowflake.ID, steamid string, slot int) error {
 	user, err := d.GetUser(steamid)
 	if err != nil {
 		return err
@@ -317,17 +317,17 @@ func (d *pebbleDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 	return nil
 }
 
-func (d *pebbleDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+func (d *pebbleDB) CopyCharacter(id snowflake.ID, steamid string, slot int) (snowflake.ID, error) {
 	// Create reference to "new" character.
 	targetUser, err := d.GetUser(steamid)
 	if err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	// Insert new character data.
 	char, err := d.GetCharacter(id)
 	if err != nil {
-		return uuid.Nil, err
+		return 0, err
 	}
 
 	charID := uuid.New()
@@ -343,26 +343,26 @@ func (d *pebbleDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.U
 
 	userData, err := cbor.Marshal(&targetUser)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("bson: failed to encode user %v", err)
+		return 0, fmt.Errorf("bson: failed to encode user %v", err)
 	}
 
 	charData, err := cbor.Marshal(&char)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("bson: failed to encode character %v", err)
+		return 0, fmt.Errorf("bson: failed to encode character %v", err)
 	}
 
 	if err := d.db.Set(userKey, userData, pebble.Sync); err != nil {
-		return uuid.Nil, fmt.Errorf("pebble: failed to set user %v", err)
+		return 0, fmt.Errorf("pebble: failed to set user %v", err)
 	}
 
 	if err := d.db.Set(charKey, charData, pebble.Sync); err != nil {
-		return uuid.Nil, fmt.Errorf("pebble: failed to set character %v", err)
+		return 0, fmt.Errorf("pebble: failed to set character %v", err)
 	}
 
 	return charID, nil
 }
 
-func (d *pebbleDB) RestoreCharacter(id uuid.UUID) error {
+func (d *pebbleDB) RestoreCharacter(id snowflake.ID) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -401,7 +401,7 @@ func (d *pebbleDB) RestoreCharacter(id uuid.UUID) error {
 	return nil
 }
 
-func (d *pebbleDB) RollbackCharacter(id uuid.UUID, ver int) error {
+func (d *pebbleDB) RollbackCharacter(id snowflake.ID, ver int) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -428,7 +428,7 @@ func (d *pebbleDB) RollbackCharacter(id uuid.UUID, ver int) error {
 	return nil
 }
 
-func (d *pebbleDB) RollbackCharacterToLatest(id uuid.UUID) error {
+func (d *pebbleDB) RollbackCharacterToLatest(id snowflake.ID) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
@@ -455,7 +455,7 @@ func (d *pebbleDB) RollbackCharacterToLatest(id uuid.UUID) error {
 	return nil
 }
 
-func (d *pebbleDB) DeleteCharacterVersions(id uuid.UUID) error {
+func (d *pebbleDB) DeleteCharacterVersions(id snowflake.ID) error {
 	char, err := d.GetCharacter(id)
 	if err != nil {
 		return err
