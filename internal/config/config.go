@@ -9,14 +9,14 @@ import (
 	"github.com/msrevive/nexus2/internal/database"
   
 	"gopkg.in/ini.v1"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
 	Core struct {
 		Address string
 		Port int
-		Timeout time.Duration
+		Timeout int
 		DBType string
 	}
 	Database database.Config

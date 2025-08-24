@@ -1,7 +1,6 @@
 package database
 
 import (
-	"time"
 )
 
 type Config struct {
@@ -10,7 +9,7 @@ type Config struct {
 	}
 	BBolt struct {
 		File string
-		Timeout time.Duration
+		Timeout int
 	}
 	Badger struct {
 		Directory string

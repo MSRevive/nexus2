@@ -98,7 +98,7 @@ func Run(args []string) (error) {
 	}
 	router.Use(mw.Log)
 	router.Use(mw.PanicRecovery)
-	router.Use(cmw.Timeout(a.Config.Core.Timeout * time.Second))
+	router.Use(cmw.Timeout(time.Duration(a.Config.Core.Timeout) * time.Second))
 
 	service := service.New(a.DB, a.Config)
 	con := controller.New(service, a.Logger, a.Config, controller.Options{

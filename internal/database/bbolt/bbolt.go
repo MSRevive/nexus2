@@ -23,7 +23,7 @@ func New() *bboltDB {
 }
 
 func (d *bboltDB) Connect(cfg database.Config, opts database.Options) error {
-	timeout := cfg.BBolt.Timeout * time.Second
+	timeout := time.Duration(cfg.BBolt.Timeout) * time.Second
 	db, err := bbolt.Open(cfg.BBolt.File, 0755, &bbolt.Options{Timeout: timeout})
 	if err != nil {
 		return err
