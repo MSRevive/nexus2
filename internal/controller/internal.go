@@ -12,7 +12,7 @@ import (
 	"github.com/msrevive/nexus2/internal/response"
 
 	"github.com/go-chi/chi/v5"
-	json "github.com/goccy/go-json"
+	json "github.com/sugawarayuuta/sonnet"
 	"github.com/google/uuid"
 )
 

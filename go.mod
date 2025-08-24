@@ -8,14 +8,13 @@ require (
 	github.com/fxamacker/cbor/v2 v2.8.0
 	github.com/go-chi/chi/v5 v5.2.0
 	github.com/go-chi/httprate v0.12.1
-	github.com/goccy/go-json v0.10.4
 	github.com/google/uuid v1.6.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/saintwish/kv v1.0.4
 	github.com/saintwish/rotatewriter v1.0.2-0.20231130031427-ca47f8a7efc2
 	github.com/spf13/pflag v1.0.5
+	github.com/sugawarayuuta/sonnet v0.0.0-20231004000330-239c7b6e4ce8
 	go.etcd.io/bbolt v1.3.10
-	go.mongodb.org/mongo-driver v1.16.1
 	golang.org/x/crypto v0.29.0
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -40,6 +39,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.5-0.20231225225746-43d5d4cd4e0e // indirect
 	github.com/google/flatbuffers v24.3.25+incompatible // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
