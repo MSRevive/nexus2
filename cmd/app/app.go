@@ -158,7 +158,7 @@ func (a *App) loadIPList(path string) error {
 		return err
 	}
 
-	return a.List.IP.LoadFromJSON(file)
+	return a.List.IP.LoadFromJSON(utils.StandardJSON(file, file))
 }
 
 func (a *App) loadMapList(path string) error {
@@ -167,7 +167,7 @@ func (a *App) loadMapList(path string) error {
 		return err
 	}
 
-	return a.List.Map.LoadFromJSON(file)
+	return a.List.Map.LoadFromJSON(utils.StandardJSON(file, file))
 }
 
 func (a *App) loadSystemAdminList(path string) error {
@@ -176,7 +176,7 @@ func (a *App) loadSystemAdminList(path string) error {
 		return err
 	}
 
-	return a.List.SystemAdmin.LoadFromJSON(file)
+	return a.List.SystemAdmin.LoadFromJSON(utils.StandardJSON(file, file))
 }
 
 func (a *App) Start(mux chi.Router) error {
