@@ -83,7 +83,7 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 		c.logger.Debug("character data sent", "data", data)
 		var errln error
 		if jsonErr, ok := err.(*json.SyntaxError); ok {
-			errln = fmt.Errorf("%w ~ error near '%s' (offset %d)", err, string(data[jsonErr.Offset-1:]), jsonErr.Offset)
+			errln = fmt.Errorf("%w ~ error near '%s' (offset %d)", err, data, jsonErr.Offset)
 		}
 
 		c.logger.Error("failed to parse data", "error", errln)
