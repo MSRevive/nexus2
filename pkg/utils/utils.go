@@ -5,6 +5,11 @@ import (
 	"net"
 	"strings"
 	"net/http"
+	"errors"
+	"fmt"
+	"io"
+
+	json "github.com/sugawarayuuta/sonnet"
 )
 
 func GetIP(r *http.Request) string {
@@ -108,4 +113,31 @@ func StandardJSON(src, dst []byte) []byte {
 	}
 
 	return dst
+}
+
+func ProcessJSON(body []byte, v any) error {
+	if err := json.Unmarshal(body, v); err != nil {
+		var errln error
+		var syntaxErr *json.SyntaxError
+		var unmarshalErr *json.UnmarshalTypeError
+
+		switch {
+		case errors.As(err, &syntaxErr):
+			errln = fmt.Errorf("json syntax error at byte %d: %w", syntaxErr.Offset, err)
+		case errors.As(err, &unmarshalErr):
+			errln = fmt.Errorf("json type mismatch for field %q: %w", unmarshalErr.Field, err)
+		case errors.Is(err, io.EOF):
+			errln = fmt.Errorf("request body is empty")
+		default:
+			errln = fmt.Errorf("malformed json: %w", err)
+		}
+
+		if errln == nil {
+			errln = fmt.Errorf("unknown error: %w", err)
+		}
+
+		return errln
+	}
+
+	return nil
 }

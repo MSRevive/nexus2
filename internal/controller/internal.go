@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 	"io"
 	"bytes"
@@ -10,39 +9,27 @@ import (
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/payload"
 	"github.com/msrevive/nexus2/internal/response"
+	"github.com/msrevive/nexus2/pkg/utils"
 
 	"github.com/go-chi/chi/v5"
-	json "github.com/sugawarayuuta/sonnet"
 	"github.com/google/uuid"
 )
 
 // POST /internal/character/
 func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
+	// copy the content of body into a new buffer for processing
+	var buf bytes.Buffer
+	if size, err := io.Copy(&buf, r.Body); err != nil {
+		c.logger.Error("failed to copy body", "error", err, "size", size, "expectedSize", r.ContentLength)
+		response.Error(w, err)
+		return
+	}
+	body := buf.Bytes()
+
 	var char payload.Character
-	if err := json.NewDecoder(r.Body).Decode(&char); err != nil {
-		c.logger.Debug("POST character body sent", "data", r.Body)
-		var buf bytes.Buffer
-
-		if size, err := io.Copy(&buf, r.Body); err != nil {
-			c.logger.Error("failed to copy body", "error", err, "size", size, "expectedSize", r.ContentLength)
-			response.Error(w, err)
-			return
-		}
-
-		data := buf.Bytes()
-		c.logger.Debug("character data sent", "data", data)
-		var errln error
-		if jsonErr, ok := err.(*json.SyntaxError); ok {
-			errln = fmt.Errorf("%w ~ error near '%s' (offset %d)", err, string(data[jsonErr.Offset-1:]), jsonErr.Offset)
-		}
-
-		c.logger.Error("failed to parse data", "error", errln)
-		if errln == nil {
-			response.GenericError(w)
-			return
-		}
-
-		response.BadRequest(w, errln)
+	if err := utils.ProcessJSON(body, &char); err != nil {
+		c.logger.Error("failed to parse JSON", "body", body, "error", err)
+		response.BadRequest(w, err)
 		return
 	}
 
@@ -68,31 +55,20 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// copy the content of body into a new buffer for processing
+	var buf bytes.Buffer
+	if size, err := io.Copy(&buf, r.Body); err != nil {
+		c.logger.Error("failed to copy body", "error", err, "size", size, "expectedSize", r.ContentLength)
+		response.Error(w, err)
+		return
+	}
+	body := buf.Bytes()
+
 	var char payload.Character
-	if err := json.NewDecoder(r.Body).Decode(&char); err != nil {
-		c.logger.Debug("PUT character body sent", "data", r.Body)
-		var buf bytes.Buffer
 
-		if size, err := io.Copy(&buf, r.Body); err != nil {
-			c.logger.Error("failed to copy body", "error", err, "size", size, "expectedSize", r.ContentLength)
-			response.Error(w, err)
-			return
-		}
-
-		data := buf.Bytes()
-		c.logger.Debug("character data sent", "data", data)
-		var errln error
-		if jsonErr, ok := err.(*json.SyntaxError); ok {
-			errln = fmt.Errorf("%w ~ error near '%s' (offset %d)", err, data, jsonErr.Offset)
-		}
-
-		c.logger.Error("failed to parse data", "error", errln)
-		if errln == nil {
-			response.GenericError(w)
-			return
-		}
-
-		response.BadRequest(w, errln)
+	if err := utils.ProcessJSON(body, &char); err != nil {
+		c.logger.Error("failed to parse JSON", "uuid", uid, "body", body, "error", err)
+		response.BadRequest(w, err)
 		return
 	}
 
