@@ -92,10 +92,22 @@ func (a *App) CalcHashes() error {
 	return nil
 }*/
 
-func (a *App) LoadConfig(path string) (err error) {
-	a.Config, err = config.Load(path)
+func (a *App) LoadConfig(path string) (error) {
+	cfg, err := config.Load(path)
+	if err != nil && os.IsNotExist(err) {
+		fmt.Println("Config file is missing, creating new one!")
 
-	return
+		if err := utils.CopyFile("./runtime/config.example.yaml", path); err != nil {
+			return fmt.Errorf("Unable to create new config %w", err)
+		}
+
+		return a.LoadConfig(path)
+	} else if err != nil {
+		return fmt.Errorf("Unable to load config file %w", err)
+	}
+
+	a.Config = cfg
+	return nil
 }
 
 func (a *App) InitializeLogger() (err error) {
