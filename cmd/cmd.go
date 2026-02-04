@@ -26,6 +26,7 @@ type flags struct {
 	cfgFile string
 	debug bool
 	threads int
+	readonly bool
 }
 
 func doFlags(args []string) *flags {
@@ -35,6 +36,7 @@ func doFlags(args []string) *flags {
 	flagSet.StringVarP(&flgs.cfgFile, "config", "c", "./runtime/config.yaml", "Location of via config file")
 	flagSet.BoolVarP(&flgs.debug, "debug", "d", false, "Run with debug mode.")
 	flagSet.IntVarP(&flgs.threads, "threads", "t", 0, "The maximum number of threads the app is allowed to use.")
+	flagSet.BoolVarP(&flgs.readonly, "readonly", "r", false, "Make the database readonly.")
 	flagSet.Parse(args[1:])
 
 	return flgs
@@ -45,6 +47,10 @@ func Run(args []string) (error) {
 
 	if flags.debug {
 		fmt.Println("!!! Running in Debug mode, do not use in production! !!!")
+	}
+
+	if flags.readonly {
+		fmt.Println("!!! Running in Read Only mode! !!!")
 	}
 
 	// Max threads allowed.
@@ -100,7 +106,7 @@ func Run(args []string) (error) {
 	router.Use(mw.PanicRecovery)
 	router.Use(cmw.Timeout(time.Duration(a.Config.Core.Timeout) * time.Second))
 
-	service := service.New(a.DB, a.Config)
+	service := service.New(a.DB, a.Config, flags.readonly)
 	con := controller.New(service, a.Logger, a.Config, controller.Options{
 		MapList: a.List.Map,
 	})

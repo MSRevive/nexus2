@@ -26,6 +26,10 @@ func (s *Service) NewCharacter(char payload.Character) (uuid.UUID, bitmask.Bitma
 }
 
 func (s *Service) UpdateCharacter(uuid uuid.UUID, char payload.Character) error {
+	if s.readonly {
+		return nil
+	}
+
 	if err := s.db.UpdateCharacter(uuid, char.Size, char.Data, s.config.Char.MaxBackups, s.config.Char.BackupTime); err != nil {
 		return err
 	}
@@ -108,6 +112,10 @@ func (s *Service) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error)
 }
 
 func (s *Service) MoveCharacter(uid uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+	if s.readonly {
+		return uuid.Nil, nil
+	}
+
 	if err := s.db.MoveCharacter(uid, steamid, slot); err != nil {
 		return uuid.Nil, err
 	}
@@ -116,6 +124,10 @@ func (s *Service) MoveCharacter(uid uuid.UUID, steamid string, slot int) (uuid.U
 }
 
 func (s *Service) CopyCharacter(uid uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+	if s.readonly {
+		return uuid.Nil, nil
+	}
+
 	newUID, err := s.db.CopyCharacter(uid, steamid, slot); 
 	if err != nil {
 		return uuid.Nil, err
@@ -125,6 +137,10 @@ func (s *Service) CopyCharacter(uid uuid.UUID, steamid string, slot int) (uuid.U
 }
 
 func (s *Service) HardDeleteCharacter(uid uuid.UUID) error {
+	if s.readonly {
+		return nil
+	}
+
 	char, err := s.db.GetCharacter(uid); 
 	if err != nil {
 		return err

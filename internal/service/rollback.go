@@ -29,6 +29,10 @@ func (s *Service) GetCharacterVersions(uid uuid.UUID) (map[int]schema.CharacterD
 }
 
 func (s *Service) RollbackCharacter(uid uuid.UUID, ver int) error {
+	if s.readonly {
+		return nil
+	}
+
 	err := s.db.RollbackCharacter(uid, ver)
 	if err != nil {
 		return err
@@ -38,6 +42,10 @@ func (s *Service) RollbackCharacter(uid uuid.UUID, ver int) error {
 }
 
 func (s *Service) RollbackCharacterToLatest(uid uuid.UUID) error {
+	if s.readonly {
+		return nil
+	}
+
 	err := s.db.RollbackCharacterToLatest(uid)
 	if err != nil {
 		return err
@@ -47,6 +55,10 @@ func (s *Service) RollbackCharacterToLatest(uid uuid.UUID) error {
 }
 
 func (s *Service) DeleteCharacterVersions(uid uuid.UUID) error {
+	if s.readonly {
+		return nil
+	}
+
 	err := s.db.DeleteCharacterVersions(uid)
 	if err != nil {
 		return err
