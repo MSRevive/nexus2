@@ -175,8 +175,6 @@ func Run(args []string) (error) {
 				r.Patch("/donor/{steamid:[0-9]+}", con.PatchDonorSteamID)
 				r.Patch("/undonor/{steamid:[0-9]+}", con.PatchUnDonorSteamID)
 
-				//r.Get("/isdonor/{steamid:[0-9]+}", con.GetIsDonorSteamID)
-
 				if flags.debug {
 					r.Get("/list", con.GetAllUsers)
 				}
