@@ -17,6 +17,9 @@ type Config struct {
 	Pebble struct {
 		Directory string
 	}
+	SQLite struct {
+		Path string
+	}
 	Sync string
 	GarbageCollection string
 }

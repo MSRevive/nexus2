@@ -11,6 +11,7 @@ import (
 	"github.com/msrevive/nexus2/internal/database/bbolt"
 	"github.com/msrevive/nexus2/internal/database/badger"
 	"github.com/msrevive/nexus2/internal/database/pebble"
+	"github.com/msrevive/nexus2/internal/database/sqlite"
 	"github.com/msrevive/nexus2/pkg/utils"
 
 	rw "github.com/saintwish/rotatewriter"
@@ -30,6 +31,9 @@ func (a *App) SetupDatabase() (err error) {
 	case "pebble":
 		a.Logger.Info("Database set to Pebble!")
 		a.DB = pebble.New()
+	case "sqlite":
+		a.Logger.Info("Database set to SQLite!")
+		a.DB = sqlite.New()
 	default:
 		err = fmt.Errorf("database not available.")
 	}
