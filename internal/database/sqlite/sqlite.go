@@ -233,8 +233,7 @@ func migrate(db *sql.DB) error {
 			expires_at      DATETIME,      -- populated on soft-delete for GC
 			data_created_at DATETIME,
 			data_size       INTEGER NOT NULL DEFAULT 0,
-			data_payload    TEXT NOT NULL DEFAULT '',
-			UNIQUE (steam_id, slot)
+			data_payload    TEXT NOT NULL DEFAULT ''
 		);
 
 		CREATE TABLE IF NOT EXISTS deleted_characters (
@@ -242,7 +241,7 @@ func migrate(db *sql.DB) error {
 			slot         INTEGER NOT NULL,
 			character_id TEXT NOT NULL REFERENCES characters(id),
 			deleted_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			PRIMARY KEY (steam_id, slot)
+			PRIMARY KEY (character_id)
 		);
 
 		-- Stores the version history (Versions []CharacterData on the schema struct).
