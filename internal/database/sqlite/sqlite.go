@@ -46,6 +46,8 @@ type sqliteDB struct {
 
 	done chan struct{}
 	wg   sync.WaitGroup
+
+	database.Options
 }
 
 func New() *sqliteDB {
@@ -239,9 +241,10 @@ func migrate(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS deleted_characters (
 			steam_id     TEXT NOT NULL REFERENCES users(id),
 			slot         INTEGER NOT NULL,
-			character_id TEXT NOT NULL REFERENCES characters(id),
+			character_id TEXT NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
 			deleted_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			PRIMARY KEY (character_id)
+			PRIMARY KEY (steam_id, slot)
+			UNIQUE (character_id)
 		);
 
 		-- Stores the version history (Versions []CharacterData on the schema struct).

@@ -27,9 +27,6 @@ func (d *sqliteDB) GetAllUsers() ([]*schema.User, error) {
 		if err := rows.Scan(&u.ID, &u.Revision, &u.Flags); err != nil {
 			return nil, err
 		}
-		if err := d.loadUserCharacters(u); err != nil {
-			return nil, err
-		}
 		users = append(users, u)
 	}
 	return users, rows.Err()

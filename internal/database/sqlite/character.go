@@ -300,12 +300,6 @@ func (d *sqliteDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 // cascade on character_versions handles version cleanup automatically.
 func (d *sqliteDB) DeleteCharacter(id uuid.UUID) error {
 	return d.exec(func(tx *sql.Tx) error {
-		// Remove the deleted_characters reference if it exists.
-		if _, err := tx.Exec(
-			`DELETE FROM deleted_characters WHERE character_id = ?`, id.String(),
-		); err != nil {
-			return err
-		}
 		// character_versions are deleted by ON DELETE CASCADE.
 		_, err := tx.Exec(`DELETE FROM characters WHERE id = ?`, id.String())
 		return err
