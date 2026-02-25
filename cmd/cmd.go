@@ -175,10 +175,6 @@ func Run(args []string) (error) {
 				r.Patch("/unadmin/{steamid:[0-9]+}", con.PatchUnAdminSteamID)
 				r.Patch("/donor/{steamid:[0-9]+}", con.PatchDonorSteamID)
 				r.Patch("/undonor/{steamid:[0-9]+}", con.PatchUnDonorSteamID)
-
-				if flags.debug {
-					r.Get("/list", con.GetAllUsers)
-				}
 			})
 
 			r.Get("/refresh", func(w http.ResponseWriter, r *http.Request) {

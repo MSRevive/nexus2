@@ -23,18 +23,6 @@ func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (c *Controller) GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := c.service.GetAllUsers()
-	if err != nil {
-		c.logger.Error("service failed", "error", err)
-		response.Error(w, err)
-		return
-	}
-
-	response.OK(w, users)
-	return
-}
-
 //PATCH user/ban/{steamid}
 func (c *Controller) PatchBanSteamID(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
