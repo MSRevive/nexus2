@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"path/filepath"
+	"os"
 
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/google/uuid"
@@ -60,9 +62,13 @@ func New() *sqliteDB {
 }
 
 func (d *sqliteDB) Connect(cfg database.Config, opts database.Options) error {
-	// WAL mode + NORMAL sync gives the best write throughput while still
-	// being crash-safe. busy_timeout prevents "database is locked" errors
-	// during the brief windows where SQLite is checkpointing.
+	// Ensure all parent directories exist before opening the SQLite file.
+	if dir := filepath.Dir(cfg.SQLite.Path); dir != "" {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("sqlite mkdir: %w", err)
+		}
+	}
+
 	dsn := fmt.Sprintf("%s?_journal=WAL&_synchronous=NORMAL&_busy_timeout=5000", cfg.SQLite.Path)
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
