@@ -2,6 +2,7 @@ package static
 
 import (
 	"runtime"
+	"errors"
 )
 
 const (
@@ -14,4 +15,9 @@ var (
 	GoVersion = runtime.Version()
 	OS = runtime.GOOS
 	OSArch = runtime.GOARCH
+)
+
+var (
+	ErrNoCharacterVersions = errors.New("no character versions exist")
+	ErrBadCharacterData = errors.New("malformed character data")
 )

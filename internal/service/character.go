@@ -1,10 +1,9 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/msrevive/nexus2/internal/bitmask"
 	"github.com/msrevive/nexus2/internal/payload"
+	"github.com/msrevive/nexus2/internal/static"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 	"github.com/msrevive/nexus2/pkg/utils"
 
@@ -44,7 +43,7 @@ func (s *Service) GetCharacterByID(uuid uuid.UUID) (*schema.Character, error) {
 	}
 
 	if (schema.CharacterData{}) == char.Data {
-		return nil, fmt.Errorf("malformed character data")
+		return nil, static.ErrBadCharacterData
 	}
 
 	return char, nil

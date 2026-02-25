@@ -5,6 +5,7 @@ import (
 	"io"
 	"bytes"
 	"strconv"
+	"errors"
 
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/payload"
@@ -92,7 +93,7 @@ func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	char, flags, err := c.service.GetCharacter(steamid, slot)
-	if err == database.ErrNoDocument {
+	if errors.Is(err, database.ErrNoDocument)  {
 		c.logger.Warn("service warning", "error", err)
 		response.OKNoContent(w)
 		return
