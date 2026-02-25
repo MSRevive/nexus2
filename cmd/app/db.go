@@ -25,8 +25,7 @@ func (a *App) SetupDatabase() (err error) {
 		a.Logger.Info("Database set to SQLite!")
 		a.DB = sqlite.New()
 	case "postgres":
-		a.Logger.Info("Database set to Postgres!")
-		a.DB = postgres.New()
+		a.Logger.Error("Database not yet implemented!")
 	default:
 		err = fmt.Errorf("database not available.")
 	}
