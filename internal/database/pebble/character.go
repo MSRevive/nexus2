@@ -102,65 +102,86 @@ func (d *pebbleDB) NewCharacter(steamid string, slot int, size int, data string)
 	return charID, nil
 }
 
-func (d *pebbleDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
-	key := append(CharPrefix, []byte(id.String())...)
+// applyCharacterUpdate performs the read-modify-write for one character and
+// writes the result into the provided Batch. Because the Batch is committed
+// atomically by the writer goroutine, the updated character and any new
+// version entry land together or not at all.
+func (d *pebbleDB) applyCharacterUpdate(b *pebble.Batch, charIDStr string, upd pendingUpdate) error {
+	key := append(CharPrefix, []byte(charIDStr)...)
 
-	val, io, err := d.db.Get(key)
+	// Read the current character state directly from Pebble (not the batch —
+	// we need the persisted state to decide whether to snapshot a version).
+	val, closer, err := d.db.Get(key)
 	if err == pebble.ErrNotFound {
 		return database.ErrNoDocument
-	}else if err != nil {
+	}
+	if err != nil {
 		return err
 	}
-
-	defer io.Close()
+	defer closer.Close()
 
 	var char *schema.Character
 	if err := cbor.Unmarshal(val, &char); err != nil {
-		return fmt.Errorf("failed to unmarshal %v", err)
+		return fmt.Errorf("unmarshal character: %w", err)
 	}
 
-	//handle character backups for rollback system.
 	bCharsLen := len(char.Versions)
-	if backupMax > 0 {
-		// we remove the oldest backup here
-		if bCharsLen >= backupMax {
+	if upd.backupMax > 0 {
+		if bCharsLen >= upd.backupMax {
 			copy(char.Versions, char.Versions[1:])
 			char.Versions = char.Versions[:bCharsLen-1]
 			bCharsLen--
 		}
 
 		if bCharsLen > 0 {
-			bNewest := char.Versions[bCharsLen-1] //latest backup
-
-			timeCheck := bNewest.CreatedAt.Add(backupTime)
-			if char.Data.CreatedAt.After(timeCheck) {
+			newest := char.Versions[bCharsLen-1]
+			if char.Data.CreatedAt.After(newest.CreatedAt.Add(upd.backupTime)) {
 				char.Versions = append(char.Versions, char.Data)
 			}
-		}else{
+		} else {
 			char.Versions = append(char.Versions, char.Data)
 		}
 	}
 
 	char.Data = schema.CharacterData{
-		CreatedAt: time.Now().UTC(), 
-		Size: size, 
-		Data: data,
+		CreatedAt: time.Now().UTC(),
+		Size: upd.size,
+		Data: upd.data,
 	}
 
-	//commit updated character to DB
 	charData, err := cbor.Marshal(&char)
 	if err != nil {
-		return fmt.Errorf("bson: failed to encode character %v", err)
+		return fmt.Errorf("marshal character: %w", err)
 	}
 
-	return d.db.Set(key, charData, pebble.NoSync)
+	// Write into the batch — not directly to d.db.
+	// The caller (writeWorker) commits the whole batch atomically.
+	return b.Set(key, charData, nil)
+}
+
+// UpdateCharacter enqueues the update in the coalescing map and returns
+// immediately. The flushWorker will apply it (along with any other updates
+// that arrived before the next tick) in a single Batch commit.
+//
+// This means 100 calls for the same character between ticks = 1 Pebble Set.
+// All characters updated in a single flush window = 1 batch commit = 1 WAL append.
+func (d *pebbleDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
+	d.coalesceMu.Lock()
+	d.pendingUpdates[id.String()] = pendingUpdate{
+		size:       size,
+		data:       data,
+		backupMax:  backupMax,
+		backupTime: backupTime,
+	}
+	d.coalesceMu.Unlock()
+	return nil
 }
 
 func (d *pebbleDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	var char *schema.Character = nil
 	key := append(CharPrefix, []byte(id.String())...)
 
-	data, io, err := d.db.Get(key)
+	data, io, err := d.get(key)
 	if err == pebble.ErrNotFound {
 		return char, database.ErrNoDocument
 	}else if err != nil {
@@ -226,12 +247,12 @@ func (d *pebbleDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 
 	userData, err := cbor.Marshal(&user)
 	if err != nil {
-		return fmt.Errorf("bson: failed to encode user %v", err)
+		return fmt.Errorf("cbor: failed to encode user %v", err)
 	}
 
 	charData, err := cbor.Marshal(&char)
 	if err != nil {
-		return fmt.Errorf("bson: failed to encode character %v", err)
+		return fmt.Errorf("cbor: failed to encode character %v", err)
 	}
 
 	if err := d.db.Set(userKey, userData, pebble.NoSync); err != nil {
@@ -261,7 +282,7 @@ func (d *pebbleDB) DeleteCharacterReference(steamid string, slot int) error {
 
 	userData, err := cbor.Marshal(&user)
 	if err != nil {
-		return fmt.Errorf("bson: failed to encode user %v", err)
+		return fmt.Errorf("cbor: failed to encode user %v", err)
 	}
 
 	if err := d.db.Set(key, userData, pebble.Sync); err != nil {
