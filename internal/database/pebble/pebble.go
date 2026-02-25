@@ -92,6 +92,7 @@ func (d *pebbleDB) Connect(cfg database.Config, opts database.Options) error {
 	go d.flushWorker()
 
 	d.db = db
+	d.Logger = opts.Logger
 	return nil
 }
 

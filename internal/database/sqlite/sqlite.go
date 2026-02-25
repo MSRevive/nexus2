@@ -89,6 +89,7 @@ func (d *sqliteDB) Connect(cfg database.Config, opts database.Options) error {
 	}
 
 	d.db = db
+	d.Logger = opts.Logger
 
 	d.wg.Add(2)
 	go d.writeWorker()
