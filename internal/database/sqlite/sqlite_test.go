@@ -69,6 +69,29 @@ func TestConnect_BadPath(t *testing.T) {
 
 // ─── User tests ──────────────────────────────────────────────────────────────
 
+func TestGetAllUsers_Empty(t *testing.T) {
+	db := newTestDB(t)
+	users, err := db.GetAllUsers()
+	require.NoError(t, err)
+	assert.Empty(t, users)
+}
+
+func TestGetAllUsers_ReturnsAllUsers(t *testing.T) {
+	db := newTestDB(t)
+	seedUser(t, db, "steam1")
+	seedUser(t, db, "steam2")
+
+	users, err := db.GetAllUsers()
+	require.NoError(t, err)
+	assert.Len(t, users, 2)
+
+	ids := make([]string, 0, len(users))
+	for _, u := range users {
+		ids = append(ids, u.ID)
+	}
+	assert.ElementsMatch(t, []string{"steam1", "steam2"}, ids)
+}
+
 func TestGetUser_Found(t *testing.T) {
 	db := newTestDB(t)
 	charID := seedCharacter(t, db, "steam1", 0, 100, "data")
@@ -607,6 +630,17 @@ func TestGetUser_CharacterMapsAreInitialized(t *testing.T) {
 	// Maps must not be nil so callers can safely do map[key] lookups.
 	assert.NotNil(t, u.Characters)
 	assert.NotNil(t, u.DeletedCharacters)
+}
+
+func TestGetAllUsers_CharacterMapsAreInitialized(t *testing.T) {
+	db := newTestDB(t)
+	seedUser(t, db, "steam1")
+
+	users, err := db.GetAllUsers()
+	require.NoError(t, err)
+	require.Len(t, users, 1)
+	assert.NotNil(t, users[0].Characters)
+	assert.NotNil(t, users[0].DeletedCharacters)
 }
 
 // ─── Concurrency / coalescing sanity check ───────────────────────────────────

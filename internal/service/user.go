@@ -5,6 +5,10 @@ import (
 	"github.com/msrevive/nexus2/internal/bitmask"
 )
 
+func (s *Service) GetAllUsers() ([]*schema.User, error) {
+	return s.db.GetAllUsers()
+}
+
 func (s *Service) GetUser(steamid string) (*schema.User, error) {
 	return s.db.GetUser(steamid)
 }
