@@ -16,20 +16,17 @@ import (
 
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/migration"
+	"github.com/msrevive/nexus2/internal/config"
 
 	// Import whichever backends you have implemented.
 	nexusPebble "github.com/msrevive/nexus2/internal/database/pebble"
 	nexusSQLite "github.com/msrevive/nexus2/internal/database/sqlite"
+	nexusPostgres "github.com/msrevive/nexus2/internal/database/postgres"
 )
 
 func main() {
-	srcType := flag.String("src", "", "source backend: pebble | sqlite")
-	srcDir  := flag.String("src-dir", "", "source pebble directory")
-	srcPath := flag.String("src-path", "", "source sqlite file path")
-
-	dstType := flag.String("dst", "", "destination backend: pebble | sqlite")
-	dstDir  := flag.String("dst-dir", "", "destination pebble directory")
-	dstPath := flag.String("dst-path", "", "destination sqlite file path")
+	srcType := flag.String("src", "", "source backend: pebble | sqlite | postgres")
+	dstType := flag.String("dst", "", "destination backend: pebble | sqlite | postgres")
 
 	flag.Parse()
 
@@ -43,6 +40,11 @@ func main() {
 	}
 	defer file.Close()
 
+	cfg, err := config.Load("./runtime/config.yaml")
+	if err != nil {
+		panic(err)
+	}
+
 	writer := io.MultiWriter(os.Stdout, file)
 	log.SetOutput(writer)
 
@@ -50,13 +52,13 @@ func main() {
 		log.Fatal("--src and --dst are required")
 	}
 
-	src, err := openDB(*srcType, *srcDir, *srcPath)
+	src, err := openDB(*srcType, cfg.Database)
 	if err != nil {
 		log.Fatalf("open source: %v", err)
 	}
 	defer src.Disconnect()
 
-	dst, err := openDB(*dstType, *dstDir, *dstPath)
+	dst, err := openDB(*dstType, cfg.Database)
 	if err != nil {
 		log.Fatalf("open destination: %v", err)
 	}
@@ -79,30 +81,24 @@ func main() {
 	os.Exit(0)
 }
 
-func openDB(kind, dir, path string) (database.Database, error) {
+func openDB(kind string, dbcfg database.Config) (database.Database, error) {
 	var db database.Database
-	var cfg database.Config
 
 	switch kind {
 	case "pebble":
-		if dir == "" {
-			return nil, fmt.Errorf("pebble backend requires --src-dir or --dst-dir")
-		}
-		cfg.Pebble.Directory = dir
 		db = nexusPebble.New()
 
 	case "sqlite":
-		if path == "" {
-			return nil, fmt.Errorf("sqlite backend requires --src-path or --dst-path")
-		}
-		cfg.SQLite.Path = path
 		db = nexusSQLite.New()
+
+	case "postgres":
+		db = nexusPostgres.New()
 
 	default:
 		return nil, fmt.Errorf("unknown backend %q (supported: pebble, sqlite)", kind)
 	}
 
-	if err := db.Connect(cfg, database.Options{}); err != nil {
+	if err := db.Connect(dbcfg, database.Options{}); err != nil {
 		return nil, fmt.Errorf("connect %s: %w", kind, err)
 	}
 	return db, nil
