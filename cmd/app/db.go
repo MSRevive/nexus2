@@ -9,7 +9,7 @@ import (
 
 	"github.com/msrevive/nexus2/internal/database/pebble"
 	"github.com/msrevive/nexus2/internal/database/sqlite"
-	"github.com/msrevive/nexus2/internal/database/postgres"
+	//"github.com/msrevive/nexus2/internal/database/postgres"
 	"github.com/msrevive/nexus2/pkg/utils"
 
 	rw "github.com/saintwish/rotatewriter"
