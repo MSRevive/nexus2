@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (d *sqliteDB) GetAllUsers() ([]*schema.User, error) {
+func (d *postgresDB) GetAllUsers() ([]*schema.User, error) {
 	rows, err := d.db.Query(`SELECT id, revision, flags FROM users`)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (d *sqliteDB) GetAllUsers() ([]*schema.User, error) {
 	return users, rows.Err()
 }
 
-func (d *sqliteDB) GetUser(steamid string) (*schema.User, error) {
+func (d *postgresDB) GetUser(steamid string) (*schema.User, error) {
 	u := &schema.User{
 		Characters:        make(map[int]uuid.UUID),
 		DeletedCharacters: make(map[int]uuid.UUID),
@@ -52,7 +52,7 @@ func (d *sqliteDB) GetUser(steamid string) (*schema.User, error) {
 	return u, d.loadUserCharacters(u)
 }
 
-func (d *sqliteDB) loadUserCharacters(u *schema.User) error {
+func (d *postgresDB) loadUserCharacters(u *schema.User) error {
 	// Active characters
 	rows, err := d.db.Query(
 		`SELECT slot, id FROM characters WHERE steam_id = ? AND deleted_at IS NULL`,
@@ -104,7 +104,7 @@ func (d *sqliteDB) loadUserCharacters(u *schema.User) error {
 	return drows.Err()
 }
 
-func (d *sqliteDB) SetUserFlags(steamid string, flags bitmask.Bitmask) error {
+func (d *postgresDB) SetUserFlags(steamid string, flags bitmask.Bitmask) error {
 	return d.exec(func(tx *sql.Tx) error {
 		res, err := tx.Exec(`UPDATE users SET flags = ? WHERE id = ?`, uint32(flags), steamid)
 		if err != nil {
@@ -118,7 +118,7 @@ func (d *sqliteDB) SetUserFlags(steamid string, flags bitmask.Bitmask) error {
 	})
 }
 
-func (d *sqliteDB) GetUserFlags(steamid string) (bitmask.Bitmask, error) {
+func (d *postgresDB) GetUserFlags(steamid string) (bitmask.Bitmask, error) {
 	var flags uint32
 	err := d.db.QueryRow(`SELECT flags FROM users WHERE id = ?`, steamid).Scan(&flags)
 	if err == sql.ErrNoRows {

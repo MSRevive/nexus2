@@ -1,13 +1,15 @@
 package postgres
 
 import (
-	"database/sql"
 	"fmt"
 	"sync"
 	"time"
+	"database/sql"
 
 	"github.com/msrevive/nexus2/internal/database"
+
 	"github.com/google/uuid"
+	//"github.com/jackc/pgx/v5/pgxpool"
 	_ "modernc.org/sqlite"
 )
 
@@ -28,8 +30,8 @@ type pendingUpdate struct {
 	backupTime time.Duration
 }
 
-type sqliteDB struct {
-	db *sql.DB
+type postgresDB struct {
+	db *pgxpool.Pool
 
 	// writeCh is the single-writer channel. Only one goroutine reads from it,
 	// so all DB writes are naturally serialized — no locking needed for writes.
@@ -50,8 +52,8 @@ type sqliteDB struct {
 	database.Options
 }
 
-func New() *sqliteDB {
-	return &sqliteDB{
+func New() *postgresDB {
+	return &postgresDB{
 		writeCh:        make(chan writeOp, 512),
 		flushInterval:  500 * time.Millisecond,
 		pendingUpdates: make(map[uuid.UUID]pendingUpdate),
@@ -59,7 +61,7 @@ func New() *sqliteDB {
 	}
 }
 
-func (d *sqliteDB) Connect(cfg database.Config, opts database.Options) error {
+func (d *postgresDB) Connect(cfg database.Config, opts database.Options) error {
 	// WAL mode + NORMAL sync gives the best write throughput while still
 	// being crash-safe. busy_timeout prevents "database is locked" errors
 	// during the brief windows where SQLite is checkpointing.
@@ -91,7 +93,7 @@ func (d *sqliteDB) Connect(cfg database.Config, opts database.Options) error {
 	return nil
 }
 
-func (d *sqliteDB) Disconnect() error {
+func (d *postgresDB) Disconnect() error {
 	close(d.done)
 	d.wg.Wait()
 	return d.db.Close()
@@ -99,14 +101,14 @@ func (d *sqliteDB) Disconnect() error {
 
 // SyncToDisk issues a passive WAL checkpoint so data in the WAL file
 // is folded back into the main database file.
-func (d *sqliteDB) SyncToDisk() error {
+func (d *postgresDB) SyncToDisk() error {
 	_, err := d.db.Exec("PRAGMA wal_checkpoint(PASSIVE)")
 	return err
 }
 
 // RunGC flushes pending updates and then purges any soft-deleted characters
 // whose expiration timestamp has passed.
-func (d *sqliteDB) RunGC() error {
+func (d *postgresDB) RunGC() error {
 	if err := d.flushPendingUpdates(); err != nil {
 		return err
 	}
@@ -122,7 +124,7 @@ func (d *sqliteDB) RunGC() error {
 // exec is the public helper for ad-hoc write operations. It packages the
 // function into a writeOp, ships it to the single writer goroutine, and
 // blocks until the result comes back.
-func (d *sqliteDB) exec(fn func(tx *sql.Tx) error) error {
+func (d *postgresDB) exec(fn func(tx *sql.Tx) error) error {
 	resp := make(chan error, 1)
 	d.writeCh <- writeOp{fn: fn, resp: resp}
 	return <-resp
@@ -130,7 +132,7 @@ func (d *sqliteDB) exec(fn func(tx *sql.Tx) error) error {
 
 // writeWorker is the ONLY goroutine that opens transactions and writes to
 // the database. This gives SQLite a single writer at all times.
-func (d *sqliteDB) writeWorker() {
+func (d *postgresDB) writeWorker() {
 	defer d.wg.Done()
 
 	runOp := func(op writeOp) {
@@ -168,7 +170,7 @@ func (d *sqliteDB) writeWorker() {
 
 // flushWorker ticks on flushInterval and drains the coalescing buffer.
 // On shutdown it performs one final flush so no updates are lost.
-func (d *sqliteDB) flushWorker() error {
+func (d *postgresDB) flushWorker() error {
 	defer d.wg.Done()
 	ticker := time.NewTicker(d.flushInterval)
 	defer ticker.Stop()
@@ -193,7 +195,7 @@ func (d *sqliteDB) flushWorker() error {
 // then commits all coalesced updates in a single transaction. N calls to
 // UpdateCharacter for the same character between ticks become exactly 1
 // database write.
-func (d *sqliteDB) flushPendingUpdates() error {
+func (d *postgresDB) flushPendingUpdates() error {
 	d.coalesceMu.Lock()
 	if len(d.pendingUpdates) == 0 {
 		d.coalesceMu.Unlock()

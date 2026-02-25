@@ -13,7 +13,7 @@ import (
 
 // NewCharacter creates the user row (if missing) and the character row in a
 // single transaction so they are always consistent.
-func (d *sqliteDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
+func (d *postgresDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
 	charID := uuid.New()
 	now := time.Now().UTC()
 
@@ -52,7 +52,7 @@ func (d *sqliteDB) NewCharacter(steamid string, slot int, size int, data string)
 //
 // This means 100 calls to UpdateCharacter for the same character within the
 // flush window result in exactly 1 database write — the one with the final state.
-func (d *sqliteDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
+func (d *postgresDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
 	d.coalesceMu.Lock()
 	d.pendingUpdates[id] = pendingUpdate{
 		size:       size,
@@ -159,7 +159,7 @@ func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 	return err
 }
 
-func (d *sqliteDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
+func (d *postgresDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	c := &schema.Character{ID: id}
 
 	var deletedAt sql.NullTime
@@ -204,7 +204,7 @@ func (d *sqliteDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	return c, rows.Err()
 }
 
-func (d *sqliteDB) GetCharacters(steamid string) (map[int]schema.Character, error) {
+func (d *postgresDB) GetCharacters(steamid string) (map[int]schema.Character, error) {
 	rows, err := d.db.Query(`
 		SELECT id, slot, created_at, deleted_at, data_created_at, data_size, data_payload
 		FROM characters
@@ -240,7 +240,7 @@ func (d *sqliteDB) GetCharacters(steamid string) (map[int]schema.Character, erro
 	return chars, rows.Err()
 }
 
-func (d *sqliteDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
+func (d *postgresDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
 	var idStr string
 	err := d.db.QueryRow(`
 		SELECT id FROM characters
@@ -258,7 +258,7 @@ func (d *sqliteDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error
 
 // SoftDeleteCharacter sets deleted_at + expires_at on the character and records
 // the slot in deleted_characters so it can be restored or GC'd later.
-func (d *sqliteDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) error {
+func (d *postgresDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) error {
 	now := time.Now().UTC()
 	expiresAt := now.Add(expiration)
 
@@ -298,7 +298,7 @@ func (d *sqliteDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 
 // DeleteCharacter permanently removes the character and all associated data.
 // cascade on character_versions handles version cleanup automatically.
-func (d *sqliteDB) DeleteCharacter(id uuid.UUID) error {
+func (d *postgresDB) DeleteCharacter(id uuid.UUID) error {
 	return d.exec(func(tx *sql.Tx) error {
 		// character_versions are deleted by ON DELETE CASCADE.
 		_, err := tx.Exec(`DELETE FROM characters WHERE id = ?`, id.String())
@@ -310,7 +310,7 @@ func (d *sqliteDB) DeleteCharacter(id uuid.UUID) error {
 // leaving the character row intact but unowned (steam_id = NULL).
 // This is called by MoveCharacter to clear the character's old slot before
 // reassigning it, mirroring delete(user.Characters, slot) in the pebble version.
-func (d *sqliteDB) DeleteCharacterReference(steamid string, slot int) error {
+func (d *postgresDB) DeleteCharacterReference(steamid string, slot int) error {
 	return d.exec(func(tx *sql.Tx) error {
 		// Nullify steam_id/slot so the character no longer occupies the slot
 		// on the old owner. The UNIQUE(steam_id, slot) constraint allows NULLs
@@ -325,7 +325,7 @@ func (d *sqliteDB) DeleteCharacterReference(steamid string, slot int) error {
 }
 
 // MoveCharacter transfers a character to a different user/slot atomically.
-func (d *sqliteDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
+func (d *postgresDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 	return d.exec(func(tx *sql.Tx) error {
 		// Fetch the character's current owner so we can clear that slot.
 		var oldSteamID string
@@ -373,7 +373,7 @@ func (d *sqliteDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 
 // CopyCharacter duplicates a character's current data under a new UUID
 // assigned to the target user/slot.
-func (d *sqliteDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+func (d *postgresDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
 	newID := uuid.New()
 	now := time.Now().UTC()
 
@@ -416,7 +416,7 @@ func (d *sqliteDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.U
 
 // RestoreCharacter clears the soft-delete markers and removes the entry from
 // deleted_characters, making the character active again.
-func (d *sqliteDB) RestoreCharacter(id uuid.UUID) error {
+func (d *postgresDB) RestoreCharacter(id uuid.UUID) error {
 	return d.exec(func(tx *sql.Tx) error {
 		var steamID string
 		var slot int
@@ -447,7 +447,7 @@ func (d *sqliteDB) RestoreCharacter(id uuid.UUID) error {
 
 // RollbackCharacter replaces the current character data with the version at
 // index ver (0-based, ordered oldest → newest). Mirrors the pebble implementation.
-func (d *sqliteDB) RollbackCharacter(id uuid.UUID, ver int) error {
+func (d *postgresDB) RollbackCharacter(id uuid.UUID, ver int) error {
 	return d.exec(func(tx *sql.Tx) error {
 		var createdAt time.Time
 		var size int
@@ -478,7 +478,7 @@ func (d *sqliteDB) RollbackCharacter(id uuid.UUID, ver int) error {
 }
 
 // RollbackCharacterToLatest replaces the current data with the most recent version.
-func (d *sqliteDB) RollbackCharacterToLatest(id uuid.UUID) error {
+func (d *postgresDB) RollbackCharacterToLatest(id uuid.UUID) error {
 	return d.exec(func(tx *sql.Tx) error {
 		var createdAt time.Time
 		var size int
@@ -508,7 +508,7 @@ func (d *sqliteDB) RollbackCharacterToLatest(id uuid.UUID) error {
 }
 
 // DeleteCharacterVersions wipes all version history for a character.
-func (d *sqliteDB) DeleteCharacterVersions(id uuid.UUID) error {
+func (d *postgresDB) DeleteCharacterVersions(id uuid.UUID) error {
 	return d.exec(func(tx *sql.Tx) error {
 		_, err := tx.Exec(
 			`DELETE FROM character_versions WHERE character_id = ?`, id.String(),
