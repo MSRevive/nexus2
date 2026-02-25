@@ -1,25 +1,18 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
-	"database/sql"
 
 	"github.com/msrevive/nexus2/internal/database"
 
 	"github.com/google/uuid"
-	//"github.com/jackc/pgx/v5/pgxpool"
-	_ "modernc.org/sqlite"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-// writeOp is a unit of work sent through the serialized write channel.
-// Every mutating DB call goes through here so SQLite's single-writer
-// constraint is respected without any external locking.
-type writeOp struct {
-	fn   func(tx *sql.Tx) error
-	resp chan error
-}
 
 // pendingUpdate holds the latest state for a character that has been
 // updated but not yet flushed to the database.
@@ -32,10 +25,6 @@ type pendingUpdate struct {
 
 type postgresDB struct {
 	db *pgxpool.Pool
-
-	// writeCh is the single-writer channel. Only one goroutine reads from it,
-	// so all DB writes are naturally serialized — no locking needed for writes.
-	writeCh chan writeOp
 
 	// flushInterval controls how often the coalescing buffer is drained.
 	flushInterval time.Duration
@@ -54,7 +43,6 @@ type postgresDB struct {
 
 func New() *postgresDB {
 	return &postgresDB{
-		writeCh:        make(chan writeOp, 512),
 		flushInterval:  500 * time.Millisecond,
 		pendingUpdates: make(map[uuid.UUID]pendingUpdate),
 		done:           make(chan struct{}),
@@ -62,33 +50,49 @@ func New() *postgresDB {
 }
 
 func (d *postgresDB) Connect(cfg database.Config, opts database.Options) error {
-	// WAL mode + NORMAL sync gives the best write throughput while still
-	// being crash-safe. busy_timeout prevents "database is locked" errors
-	// during the brief windows where SQLite is checkpointing.
-	dsn := fmt.Sprintf("%s?_journal=WAL&_synchronous=NORMAL&_busy_timeout=5000", cfg.SQLite.Path)
-	db, err := sql.Open("sqlite", dsn)
+	ctx := context.Background()
+
+	poolCfg, err := pgxpool.ParseConfig(cfg.Postgres.Conn)
 	if err != nil {
-		return err
+		return fmt.Errorf("postgres: parse dsn: %w", err)
 	}
 
-	// Crucial: limit to a single open connection so SQLite's file-level
-	// write lock is never contended from within our own process.
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
+	poolCfg.MinConns = cfg.Postgres.MinConns
+	poolCfg.MaxConns = cfg.Postgres.MaxConns
 
-	if err := db.Ping(); err != nil {
-		return fmt.Errorf("sqlite ping: %w", err)
+	// Health-check idle connections periodically so stale connections to a
+	// remote instance (which may be behind a load-balancer or firewall with
+	// idle timeouts) are replaced before they cause query failures.
+	poolCfg.HealthCheckPeriod = 30 * time.Second
+
+	// Keep idle connections alive for a reasonable window. Managed instances
+	// (e.g. RDS, Cloud SQL) often terminate connections idle > 10 min.
+	poolCfg.MaxConnIdleTime = 5 * time.Minute
+	poolCfg.MaxConnLifetime = 30 * time.Minute
+
+	// Per-connection timeouts protect against network partitions to the
+	// remote host.
+	poolCfg.ConnConfig.ConnectTimeout = 10 * time.Second
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
+	if err != nil {
+		return fmt.Errorf("postgres: create pool: %w", err)
 	}
 
-	if err := migrate(db); err != nil {
-		return fmt.Errorf("sqlite migrate: %w", err)
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
+		return fmt.Errorf("postgres: ping: %w", err)
 	}
 
-	d.db = db
+	d.db = pool
 	d.Logger = opts.Logger
 
-	d.wg.Add(2)
-	go d.writeWorker()
+	if err := migrate(ctx, pool); err != nil {
+		pool.Close()
+		return fmt.Errorf("postgres: migrate: %w", err)
+	}
+
+	d.wg.Add(1)
 	go d.flushWorker()
 
 	return nil
@@ -97,14 +101,13 @@ func (d *postgresDB) Connect(cfg database.Config, opts database.Options) error {
 func (d *postgresDB) Disconnect() error {
 	close(d.done)
 	d.wg.Wait()
-	return d.db.Close()
+	d.db.Close()
+	return nil
 }
 
-// SyncToDisk issues a passive WAL checkpoint so data in the WAL file
-// is folded back into the main database file.
+// SyncToDisk is a no-op for Postgres — data is durable after COMMIT.
 func (d *postgresDB) SyncToDisk() error {
-	_, err := d.db.Exec("PRAGMA wal_checkpoint(PASSIVE)")
-	return err
+	return nil
 }
 
 // RunGC flushes pending updates and then purges any soft-deleted characters
@@ -114,64 +117,30 @@ func (d *postgresDB) RunGC() error {
 		return err
 	}
 
-	return d.exec(func(tx *sql.Tx) error {
-		_, err := tx.Exec(
-			`DELETE FROM characters WHERE expires_at IS NOT NULL AND expires_at <= datetime('now')`,
-		)
+	ctx := context.Background()
+	_, err := d.db.Exec(ctx,
+		`DELETE FROM characters WHERE expires_at IS NOT NULL AND expires_at <= NOW()`,
+	)
+	return err
+}
+
+// execTx runs fn inside a transaction. Postgres supports multiple concurrent
+// writers, so there is no need for a serialized write channel.
+func (d *postgresDB) execTx(ctx context.Context, fn func(tx pgx.Tx) error) error {
+	tx, err := d.db.Begin(ctx)
+	if err != nil {
 		return err
-	})
-}
-
-// exec is the public helper for ad-hoc write operations. It packages the
-// function into a writeOp, ships it to the single writer goroutine, and
-// blocks until the result comes back.
-func (d *postgresDB) exec(fn func(tx *sql.Tx) error) error {
-	resp := make(chan error, 1)
-	d.writeCh <- writeOp{fn: fn, resp: resp}
-	return <-resp
-}
-
-// writeWorker is the ONLY goroutine that opens transactions and writes to
-// the database. This gives SQLite a single writer at all times.
-func (d *postgresDB) writeWorker() {
-	defer d.wg.Done()
-
-	runOp := func(op writeOp) {
-		tx, err := d.db.Begin()
-		if err != nil {
-			op.resp <- err
-			return
-		}
-		if err := op.fn(tx); err != nil {
-			_ = tx.Rollback()
-			op.resp <- err
-			return
-		}
-		op.resp <- tx.Commit()
 	}
-
-	for {
-		select {
-		case op := <-d.writeCh:
-			runOp(op)
-
-		case <-d.done:
-			// Drain any remaining ops that arrived before shutdown.
-			for {
-				select {
-				case op := <-d.writeCh:
-					runOp(op)
-				default:
-					return
-				}
-			}
-		}
+	if err := fn(tx); err != nil {
+		_ = tx.Rollback(ctx)
+		return err
 	}
+	return tx.Commit(ctx)
 }
 
 // flushWorker ticks on flushInterval and drains the coalescing buffer.
 // On shutdown it performs one final flush so no updates are lost.
-func (d *postgresDB) flushWorker() error {
+func (d *postgresDB) flushWorker() {
 	defer d.wg.Done()
 	ticker := time.NewTicker(d.flushInterval)
 	defer ticker.Stop()
@@ -179,37 +148,33 @@ func (d *postgresDB) flushWorker() error {
 	for {
 		select {
 		case <-ticker.C:
-			if err := d.flushPendingUpdates(); err != nil {
-				return fmt.Errorf("sqlite: flush error: %v", err)
+			if err := d.flushPendingUpdates(); err != nil && d.Logger != nil {
+				d.Logger.Fatalln("postgres: flush error", "error", err)
 			}
 
 		case <-d.done:
-			if err := d.flushPendingUpdates(); err != nil {
-				return fmt.Errorf("sqlite: final flush error: %v", err)
-			}
-			return nil
+			_ = d.flushPendingUpdates()
+			return
 		}
 	}
 }
 
 // flushPendingUpdates atomically swaps the coalescing map for a fresh one,
-// then commits all coalesced updates in a single transaction. N calls to
-// UpdateCharacter for the same character between ticks become exactly 1
-// database write.
+// then commits all coalesced updates in a single transaction.
 func (d *postgresDB) flushPendingUpdates() error {
 	d.coalesceMu.Lock()
 	if len(d.pendingUpdates) == 0 {
 		d.coalesceMu.Unlock()
 		return nil
 	}
-	// Swap out the map so callers can keep writing while we flush.
 	snapshot := d.pendingUpdates
 	d.pendingUpdates = make(map[uuid.UUID]pendingUpdate)
 	d.coalesceMu.Unlock()
 
-	return d.exec(func(tx *sql.Tx) error {
+	ctx := context.Background()
+	return d.execTx(ctx, func(tx pgx.Tx) error {
 		for id, upd := range snapshot {
-			if err := applyCharacterUpdate(tx, id, upd); err != nil {
+			if err := applyCharacterUpdate(ctx, tx, id, upd); err != nil {
 				return fmt.Errorf("flush update for %s: %w", id, err)
 			}
 		}
@@ -217,45 +182,42 @@ func (d *postgresDB) flushPendingUpdates() error {
 	})
 }
 
-// migrate creates the schema on first run. Queries are idempotent (IF NOT EXISTS).
-// When moving to Postgres: swap TEXT for UUID, DATETIME for TIMESTAMPTZ,
-// AUTOINCREMENT for GENERATED ALWAYS AS IDENTITY, and ? for $N placeholders.
-func migrate(db *sql.DB) error {
-	_, err := db.Exec(`
+// migrate creates the schema on first run. Uses Postgres-native types.
+func migrate(ctx context.Context, pool *pgxpool.Pool) error {
+	_, err := pool.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS users (
 			id         TEXT PRIMARY KEY,
 			revision   INTEGER NOT NULL DEFAULT 0,
 			flags      INTEGER NOT NULL DEFAULT 0,
-			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
 
 		CREATE TABLE IF NOT EXISTS characters (
-			id              TEXT PRIMARY KEY,
+			id              UUID PRIMARY KEY,
 			steam_id        TEXT REFERENCES users(id),
 			slot            INTEGER,
-			created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			deleted_at      DATETIME,
-			expires_at      DATETIME,      -- populated on soft-delete for GC
-			data_created_at DATETIME,
+			created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			deleted_at      TIMESTAMPTZ,
+			expires_at      TIMESTAMPTZ,
+			data_created_at TIMESTAMPTZ,
 			data_size       INTEGER NOT NULL DEFAULT 0,
-			data_payload    TEXT NOT NULL DEFAULT ''
+			data_payload    TEXT NOT NULL DEFAULT '',
+			UNIQUE (steam_id, slot)
 		);
 
 		CREATE TABLE IF NOT EXISTS deleted_characters (
 			steam_id     TEXT NOT NULL REFERENCES users(id),
 			slot         INTEGER NOT NULL,
-			character_id TEXT NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
-			deleted_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			PRIMARY KEY (steam_id, slot)
+			character_id UUID NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+			deleted_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			PRIMARY KEY (steam_id, slot),
 			UNIQUE (character_id)
 		);
 
-		-- Stores the version history (Versions []CharacterData on the schema struct).
-		-- Ordered by autoincrement id to preserve insertion order.
 		CREATE TABLE IF NOT EXISTS character_versions (
-			id           INTEGER PRIMARY KEY AUTOINCREMENT,
-			character_id TEXT NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
-			created_at   DATETIME NOT NULL,
+			id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+			character_id UUID NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+			created_at   TIMESTAMPTZ NOT NULL,
 			size         INTEGER NOT NULL,
 			data_payload TEXT NOT NULL
 		);
@@ -264,4 +226,19 @@ func migrate(db *sql.DB) error {
 		CREATE INDEX IF NOT EXISTS idx_charver_char_id  ON character_versions(character_id);
 	`)
 	return err
+}
+
+// pgErr is a helper to check for specific Postgres error codes if needed.
+func pgErr(err error) *pgconn.PgError {
+	var pgError *pgconn.PgError
+	if err != nil {
+		if ok := pgx.ErrNoRows; err == ok {
+			return nil
+		}
+		if e, ok := err.(*pgconn.PgError); ok {
+			return e
+		}
+	}
+	_ = pgError
+	return nil
 }

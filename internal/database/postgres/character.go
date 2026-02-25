@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"time"
 
@@ -9,6 +9,7 @@ import (
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 // NewCharacter creates the user row (if missing) and the character row in a
@@ -16,23 +17,23 @@ import (
 func (d *postgresDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
 	charID := uuid.New()
 	now := time.Now().UTC()
+	ctx := context.Background()
 
-	err := d.exec(func(tx *sql.Tx) error {
-		// Upsert the user — mirrors the pebble logic that creates a new user
-		// document when one doesn't exist yet.
-		_, err := tx.Exec(
-			`INSERT INTO users (id) VALUES (?) ON CONFLICT(id) DO NOTHING`,
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
+		// Upsert the user.
+		_, err := tx.Exec(ctx,
+			`INSERT INTO users (id) VALUES ($1) ON CONFLICT(id) DO NOTHING`,
 			steamid,
 		)
 		if err != nil {
 			return fmt.Errorf("upsert user: %w", err)
 		}
 
-		_, err = tx.Exec(`
+		_, err = tx.Exec(ctx, `
 			INSERT INTO characters
 				(id, steam_id, slot, created_at, data_created_at, data_size, data_payload)
-			VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			charID.String(), steamid, slot, now, now, size, data,
+			VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+			charID, steamid, slot, now, now, size, data,
 		)
 		if err != nil {
 			return fmt.Errorf("insert character: %w", err)
@@ -46,12 +47,8 @@ func (d *postgresDB) NewCharacter(steamid string, slot int, size int, data strin
 	return charID, nil
 }
 
-// UpdateCharacter does NOT touch the database immediately. It stores the latest
-// state for this character ID in the coalescing map and returns. The next
+// UpdateCharacter stores the latest state in the coalescing map. The next
 // flushWorker tick will commit all coalesced updates in a single transaction.
-//
-// This means 100 calls to UpdateCharacter for the same character within the
-// flush window result in exactly 1 database write — the one with the final state.
 func (d *postgresDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
 	d.coalesceMu.Lock()
 	d.pendingUpdates[id] = pendingUpdate{
@@ -65,24 +62,20 @@ func (d *postgresDB) UpdateCharacter(id uuid.UUID, size int, data string, backup
 }
 
 // applyCharacterUpdate is called inside the flush transaction. It performs the
-// read-modify-write cycle for one character, applying the version/backup logic
-// that mirrors the pebble implementation exactly.
-//
-// Called only from within a transaction on the write goroutine.
-func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
-	// Read the current character data so we can snapshot it as a version.
+// read-modify-write cycle for one character, applying version/backup logic.
+func applyCharacterUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID, upd pendingUpdate) error {
 	var (
 		dataCreatedAt time.Time
 		dataSize      int
 		dataPayload   string
 	)
-	err := tx.QueryRow(`
+	err := tx.QueryRow(ctx, `
 		SELECT data_created_at, data_size, data_payload
-		FROM characters WHERE id = ?`,
-		id.String(),
+		FROM characters WHERE id = $1`,
+		id,
 	).Scan(&dataCreatedAt, &dataSize, &dataPayload)
 
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		return database.ErrNoDocument
 	}
 	if err != nil {
@@ -90,24 +83,24 @@ func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 	}
 
 	// ------------------------------------------------------------------
-	// Version / backup logic — mirrors the pebble UpdateCharacter exactly.
+	// Version / backup logic
 	// ------------------------------------------------------------------
 	if upd.backupMax > 0 {
 		var versionCount int
-		if err := tx.QueryRow(
-			`SELECT COUNT(*) FROM character_versions WHERE character_id = ?`,
-			id.String(),
+		if err := tx.QueryRow(ctx,
+			`SELECT COUNT(*) FROM character_versions WHERE character_id = $1`,
+			id,
 		).Scan(&versionCount); err != nil {
 			return err
 		}
 
-		// If we are at the cap, delete the oldest entry (lowest autoincrement id).
+		// If at the cap, delete the oldest entry.
 		if versionCount >= upd.backupMax {
-			if _, err := tx.Exec(`
+			if _, err := tx.Exec(ctx, `
 				DELETE FROM character_versions WHERE id = (
 					SELECT id FROM character_versions
-					WHERE character_id = ? ORDER BY id ASC LIMIT 1
-				)`, id.String(),
+					WHERE character_id = $1 ORDER BY id ASC LIMIT 1
+				)`, id,
 			); err != nil {
 				return err
 			}
@@ -115,34 +108,31 @@ func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 		}
 
 		if versionCount > 0 {
-			// Only snapshot the current data if enough time has passed since
-			// the newest existing backup. This prevents rapid-fire updates from
-			// flooding the version table.
 			var newestCreatedAt time.Time
-			err := tx.QueryRow(`
+			err := tx.QueryRow(ctx, `
 				SELECT created_at FROM character_versions
-				WHERE character_id = ? ORDER BY id DESC LIMIT 1`,
-				id.String(),
+				WHERE character_id = $1 ORDER BY id DESC LIMIT 1`,
+				id,
 			).Scan(&newestCreatedAt)
 			if err != nil {
 				return err
 			}
 
 			if dataCreatedAt.After(newestCreatedAt.Add(upd.backupTime)) {
-				if _, err := tx.Exec(`
+				if _, err := tx.Exec(ctx, `
 					INSERT INTO character_versions (character_id, created_at, size, data_payload)
-					VALUES (?, ?, ?, ?)`,
-					id.String(), dataCreatedAt, dataSize, dataPayload,
+					VALUES ($1, $2, $3, $4)`,
+					id, dataCreatedAt, dataSize, dataPayload,
 				); err != nil {
 					return err
 				}
 			}
 		} else {
-			// No versions yet — always snapshot the current data on the first update.
-			if _, err := tx.Exec(`
+			// No versions yet — always snapshot.
+			if _, err := tx.Exec(ctx, `
 				INSERT INTO character_versions (character_id, created_at, size, data_payload)
-				VALUES (?, ?, ?, ?)`,
-				id.String(), dataCreatedAt, dataSize, dataPayload,
+				VALUES ($1, $2, $3, $4)`,
+				id, dataCreatedAt, dataSize, dataPayload,
 			); err != nil {
 				return err
 			}
@@ -150,44 +140,43 @@ func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 	}
 
 	// Write the new current character data.
-	_, err = tx.Exec(`
+	_, err = tx.Exec(ctx, `
 		UPDATE characters
-		SET data_created_at = ?, data_size = ?, data_payload = ?
-		WHERE id = ?`,
-		time.Now().UTC(), upd.size, upd.data, id.String(),
+		SET data_created_at = $1, data_size = $2, data_payload = $3
+		WHERE id = $4`,
+		time.Now().UTC(), upd.size, upd.data, id,
 	)
 	return err
 }
 
 func (d *postgresDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
+	ctx := context.Background()
 	c := &schema.Character{ID: id}
 
-	var deletedAt sql.NullTime
-	err := d.db.QueryRow(`
+	var deletedAt *time.Time
+	err := d.db.QueryRow(ctx, `
 		SELECT steam_id, slot, created_at, deleted_at,
 		       data_created_at, data_size, data_payload
-		FROM characters WHERE id = ?`,
-		id.String(),
+		FROM characters WHERE id = $1`,
+		id,
 	).Scan(
 		&c.SteamID, &c.Slot, &c.CreatedAt, &deletedAt,
 		&c.Data.CreatedAt, &c.Data.Size, &c.Data.Data,
 	)
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		return nil, database.ErrNoDocument
 	}
 	if err != nil {
 		return nil, err
 	}
-	if deletedAt.Valid {
-		c.DeletedAt = &deletedAt.Time
-	}
+	c.DeletedAt = deletedAt
 
-	// Load the versions slice (Versions []CharacterData).
-	rows, err := d.db.Query(`
+	// Load version history.
+	rows, err := d.db.Query(ctx, `
 		SELECT created_at, size, data_payload
 		FROM character_versions
-		WHERE character_id = ? ORDER BY id ASC`,
-		id.String(),
+		WHERE character_id = $1 ORDER BY id ASC`,
+		id,
 	)
 	if err != nil {
 		return nil, err
@@ -205,10 +194,11 @@ func (d *postgresDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 }
 
 func (d *postgresDB) GetCharacters(steamid string) (map[int]schema.Character, error) {
-	rows, err := d.db.Query(`
+	ctx := context.Background()
+	rows, err := d.db.Query(ctx, `
 		SELECT id, slot, created_at, deleted_at, data_created_at, data_size, data_payload
 		FROM characters
-		WHERE steam_id = ? AND deleted_at IS NULL`,
+		WHERE steam_id = $1 AND deleted_at IS NULL`,
 		steamid,
 	)
 	if err != nil {
@@ -219,41 +209,38 @@ func (d *postgresDB) GetCharacters(steamid string) (map[int]schema.Character, er
 	chars := make(map[int]schema.Character)
 	for rows.Next() {
 		var (
-			c         schema.Character
-			idStr     string
-			deletedAt sql.NullTime
+			c schema.Character
+			deletedAt *time.Time
 		)
 		err := rows.Scan(
-			&idStr, &c.Slot, &c.CreatedAt, &deletedAt,
+			&c.ID, &c.Slot, &c.CreatedAt, &deletedAt,
 			&c.Data.CreatedAt, &c.Data.Size, &c.Data.Data,
 		)
 		if err != nil {
 			return nil, err
 		}
-		c.ID, _ = uuid.Parse(idStr)
 		c.SteamID = steamid
-		if deletedAt.Valid {
-			c.DeletedAt = &deletedAt.Time
-		}
+		c.DeletedAt = deletedAt
 		chars[c.Slot] = c
 	}
 	return chars, rows.Err()
 }
 
 func (d *postgresDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
-	var idStr string
-	err := d.db.QueryRow(`
+	ctx := context.Background()
+	var id uuid.UUID
+	err := d.db.QueryRow(ctx, `
 		SELECT id FROM characters
-		WHERE steam_id = ? AND slot = ? AND deleted_at IS NULL`,
+		WHERE steam_id = $1 AND slot = $2 AND deleted_at IS NULL`,
 		steamid, slot,
-	).Scan(&idStr)
-	if err == sql.ErrNoRows {
+	).Scan(&id)
+	if err == pgx.ErrNoRows {
 		return uuid.Nil, database.ErrNoDocument
 	}
 	if err != nil {
 		return uuid.Nil, err
 	}
-	return uuid.Parse(idStr)
+	return id, nil
 }
 
 // SoftDeleteCharacter sets deleted_at + expires_at on the character and records
@@ -261,63 +248,56 @@ func (d *postgresDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, err
 func (d *postgresDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) error {
 	now := time.Now().UTC()
 	expiresAt := now.Add(expiration)
+	ctx := context.Background()
 
-	return d.exec(func(tx *sql.Tx) error {
+	return d.execTx(ctx, func(tx pgx.Tx) error {
 		var steamID string
 		var slot int
-		err := tx.QueryRow(
-			`SELECT steam_id, slot FROM characters WHERE id = ?`, id.String(),
+		err := tx.QueryRow(ctx,
+			`SELECT steam_id, slot FROM characters WHERE id = $1`, id,
 		).Scan(&steamID, &slot)
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return database.ErrNoDocument
 		}
 		if err != nil {
 			return err
 		}
 
-		if _, err := tx.Exec(`
-			UPDATE characters SET deleted_at = ?, expires_at = ? WHERE id = ?`,
-			now, expiresAt, id.String(),
+		if _, err := tx.Exec(ctx, `
+			UPDATE characters SET deleted_at = $1, expires_at = $2 WHERE id = $3`,
+			now, expiresAt, id,
 		); err != nil {
 			return err
 		}
 
-		// Upsert into deleted_characters to preserve the slot → id mapping
-		// (mirrors user.DeletedCharacters in the pebble implementation).
-		_, err = tx.Exec(`
+		_, err = tx.Exec(ctx, `
 			INSERT INTO deleted_characters (steam_id, slot, character_id, deleted_at)
-			VALUES (?, ?, ?, ?)
+			VALUES ($1, $2, $3, $4)
 			ON CONFLICT (steam_id, slot) DO UPDATE
-			SET character_id = excluded.character_id,
-			    deleted_at   = excluded.deleted_at`,
-			steamID, slot, id.String(), now,
+			SET character_id = EXCLUDED.character_id,
+			    deleted_at   = EXCLUDED.deleted_at`,
+			steamID, slot, id, now,
 		)
 		return err
 	})
 }
 
 // DeleteCharacter permanently removes the character and all associated data.
-// cascade on character_versions handles version cleanup automatically.
 func (d *postgresDB) DeleteCharacter(id uuid.UUID) error {
-	return d.exec(func(tx *sql.Tx) error {
-		// character_versions are deleted by ON DELETE CASCADE.
-		_, err := tx.Exec(`DELETE FROM characters WHERE id = ?`, id.String())
+	ctx := context.Background()
+	return d.execTx(ctx, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `DELETE FROM characters WHERE id = $1`, id)
 		return err
 	})
 }
 
-// DeleteCharacterReference removes the active slot→character mapping for a user,
-// leaving the character row intact but unowned (steam_id = NULL).
-// This is called by MoveCharacter to clear the character's old slot before
-// reassigning it, mirroring delete(user.Characters, slot) in the pebble version.
+// DeleteCharacterReference removes the active slot→character mapping for a user.
 func (d *postgresDB) DeleteCharacterReference(steamid string, slot int) error {
-	return d.exec(func(tx *sql.Tx) error {
-		// Nullify steam_id/slot so the character no longer occupies the slot
-		// on the old owner. The UNIQUE(steam_id, slot) constraint allows NULLs
-		// on both columns, so this is safe.
-		_, err := tx.Exec(`
+	ctx := context.Background()
+	return d.execTx(ctx, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `
 			UPDATE characters SET steam_id = NULL, slot = NULL
-			WHERE steam_id = ? AND slot = ? AND deleted_at IS NULL`,
+			WHERE steam_id = $1 AND slot = $2 AND deleted_at IS NULL`,
 			steamid, slot,
 		)
 		return err
@@ -326,24 +306,24 @@ func (d *postgresDB) DeleteCharacterReference(steamid string, slot int) error {
 
 // MoveCharacter transfers a character to a different user/slot atomically.
 func (d *postgresDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
-	return d.exec(func(tx *sql.Tx) error {
-		// Fetch the character's current owner so we can clear that slot.
+	ctx := context.Background()
+	return d.execTx(ctx, func(tx pgx.Tx) error {
 		var oldSteamID string
 		var oldSlot int
-		err := tx.QueryRow(
-			`SELECT steam_id, slot FROM characters WHERE id = ?`, id.String(),
+		err := tx.QueryRow(ctx,
+			`SELECT steam_id, slot FROM characters WHERE id = $1`, id,
 		).Scan(&oldSteamID, &oldSlot)
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return database.ErrNoDocument
 		}
 		if err != nil {
 			return err
 		}
 
-		// Ensure the target user exists.
+		// Ensure target user exists.
 		var exists int
-		if err := tx.QueryRow(
-			`SELECT COUNT(*) FROM users WHERE id = ?`, steamid,
+		if err := tx.QueryRow(ctx,
+			`SELECT COUNT(*) FROM users WHERE id = $1`, steamid,
 		).Scan(&exists); err != nil {
 			return err
 		}
@@ -351,60 +331,58 @@ func (d *postgresDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error
 			return database.ErrNoDocument
 		}
 
-		// Clear the old owner's reference by nullifying steam_id/slot so the
-		// UNIQUE constraint on (steam_id, slot) doesn't block the reassignment.
-		if _, err := tx.Exec(`
+		// Clear old slot.
+		if _, err := tx.Exec(ctx, `
 			UPDATE characters SET steam_id = NULL, slot = NULL
-			WHERE steam_id = ? AND slot = ? AND deleted_at IS NULL`,
+			WHERE steam_id = $1 AND slot = $2 AND deleted_at IS NULL`,
 			oldSteamID, oldSlot,
 		); err != nil {
 			return err
 		}
 
-		// Now assign the character to the new owner.
-		_, err = tx.Exec(`
-			UPDATE characters SET steam_id = ?, slot = ?, deleted_at = NULL
-			WHERE id = ?`,
-			steamid, slot, id.String(),
+		// Assign to new owner.
+		_, err = tx.Exec(ctx, `
+			UPDATE characters SET steam_id = $1, slot = $2, deleted_at = NULL
+			WHERE id = $3`,
+			steamid, slot, id,
 		)
 		return err
 	})
 }
 
-// CopyCharacter duplicates a character's current data under a new UUID
-// assigned to the target user/slot.
+// CopyCharacter duplicates a character's current data under a new UUID.
 func (d *postgresDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
 	newID := uuid.New()
 	now := time.Now().UTC()
+	ctx := context.Background()
 
-	err := d.exec(func(tx *sql.Tx) error {
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		var dataCreatedAt time.Time
 		var dataSize int
 		var dataPayload string
-		err := tx.QueryRow(`
+		err := tx.QueryRow(ctx, `
 			SELECT data_created_at, data_size, data_payload
-			FROM characters WHERE id = ?`,
-			id.String(),
+			FROM characters WHERE id = $1`,
+			id,
 		).Scan(&dataCreatedAt, &dataSize, &dataPayload)
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return database.ErrNoDocument
 		}
 		if err != nil {
 			return err
 		}
 
-		// Ensure the target user exists.
-		if _, err := tx.Exec(
-			`INSERT INTO users (id) VALUES (?) ON CONFLICT(id) DO NOTHING`, steamid,
+		if _, err := tx.Exec(ctx,
+			`INSERT INTO users (id) VALUES ($1) ON CONFLICT(id) DO NOTHING`, steamid,
 		); err != nil {
 			return err
 		}
 
-		_, err = tx.Exec(`
+		_, err = tx.Exec(ctx, `
 			INSERT INTO characters
 				(id, steam_id, slot, created_at, data_created_at, data_size, data_payload)
-			VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			newID.String(), steamid, slot, now, dataCreatedAt, dataSize, dataPayload,
+			VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+			newID, steamid, slot, now, dataCreatedAt, dataSize, dataPayload,
 		)
 		return err
 	})
@@ -414,31 +392,31 @@ func (d *postgresDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid
 	return newID, nil
 }
 
-// RestoreCharacter clears the soft-delete markers and removes the entry from
-// deleted_characters, making the character active again.
+// RestoreCharacter clears the soft-delete markers and makes the character active again.
 func (d *postgresDB) RestoreCharacter(id uuid.UUID) error {
-	return d.exec(func(tx *sql.Tx) error {
+	ctx := context.Background()
+	return d.execTx(ctx, func(tx pgx.Tx) error {
 		var steamID string
 		var slot int
-		err := tx.QueryRow(
-			`SELECT steam_id, slot FROM characters WHERE id = ?`, id.String(),
+		err := tx.QueryRow(ctx,
+			`SELECT steam_id, slot FROM characters WHERE id = $1`, id,
 		).Scan(&steamID, &slot)
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return database.ErrNoDocument
 		}
 		if err != nil {
 			return err
 		}
 
-		if _, err := tx.Exec(`
-			UPDATE characters SET deleted_at = NULL, expires_at = NULL WHERE id = ?`,
-			id.String(),
+		if _, err := tx.Exec(ctx, `
+			UPDATE characters SET deleted_at = NULL, expires_at = NULL WHERE id = $1`,
+			id,
 		); err != nil {
 			return err
 		}
 
-		_, err = tx.Exec(
-			`DELETE FROM deleted_characters WHERE steam_id = ? AND slot = ?`,
+		_, err = tx.Exec(ctx,
+			`DELETE FROM deleted_characters WHERE steam_id = $1 AND slot = $2`,
 			steamID, slot,
 		)
 		return err
@@ -446,32 +424,33 @@ func (d *postgresDB) RestoreCharacter(id uuid.UUID) error {
 }
 
 // RollbackCharacter replaces the current character data with the version at
-// index ver (0-based, ordered oldest → newest). Mirrors the pebble implementation.
+// index ver (0-based, ordered oldest → newest).
 func (d *postgresDB) RollbackCharacter(id uuid.UUID, ver int) error {
-	return d.exec(func(tx *sql.Tx) error {
+	ctx := context.Background()
+	return d.execTx(ctx, func(tx pgx.Tx) error {
 		var createdAt time.Time
 		var size int
 		var payload string
-		err := tx.QueryRow(`
+		err := tx.QueryRow(ctx, `
 			SELECT created_at, size, data_payload
 			FROM character_versions
-			WHERE character_id = ?
+			WHERE character_id = $1
 			ORDER BY id ASC
-			LIMIT 1 OFFSET ?`,
-			id.String(), ver,
+			LIMIT 1 OFFSET $2`,
+			id, ver,
 		).Scan(&createdAt, &size, &payload)
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return fmt.Errorf("no character version at index %d", ver)
 		}
 		if err != nil {
 			return err
 		}
 
-		_, err = tx.Exec(`
+		_, err = tx.Exec(ctx, `
 			UPDATE characters
-			SET data_created_at = ?, data_size = ?, data_payload = ?
-			WHERE id = ?`,
-			createdAt, size, payload, id.String(),
+			SET data_created_at = $1, data_size = $2, data_payload = $3
+			WHERE id = $4`,
+			createdAt, size, payload, id,
 		)
 		return err
 	})
@@ -479,29 +458,30 @@ func (d *postgresDB) RollbackCharacter(id uuid.UUID, ver int) error {
 
 // RollbackCharacterToLatest replaces the current data with the most recent version.
 func (d *postgresDB) RollbackCharacterToLatest(id uuid.UUID) error {
-	return d.exec(func(tx *sql.Tx) error {
+	ctx := context.Background()
+	return d.execTx(ctx, func(tx pgx.Tx) error {
 		var createdAt time.Time
 		var size int
 		var payload string
-		err := tx.QueryRow(`
+		err := tx.QueryRow(ctx, `
 			SELECT created_at, size, data_payload
 			FROM character_versions
-			WHERE character_id = ?
+			WHERE character_id = $1
 			ORDER BY id DESC LIMIT 1`,
-			id.String(),
+			id,
 		).Scan(&createdAt, &size, &payload)
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return fmt.Errorf("no character backups exist")
 		}
 		if err != nil {
 			return err
 		}
 
-		_, err = tx.Exec(`
+		_, err = tx.Exec(ctx, `
 			UPDATE characters
-			SET data_created_at = ?, data_size = ?, data_payload = ?
-			WHERE id = ?`,
-			createdAt, size, payload, id.String(),
+			SET data_created_at = $1, data_size = $2, data_payload = $3
+			WHERE id = $4`,
+			createdAt, size, payload, id,
 		)
 		return err
 	})
@@ -509,9 +489,10 @@ func (d *postgresDB) RollbackCharacterToLatest(id uuid.UUID) error {
 
 // DeleteCharacterVersions wipes all version history for a character.
 func (d *postgresDB) DeleteCharacterVersions(id uuid.UUID) error {
-	return d.exec(func(tx *sql.Tx) error {
-		_, err := tx.Exec(
-			`DELETE FROM character_versions WHERE character_id = ?`, id.String(),
+	ctx := context.Background()
+	return d.execTx(ctx, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx,
+			`DELETE FROM character_versions WHERE character_id = $1`, id,
 		)
 		return err
 	})

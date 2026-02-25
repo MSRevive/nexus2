@@ -10,7 +10,7 @@ import (
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/database/pebble"
 	"github.com/msrevive/nexus2/internal/database/sqlite"
-	//"github.com/msrevive/nexus2/internal/database/postgres"
+	"github.com/msrevive/nexus2/internal/database/postgres"
 	"github.com/msrevive/nexus2/pkg/utils"
 
 	rw "github.com/saintwish/rotatewriter"
@@ -26,7 +26,8 @@ func (a *App) SetupDatabase() error {
 		a.Logger.Info("Database set to SQLite!")
 		a.DB = sqlite.New()
 	case "postgres":
-		return database.ErrNotImplemented
+		a.Logger.Info("Database set to PostgreSQL!")
+		a.DB = postgres.New()
 	default:
 		return database.ErrNotAvailable
 	}

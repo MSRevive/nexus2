@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 
 	"github.com/msrevive/nexus2/internal/bitmask"
@@ -9,10 +9,13 @@ import (
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 func (d *postgresDB) GetAllUsers() ([]*schema.User, error) {
-	rows, err := d.db.Query(`SELECT id, revision, flags FROM users`)
+	ctx := context.Background()
+	ctx2 := context.Background()
+	rows, err := d.db.Query(ctx, `SELECT id, revision, flags FROM users`)
 	if err != nil {
 		return nil, err
 	}
@@ -27,35 +30,39 @@ func (d *postgresDB) GetAllUsers() ([]*schema.User, error) {
 		if err := rows.Scan(&u.ID, &u.Revision, &u.Flags); err != nil {
 			return nil, err
 		}
+		if err := d.loadUserCharacters(ctx2, u); err != nil {
+			return nil, err
+		}
 		users = append(users, u)
 	}
 	return users, rows.Err()
 }
 
 func (d *postgresDB) GetUser(steamid string) (*schema.User, error) {
+	ctx := context.Background()
 	u := &schema.User{
 		Characters:        make(map[int]uuid.UUID),
 		DeletedCharacters: make(map[int]uuid.UUID),
 	}
 
-	err := d.db.QueryRow(
-		`SELECT id, revision, flags FROM users WHERE id = ?`, steamid,
+	err := d.db.QueryRow(ctx,
+		`SELECT id, revision, flags FROM users WHERE id = $1`, steamid,
 	).Scan(&u.ID, &u.Revision, &u.Flags)
 
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		return nil, database.ErrNoDocument
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	return u, d.loadUserCharacters(u)
+	return u, d.loadUserCharacters(ctx, u)
 }
 
-func (d *postgresDB) loadUserCharacters(u *schema.User) error {
+func (d *postgresDB) loadUserCharacters(ctx context.Context, u *schema.User) error {
 	// Active characters
-	rows, err := d.db.Query(
-		`SELECT slot, id FROM characters WHERE steam_id = ? AND deleted_at IS NULL`,
+	rows, err := d.db.Query(ctx,
+		`SELECT slot, id FROM characters WHERE steam_id = $1 AND deleted_at IS NULL`,
 		u.ID,
 	)
 	if err != nil {
@@ -65,13 +72,9 @@ func (d *postgresDB) loadUserCharacters(u *schema.User) error {
 
 	for rows.Next() {
 		var slot int
-		var idStr string
-		if err := rows.Scan(&slot, &idStr); err != nil {
+		var id uuid.UUID
+		if err := rows.Scan(&slot, &id); err != nil {
 			return err
-		}
-		id, err := uuid.Parse(idStr)
-		if err != nil {
-			return fmt.Errorf("loadUserCharacters: bad uuid %q: %w", idStr, err)
 		}
 		u.Characters[slot] = id
 	}
@@ -79,9 +82,9 @@ func (d *postgresDB) loadUserCharacters(u *schema.User) error {
 		return err
 	}
 
-	// Soft-deleted characters (the DeletedCharacters map)
-	drows, err := d.db.Query(
-		`SELECT slot, character_id FROM deleted_characters WHERE steam_id = ?`,
+	// Soft-deleted characters
+	drows, err := d.db.Query(ctx,
+		`SELECT slot, character_id FROM deleted_characters WHERE steam_id = $1`,
 		u.ID,
 	)
 	if err != nil {
@@ -91,13 +94,9 @@ func (d *postgresDB) loadUserCharacters(u *schema.User) error {
 
 	for drows.Next() {
 		var slot int
-		var idStr string
-		if err := drows.Scan(&slot, &idStr); err != nil {
+		var id uuid.UUID
+		if err := drows.Scan(&slot, &id); err != nil {
 			return err
-		}
-		id, err := uuid.Parse(idStr)
-		if err != nil {
-			return fmt.Errorf("loadUserCharacters: bad deleted uuid %q: %w", idStr, err)
 		}
 		u.DeletedCharacters[slot] = id
 	}
@@ -105,13 +104,15 @@ func (d *postgresDB) loadUserCharacters(u *schema.User) error {
 }
 
 func (d *postgresDB) SetUserFlags(steamid string, flags bitmask.Bitmask) error {
-	return d.exec(func(tx *sql.Tx) error {
-		res, err := tx.Exec(`UPDATE users SET flags = ? WHERE id = ?`, uint32(flags), steamid)
+	ctx := context.Background()
+	return d.execTx(ctx, func(tx pgx.Tx) error {
+		ct, err := tx.Exec(ctx,
+			`UPDATE users SET flags = $1 WHERE id = $2`, uint32(flags), steamid,
+		)
 		if err != nil {
 			return err
 		}
-		n, _ := res.RowsAffected()
-		if n == 0 {
+		if ct.RowsAffected() == 0 {
 			return database.ErrNoDocument
 		}
 		return nil
@@ -119,10 +120,16 @@ func (d *postgresDB) SetUserFlags(steamid string, flags bitmask.Bitmask) error {
 }
 
 func (d *postgresDB) GetUserFlags(steamid string) (bitmask.Bitmask, error) {
+	ctx := context.Background()
 	var flags uint32
-	err := d.db.QueryRow(`SELECT flags FROM users WHERE id = ?`, steamid).Scan(&flags)
-	if err == sql.ErrNoRows {
+	err := d.db.QueryRow(ctx,
+		`SELECT flags FROM users WHERE id = $1`, steamid,
+	).Scan(&flags)
+	if err == pgx.ErrNoRows {
 		return 0, database.ErrNoDocument
 	}
-	return bitmask.Bitmask(flags), err
+	if err != nil {
+		return 0, fmt.Errorf("get user flags: %w", err)
+	}
+	return bitmask.Bitmask(flags), nil
 }

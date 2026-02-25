@@ -12,6 +12,8 @@ type Config struct {
 	}
 	Postgres struct {
 		Conn string
+		MinConns int32
+		MaxConns int32
 	}
 	Sync string
 	GarbageCollection string
