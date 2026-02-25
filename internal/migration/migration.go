@@ -74,33 +74,6 @@ func (m *Migrator) migrateUser(user *schema.User) error {
 		}
 	}
 
-	// Migrate soft-deleted characters.
-	// These are written as normal characters first, then soft-deleted so that
-	// the destination accurately reflects the source state.
-	for slot, charID := range user.DeletedCharacters {
-		char, err := m.src.GetCharacter(charID)
-		if err != nil {
-			return fmt.Errorf("get deleted character %s (slot %d): %w", charID, slot, err)
-		}
-
-		if err := m.migrateCharacter(user, char); err != nil {
-			return fmt.Errorf("migrate deleted character %s (slot %d): %w", charID, slot, err)
-		}
-
-		// Re-apply the soft-delete on the destination. We pass 0 as expiration
-		// since the TTL clock already started on the source — the destination
-		// GC will clean it up on the next RunGC pass.
-		if char.DeletedAt != nil {
-			if err := m.dst.SoftDeleteCharacter(charID, 0); err != nil {
-				return fmt.Errorf("soft-delete character %s: %w", charID, err)
-			}
-		}
-
-		if m.OnProgress != nil {
-			m.OnProgress(user.ID, slot, charID.String())
-		}
-	}
-
 	// Migrate user flags last so the user row definitely exists in dst.
 	flags, err := m.src.GetUserFlags(user.ID)
 	if err != nil {
