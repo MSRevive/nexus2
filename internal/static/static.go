@@ -10,7 +10,7 @@ const (
 )
 
 var (
-	Version = "canary"
+	Version = "nightly-canary"
 	GoVersion = runtime.Version()
 	OS = runtime.GOOS
 	OSArch = runtime.GOARCH
