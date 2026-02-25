@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/database/pebble"
 	"github.com/msrevive/nexus2/internal/database/sqlite"
 	//"github.com/msrevive/nexus2/internal/database/postgres"
@@ -16,7 +17,7 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-func (a *App) SetupDatabase() (err error) {
+func (a *App) SetupDatabase() error {
 	switch a.Config.Core.DBType {
 	case "pebble":
 		a.Logger.Info("Database set to Pebble!")
@@ -25,9 +26,9 @@ func (a *App) SetupDatabase() (err error) {
 		a.Logger.Info("Database set to SQLite!")
 		a.DB = sqlite.New()
 	case "postgres":
-		a.Logger.Error("Database not yet implemented!")
+		return database.ErrNotImplemented
 	default:
-		err = fmt.Errorf("database not available.")
+		return database.ErrNotAvailable
 	}
 
 	// Setup database sync
@@ -59,7 +60,7 @@ func (a *App) SetupDatabase() (err error) {
 	})
 	gcCron.Start()
 
-	return err
+	return nil
 }
 
 // TODO: Move this to database package.
@@ -82,6 +83,6 @@ func (a *App) SetUpDatabaseLogger() *log.Logger {
 		MaxSize: 5 * rw.Megabyte,
 	})
 
-	fmt.Println("Setting up database logger!")
+	fmt.Println("\t Setting up database logger...")
 	return log.New(iow, "", log.LstdFlags)
 }
