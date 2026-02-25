@@ -14,28 +14,71 @@ import (
 
 func (d *postgresDB) GetAllUsers() ([]*schema.User, error) {
 	ctx := context.Background()
-	ctx2 := context.Background()
-	rows, err := d.db.Query(ctx, `SELECT id, revision, flags FROM users`)
+
+	rows, err := d.db.Query(ctx, `
+		SELECT
+			u.id, u.revision, u.flags,
+			c.slot           AS char_slot,
+			c.id             AS char_id,
+			dc.slot          AS del_slot,
+			dc.character_id  AS del_char_id
+		FROM users u
+		LEFT JOIN characters c
+			ON c.steam_id = u.id AND c.deleted_at IS NULL
+		LEFT JOIN deleted_characters dc
+			ON dc.steam_id = u.id
+		ORDER BY u.id`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var users []*schema.User
+	userMap := make(map[string]*schema.User)
+	var order []string
+
 	for rows.Next() {
-		u := &schema.User{
-			Characters:        make(map[int]uuid.UUID),
-			DeletedCharacters: make(map[int]uuid.UUID),
-		}
-		if err := rows.Scan(&u.ID, &u.Revision, &u.Flags); err != nil {
+		var (
+			id string
+			revision int
+			flags uint32
+			charSlot *int
+			charID *uuid.UUID
+			delSlot *int
+			delID *uuid.UUID
+		)
+		if err := rows.Scan(&id, &revision, &flags, &charSlot, &charID, &delSlot, &delID); err != nil {
 			return nil, err
 		}
-		if err := d.loadUserCharacters(ctx2, u); err != nil {
-			return nil, err
+
+		u, exists := userMap[id]
+		if !exists {
+			u = &schema.User{
+				ID: id,
+				Revision: revision,
+				Flags: flags,
+				Characters: make(map[int]uuid.UUID),
+				DeletedCharacters: make(map[int]uuid.UUID),
+			}
+			userMap[id] = u
+			order = append(order, id)
 		}
-		users = append(users, u)
+
+		if charSlot != nil && charID != nil {
+			u.Characters[*charSlot] = *charID
+		}
+		if delSlot != nil && delID != nil {
+			u.DeletedCharacters[*delSlot] = *delID
+		}
 	}
-	return users, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	users := make([]*schema.User, 0, len(order))
+	for _, id := range order {
+		users = append(users, userMap[id])
+	}
+	return users, nil
 }
 
 func (d *postgresDB) GetUser(steamid string) (*schema.User, error) {
