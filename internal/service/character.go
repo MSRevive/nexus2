@@ -140,7 +140,8 @@ func (s *Service) HardDeleteCharacter(uid uuid.UUID) error {
 		return nil
 	}
 
-	char, err := s.db.GetCharacter(uid); 
+	// make sure character exists
+	_, err := s.db.GetCharacter(uid);
 	if err != nil {
 		return err
 	}
