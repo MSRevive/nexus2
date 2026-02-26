@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // NewCharacter creates the user row (if missing) and the character row in a
@@ -153,14 +154,19 @@ func (d *postgresDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	ctx := context.Background()
 	c := &schema.Character{ID: id}
 
-	var deletedAt *time.Time
+	var (
+		steamID pgtype.Text
+		slot pgtype.Int4
+		deletedAt pgtype.Timestamptz
+	)
+
 	err := d.db.QueryRow(ctx, `
 		SELECT steam_id, slot, created_at, deleted_at,
 			data_created_at, data_size, data_payload
 		FROM characters WHERE id = $1`,
 		id,
 	).Scan(
-		&c.SteamID, &c.Slot, &c.CreatedAt, &deletedAt,
+		&steamID, &slot, &c.CreatedAt, &deletedAt,
 		&c.Data.CreatedAt, &c.Data.Size, &c.Data.Data,
 	)
 	if err == pgx.ErrNoRows {
@@ -169,7 +175,17 @@ func (d *postgresDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.DeletedAt = deletedAt
+	// if steamID.Valid {
+		
+	// }
+	// if slot.Valid {
+		
+	// }
+	c.SteamID = steamID.String
+	c.Slot = int(slot.Int32)
+	if deletedAt.Valid {
+		c.DeletedAt = &deletedAt.Time
+	}
 
 	// Load version history.
 	rows, err := d.db.Query(ctx, `
