@@ -263,8 +263,9 @@ func (d *postgresDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration)
 			return err
 		}
 
+		// we orphan the character data here.
 		if _, err := tx.Exec(ctx, `
-			UPDATE characters SET deleted_at = $1, expires_at = $2 WHERE id = $3`,
+			UPDATE characters SET deleted_at = $1, expires_at = $2, steam_id = NULL, slot = NULL WHERE id = $3`,
 			now, expiresAt, id,
 		); err != nil {
 			return err
@@ -399,7 +400,7 @@ func (d *postgresDB) RestoreCharacter(id uuid.UUID) error {
 		var steamID string
 		var slot int
 		err := tx.QueryRow(ctx,
-			`SELECT steam_id, slot FROM characters WHERE id = $1`, id,
+			`SELECT steam_id, slot FROM deleted_characters WHERE character_id = $1`, id,
 		).Scan(&steamID, &slot)
 		if err == pgx.ErrNoRows {
 			return database.ErrNoDocument
@@ -409,15 +410,15 @@ func (d *postgresDB) RestoreCharacter(id uuid.UUID) error {
 		}
 
 		if _, err := tx.Exec(ctx, `
-			UPDATE characters SET deleted_at = NULL, expires_at = NULL WHERE id = $1`,
-			id,
+			UPDATE characters SET deleted_at = NULL, expires_at = NULL, steam_id = $1, slot = $2 WHERE id = $3`,
+			steamID, slot, id,
 		); err != nil {
 			return err
 		}
 
 		_, err = tx.Exec(ctx,
-			`DELETE FROM deleted_characters WHERE steam_id = $1 AND slot = $2`,
-			steamID, slot,
+			`DELETE FROM deleted_characters WHERE character_id = $1`,
+			id,
 		)
 		return err
 	})

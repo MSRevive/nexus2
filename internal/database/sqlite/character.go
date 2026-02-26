@@ -276,7 +276,7 @@ func (d *sqliteDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 		}
 
 		if _, err := tx.Exec(`
-			UPDATE characters SET deleted_at = ?, expires_at = ? WHERE id = ?`,
+			UPDATE characters SET deleted_at = ?, expires_at = ?, steam_id = NULL, slot = NULL WHERE id = ?`,
 			now, expiresAt, id.String(),
 		); err != nil {
 			return err
@@ -421,7 +421,7 @@ func (d *sqliteDB) RestoreCharacter(id uuid.UUID) error {
 		var steamID string
 		var slot int
 		err := tx.QueryRow(
-			`SELECT steam_id, slot FROM characters WHERE id = ?`, id.String(),
+			`SELECT steam_id, slot FROM deleted_characters WHERE character_id = ?`, id.String(),
 		).Scan(&steamID, &slot)
 		if err == sql.ErrNoRows {
 			return database.ErrNoDocument
@@ -431,15 +431,15 @@ func (d *sqliteDB) RestoreCharacter(id uuid.UUID) error {
 		}
 
 		if _, err := tx.Exec(`
-			UPDATE characters SET deleted_at = NULL, expires_at = NULL WHERE id = ?`,
-			id.String(),
+			UPDATE characters SET deleted_at = NULL, expires_at = NULL, steam_id = ?, slot = ? WHERE id = ?`,
+			steamID, slot, id.String(),
 		); err != nil {
 			return err
 		}
 
 		_, err = tx.Exec(
-			`DELETE FROM deleted_characters WHERE steam_id = ? AND slot = ?`,
-			steamID, slot,
+			`DELETE FROM deleted_characters WHERE character_id = ?`,
+			id,
 		)
 		return err
 	})
