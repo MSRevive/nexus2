@@ -95,7 +95,7 @@ func (a *App) CalcHashes() error {
 func (a *App) LoadConfig(path string) (error) {
 	cfg, err := config.Load(path)
 	if err != nil && os.IsNotExist(err) {
-		fmt.Println("Config file is missing, creating new one!")
+		fmt.Println("\t Creating New Config File")
 
 		if err := utils.CopyFile("./runtime/config.example.yaml", path); err != nil {
 			return fmt.Errorf("Unable to create new config %w", err)
@@ -144,24 +144,23 @@ func (a *App) InitializeLogger() (err error) {
 	return
 }
 
-func (a *App) LoadLists() error {
+func (a *App) LoadLists() (listErr error) {
+	fmt.Println("\t Loading System Admins List...")
 	if err := a.loadSystemAdminList(a.Config.ApiAuth.SystemAdmins); err != nil {
-		return fmt.Errorf("failed to load system admin list: %w", err)
+		listErr = fmt.Errorf("failed to load system admin list: %w", err)
 	}
 
-	if a.Config.ApiAuth.EnforceIP {
-		if err := a.loadIPList(a.Config.ApiAuth.IPListFile); err != nil {
-			return fmt.Errorf("failed to load IP whitelist: %w", err)
-		}
+	fmt.Println("\t Loading API IP Whitelist List...")
+	if err := a.loadIPList(a.Config.ApiAuth.IPListFile); err != nil {
+		listErr = fmt.Errorf("failed to load IP whitelist: %w", err)
 	}
 
-	if a.Config.Verify.EnforceMap {
-		if err := a.loadMapList(a.Config.Verify.MapListFile); err != nil {
-			return fmt.Errorf("failed to load map list: %w", err)
-		}
+	fmt.Println("\t Loading FN Map List...")
+	if err := a.loadMapList(a.Config.Verify.MapListFile); err != nil {
+		listErr = fmt.Errorf("failed to load map list: %w", err)
 	}
 
-	return nil
+	return listErr
 }
 
 func (a *App) loadIPList(path string) error {
@@ -192,9 +191,8 @@ func (a *App) loadSystemAdminList(path string) error {
 }
 
 func (a *App) Start(mux chi.Router) error {
-	a.Logger.Info("Starting Nexus2", "App Version", static.Version, "Go Version", static.GoVersion, "OS", static.OS, "Arch", static.OSArch)
+	defer a.Logger.Info("Starting Nexus2", "App Version", static.Version, "Go Version", static.GoVersion, "OS", static.OS, "Arch", static.OSArch)
 
-	a.Logger.Info("Connecting to database")
 	if err := a.DB.Connect(a.Config.Database, database.Options{
 		Logger: a.SetUpDatabaseLogger(),
 	}); err != nil {
@@ -229,11 +227,10 @@ func (a *App) Start(mux chi.Router) error {
 		},
 	}
 
+	fmt.Println("\t Starting HTTP Server...")
 	if a.Config.Cert.Enable {
-		a.Logger.Info("Starting HTTPS server with cert")
 		return a.StartHTTPWithCert()
 	}else{
-		a.Logger.Info("Starting HTTP server")
 		return a.StartHTTP()
 	}
 

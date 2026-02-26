@@ -4,18 +4,16 @@ import (
 )
 
 type Config struct {
-	MongoDB struct {
-		Connection string
-	}
-	BBolt struct {
-		File string
-		Timeout int
-	}
-	Badger struct {
-		Directory string
-	}
 	Pebble struct {
 		Directory string
+	}
+	SQLite struct {
+		Path string
+	}
+	Postgres struct {
+		Conn string
+		MinConns int32
+		MaxConns int32
 	}
 	Sync string
 	GarbageCollection string

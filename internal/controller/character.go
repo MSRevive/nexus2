@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"io"
 	"strconv"
+	"errors"
 
 	"github.com/msrevive/nexus2/internal/payload"
 	"github.com/msrevive/nexus2/internal/response"
+	"github.com/msrevive/nexus2/internal/database"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -89,8 +91,12 @@ func (c *Controller) GetCharacterByIDExternal(w http.ResponseWriter, r *http.Req
 	}
 
 	char, err := c.service.GetCharacterByID(uid)
-	if err != nil {
-		c.logger.Error("service failed", "error", err)
+	if errors.Is(err, database.ErrNoDocument)  {
+		c.logger.Warn("service warning", "error", err)
+		response.OKNoContent(w)
+		return
+	}else if err != nil {
+		c.logger.Error("service error", "error", err)
 		response.Error(w, err)
 		return
 	}

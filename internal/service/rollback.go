@@ -1,9 +1,8 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/msrevive/nexus2/pkg/database/schema"
+	"github.com/msrevive/nexus2/internal/static"
 
 	"github.com/google/uuid"
 )
@@ -25,7 +24,7 @@ func (s *Service) GetCharacterVersions(uid uuid.UUID) (map[int]schema.CharacterD
 		return datas, nil
 	}
 	
-	return nil, fmt.Errorf("no character versions exist")
+	return nil, static.ErrNoCharacterVersions
 }
 
 func (s *Service) RollbackCharacter(uid uuid.UUID, ver int) error {

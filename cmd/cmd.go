@@ -63,18 +63,22 @@ func Run(args []string) (error) {
 	/////////////////////////
 	a := app.New();
 
+	fmt.Printf("-> Loading Config (%s)...\n", flags.cfgFile)
 	if err := a.LoadConfig(flags.cfgFile); err != nil {
 		return err
 	}
-
+	
+	fmt.Println("-> Initiating Logger...")
 	if err := a.InitializeLogger(); err != nil {
 		return err
 	}
 
+	fmt.Println("-> Connecting to Database...")
 	if err := a.SetupDatabase(); err != nil {
 		return err
 	}
 
+	fmt.Println("-> Loading Lists...")
 	if err := a.LoadLists(); err != nil {
 		a.Logger.Warn("Failed to load list(s)!", "error", err)
 	}
@@ -150,6 +154,7 @@ func Run(args []string) (error) {
 				r.Get("/{uuid}", con.GetCharacterByIDExternal)
 				r.Patch("/restore/{uuid}", con.RestoreCharacter)
 				r.Get("/export/{uuid}", con.ExportCharacter)
+				r.Get("/{steamid:[0-9]+}/{slot:[0-9]+}", con.GetCharacter)
 			})
 
 			r.Route("/rollback/character", func(r chi.Router) {
@@ -225,6 +230,7 @@ func Run(args []string) (error) {
 	/////////////////////////
 	// Application Startup
 	/////////////////////////
+	fmt.Println("-> Starting Application...")
 	if err := a.Start(router); err != nil {
 		a.Logger.Error("Failed to start application", "error", err)
 		return err

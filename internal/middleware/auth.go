@@ -33,10 +33,12 @@ func (mw *Middleware) ExternalAuth(next http.Handler) http.Handler {
 			ok = true
 		}
 
-		if !ok || (key != "" && val != key) {
-			mw.logger.Info("ExternalAuth: IP is not authorized!", "ip", ip)
-			http.Error(w, http.StatusText(401), http.StatusUnauthorized)
-			return
+		if mw.config.ApiAuth.EnforceIP {
+			if !ok || (key != "" && val != key) {
+				mw.logger.Info("ExternalAuth: IP is not authorized!", "ip", ip)
+				http.Error(w, http.StatusText(401), http.StatusUnauthorized)
+				return
+			}
 		}
 
 		next.ServeHTTP(w, r)

@@ -6,32 +6,30 @@ import (
 	"log"
 	"io"
 	"os"
-	"path/filepath"
 
-	"github.com/msrevive/nexus2/internal/database/bbolt"
-	"github.com/msrevive/nexus2/internal/database/badger"
+	"github.com/msrevive/nexus2/internal/database"
 	"github.com/msrevive/nexus2/internal/database/pebble"
+	"github.com/msrevive/nexus2/internal/database/sqlite"
+	"github.com/msrevive/nexus2/internal/database/postgres"
 	"github.com/msrevive/nexus2/pkg/utils"
 
 	rw "github.com/saintwish/rotatewriter"
 	"github.com/robfig/cron/v3"
 )
 
-func (a *App) SetupDatabase() (err error) {
+func (a *App) SetupDatabase() error {
 	switch a.Config.Core.DBType {
-	case "bbolt":
-		a.Logger.Info("Database set to BBolt!")
-		// This is needed because BBolt doesn't automatically create the directory.
-		err = os.MkdirAll(filepath.Dir(a.Config.Database.BBolt.File), os.ModePerm)
-		a.DB = bbolt.New()
-	case "badger":
-		a.Logger.Info("Database set to Badger!")
-		a.DB = badger.New()
 	case "pebble":
 		a.Logger.Info("Database set to Pebble!")
 		a.DB = pebble.New()
+	case "sqlite":
+		a.Logger.Info("Database set to SQLite!")
+		a.DB = sqlite.New()
+	case "postgres":
+		a.Logger.Info("Database set to PostgreSQL!")
+		a.DB = postgres.New()
 	default:
-		err = fmt.Errorf("database not available.")
+		return database.ErrNotAvailable
 	}
 
 	// Setup database sync
@@ -63,15 +61,11 @@ func (a *App) SetupDatabase() (err error) {
 	})
 	gcCron.Start()
 
-	return err
+	return nil
 }
 
 // TODO: Move this to database package.
 func (a *App) SetUpDatabaseLogger() *log.Logger {
-	if a.Config.Core.DBType != "badger" {
-		return nil
-	}
-
 	if err := os.MkdirAll(a.Config.Log.Dir+"database/", os.ModePerm); err != nil {
 		fmt.Println(fmt.Errorf("database error: failed to create logging directory %v", err))
 		return nil
@@ -90,6 +84,6 @@ func (a *App) SetUpDatabaseLogger() *log.Logger {
 		MaxSize: 5 * rw.Megabyte,
 	})
 
-	fmt.Println("Setting up database logger!")
+	fmt.Println("\t Setting up database logger...")
 	return log.New(iow, "", log.LstdFlags)
 }

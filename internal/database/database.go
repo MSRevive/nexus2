@@ -13,6 +13,8 @@ import (
 
 var (
 	ErrNoDocument = errors.New("no document")
+	ErrNotImplemented = errors.New("database not yet implemented")
+	ErrNotAvailable = errors.New("database not available")
 )
 
 type Options struct {

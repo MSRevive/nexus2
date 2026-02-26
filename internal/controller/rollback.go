@@ -3,8 +3,10 @@ package controller
 import (
 	"net/http"
 	"strconv"
+	"errors"
 
 	"github.com/msrevive/nexus2/internal/response"
+	"github.com/msrevive/nexus2/internal/static"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -20,7 +22,11 @@ func (c *Controller) GetCharacterVersions(w http.ResponseWriter, r *http.Request
 	}
 
 	data, err := c.service.GetCharacterVersions(uid)
-	if err != nil {
+	if errors.Is(err, static.ErrNoCharacterVersions) {
+		c.logger.Warn("service warning", "error", err)
+		response.OKNoContent(w)
+		return
+	} else if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
