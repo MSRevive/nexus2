@@ -175,12 +175,6 @@ func (d *postgresDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	if err != nil {
 		return nil, err
 	}
-	// if steamID.Valid {
-		
-	// }
-	// if slot.Valid {
-		
-	// }
 	c.SteamID = steamID.String
 	c.Slot = int(slot.Int32)
 	if deletedAt.Valid {
