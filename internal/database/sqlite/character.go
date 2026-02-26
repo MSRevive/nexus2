@@ -162,14 +162,19 @@ func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 func (d *sqliteDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	c := &schema.Character{ID: id}
 
-	var deletedAt sql.NullTime
+	var (
+		steamID sql.NullString
+		slot sql.NullInt32
+		deletedAt sql.NullTime
+	)
+
 	err := d.db.QueryRow(`
 		SELECT steam_id, slot, created_at, deleted_at,
-		       data_created_at, data_size, data_payload
+		    data_created_at, data_size, data_payload
 		FROM characters WHERE id = ?`,
 		id.String(),
 	).Scan(
-		&c.SteamID, &c.Slot, &c.CreatedAt, &deletedAt,
+		&steamID, &slot, &c.CreatedAt, &deletedAt,
 		&c.Data.CreatedAt, &c.Data.Size, &c.Data.Data,
 	)
 	if err == sql.ErrNoRows {
@@ -178,6 +183,8 @@ func (d *sqliteDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.SteamID = steamID.String
+	c.Slot = int(slot.Int32)
 	if deletedAt.Valid {
 		c.DeletedAt = &deletedAt.Time
 	}
