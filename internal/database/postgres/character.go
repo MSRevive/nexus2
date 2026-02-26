@@ -156,7 +156,7 @@ func (d *postgresDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	var deletedAt *time.Time
 	err := d.db.QueryRow(ctx, `
 		SELECT steam_id, slot, created_at, deleted_at,
-		       data_created_at, data_size, data_payload
+			data_created_at, data_size, data_payload
 		FROM characters WHERE id = $1`,
 		id,
 	).Scan(
