@@ -145,9 +145,9 @@ func (s *Service) HardDeleteCharacter(uid uuid.UUID) error {
 		return err
 	}
 
-	if err := s.db.DeleteCharacterReference(char.SteamID, char.Slot); err != nil {
-		return err
-	}
+	// if err := s.db.DeleteCharacterReference(char.SteamID, char.Slot); err != nil {
+	// 	return err
+	// }
 
 	if err := s.db.DeleteCharacter(uid); err != nil {
 		return err
