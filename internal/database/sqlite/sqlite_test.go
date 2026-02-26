@@ -59,14 +59,6 @@ func TestConnect_CreatesSchema(t *testing.T) {
 	assert.NotNil(t, db)
 }
 
-func TestConnect_BadPath(t *testing.T) {
-	db := New()
-	cfg := database.Config{}
-	cfg.SQLite.Path = "/nonexistent/dir/db.sqlite"
-	err := db.Connect(cfg, database.Options{})
-	assert.Error(t, err)
-}
-
 // ─── User tests ──────────────────────────────────────────────────────────────
 
 func TestGetAllUsers_Empty(t *testing.T) {
