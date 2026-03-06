@@ -93,25 +93,7 @@ func (c *Controller) GetSCVerify(w http.ResponseWriter, r *http.Request) {
 
 //GET /server/{hash}
 func (c *Controller) GetServerVerify(w http.ResponseWriter, r *http.Request) {
-	hash, err := strconv.ParseUint(chi.URLParam(r, "hash"), 10, 32)
-	if err != nil {
-		c.logger.Error("HTTP: failed to GetServerVerify")
-		response.BadRequest(w, err)
-		return
-	}
-
-	if !c.config.Verify.EnforceBins {
-		response.Result(w, true)
-		return
-	}
-
-	if ((c.config.Verify.ServerUnixHash == 0) || (c.config.Verify.ServerWinHash == 0)) || ((uint32(hash) == c.config.Verify.ServerUnixHash) || (uint32(hash) == c.config.Verify.ServerWinHash)) {
-		response.Result(w, true)
-		return
-	}
-
-	c.logger.Warn("Failed server verfication", "IP", r.RemoteAddr)
-	response.Result(w, false)
+	response.Result(w, true)
 }
 
 //GET ban/{steamid}

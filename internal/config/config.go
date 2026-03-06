@@ -42,8 +42,6 @@ type Config struct {
 		MapListFile string
 		BanListFile string
 		AdminListFile string
-		ServerUnixHash uint32
-		ServerWinHash uint32
 		ScriptsHash uint32
 	}
 	Char struct {
