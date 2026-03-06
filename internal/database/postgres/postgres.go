@@ -87,10 +87,10 @@ func (d *postgresDB) Connect(cfg database.Config, opts database.Options) error {
 	d.db = pool
 	d.Logger = opts.Logger
 
-	if err := migrate(ctx, pool); err != nil {
-		pool.Close()
-		return fmt.Errorf("postgres: migrate: %w", err)
-	}
+	// if err := migrate(ctx, pool); err != nil {
+	// 	pool.Close()
+	// 	return fmt.Errorf("postgres: migrate: %w", err)
+	// }
 
 	d.wg.Add(1)
 	go d.flushWorker()
