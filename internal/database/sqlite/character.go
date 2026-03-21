@@ -544,7 +544,7 @@ func (d *sqliteDB) GetRollbackVersionsTimestamp(id uuid.UUID) (map[int]string, e
 		if err := rows.Scan(&createdAt); err != nil {
 			return nil, err
 		}
-		versions[idx] = createdAt.UTC().Format(time.RFC3339Nano)
+		versions[idx] = createdAt.UTC().Format(time.RFC3339)
 		idx++
 	}
 	return versions, rows.Err()
