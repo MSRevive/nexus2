@@ -41,7 +41,7 @@ collection:
         meta:
           id: req_b4937fca3b244d0ebc92d498b561f86b
           created: 1701668372562
-          modified: 1771885637277
+          modified: 1772077327274
           isPrivate: false
           description: ""
           sortKey: -1702091266935
@@ -52,7 +52,7 @@ collection:
             {
             	"steamid": "76561197970271912",
             	"slot": 2,
-            	"size": 180,
+            	"size": 1234,
             	"data": "THIS_TEST_DATA2J____DJHDHJFJK ALTERNATE"
             }
         headers:
@@ -140,12 +140,12 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: http://127.0.0.1:1337/api/v2/internal/character/99d08d19-e67f-48f3-beb5-a424de24270e
+      - url: http://127.0.0.1:1337/api/v2/internal/character/80371fe2-31b6-42f4-9c07-7ee0b48f3e88
         name: Delete Character
         meta:
           id: req_8661af7a260e4ee3b14763a182341e9d
           created: 1702014924846
-          modified: 1772004720934
+          modified: 1772083296675
           isPrivate: false
           description: ""
           sortKey: -1702091266885
@@ -169,12 +169,12 @@ collection:
       sortKey: -1702091446572
       description: ""
     children:
-      - url: 127.0.0.1:1337/api/v2/character/99d08d19-e67f-48f3-beb5-a424de24270e
+      - url: 127.0.0.1:1337/api/v2/character/82a60afb-3d29-4e82-a000-51a175128df2
         name: Get Character By ID
         meta:
           id: req_8acaacdd253546d58c45e5ba5bef0d88
           created: 1701720160986
-          modified: 1772005038219
+          modified: 1774069116689
           isPrivate: false
           description: ""
           sortKey: -1702091526359
@@ -190,12 +190,12 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: 127.0.0.1:1337/api/v2/character/76561197970271912
+      - url: 127.0.0.1:1337/api/v2/character/76561198745385555
         name: Get Characters
         meta:
           id: req_e76e2ec9e28e48dd904a7b48472e05bc
           created: 1702086161941
-          modified: 1771886210189
+          modified: 1774069073583
           isPrivate: false
           description: ""
           sortKey: -1702091526459
@@ -253,12 +253,12 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: http://127.0.0.1:1337/api/v2/unsafe/character/move/c5077373-ea54-4f37-a47d-5ab5dc140ff2/to/1234/2
+      - url: 127.0.0.1:1337/api/v2/unsafe/character/move/a802d9c5-8eff-4dbe-a0e0-81144ee07b83/to/76561198745385555/0
         name: Move Character
         meta:
           id: req_54922995ef274d5a91dcca95fb2a0b9a
           created: 1702096471985
-          modified: 1706398471300
+          modified: 1774069168378
           isPrivate: false
           description: ""
           sortKey: -1702091526609
@@ -274,12 +274,12 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: http://127.0.0.1:1337/api/v2/unsafe/character/copy/3a362194-5783-487c-a76d-49d2c2652d21/to/1337/2
+      - url: 127.0.0.1:1337/api/v2/unsafe/character/copy/542b89b2-d113-46d1-bf5e-9bccc8f2f86b/to/76561198745385555/2
         name: Copy Character
         meta:
           id: req_990e2daa835f44b184e500af526b4719
           created: 1702096766384
-          modified: 1706398421538
+          modified: 1774069156105
           isPrivate: false
           description: ""
           sortKey: -1702091526584
@@ -295,12 +295,12 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: http://127.0.0.1:1337/api/v2/character/restore/f69ffd70-6fdb-443c-a071-7f17565291ad
+      - url: 127.0.0.1:1337/api/v2/character/restore/5b2b30da-9dfd-41d7-afde-d7ef77f2999f
         name: Restore Character
         meta:
           id: req_30ba1d0afc43438cb9d832561704dec2
           created: 1702165085087
-          modified: 1750895319533
+          modified: 1774069178378
           isPrivate: false
           description: ""
           sortKey: -1702091526759
@@ -400,12 +400,12 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: 127.0.0.1:1337/api/v2/character/76561197970271912/2
+      - url: 127.0.0.1:1337/api/v2/character/76561197964550373/1
         name: Get Character By STEAMID and SLOT
         meta:
           id: req_45c6c0d6fdf74fe1b477ca41f6ae5290
           created: 1772004912440
-          modified: 1772004925147
+          modified: 1774069199481
           isPrivate: false
           description: ""
           sortKey: -1702091396797
@@ -429,12 +429,12 @@ collection:
       sortKey: -1702169927187
       description: ""
     children:
-      - url: 127.0.0.1:1337/api/v2/rollback/character/b07ce88f-fe4b-48fc-8b0d-e23e04d35789
+      - url: 127.0.0.1:1337/api/v2/rollback/character/7f691b54-099a-49b9-a797-bb7015a7d5e5
         name: Character Versions
         meta:
           id: req_8ba340a74190489d8d2d3c5268198180
           created: 1702169943633
-          modified: 1772006700822
+          modified: 1774069188074
           isPrivate: false
           description: ""
           sortKey: -1702169943633
@@ -442,6 +442,52 @@ collection:
         headers:
           - name: User-Agent
             value: insomnia/8.4.5
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: 127.0.0.1:1337/api/v2/rollback/character/7f691b54-099a-49b9-a797-bb7015a7d5e5/17
+        name: Rollback character to version
+        meta:
+          id: req_4fc1b74b733a453293b9cdc71ab3910a
+          created: 1773203108831
+          modified: 1774069192426
+          isPrivate: false
+          description: ""
+          sortKey: -1773203108831
+        method: PATCH
+        headers:
+          - name: User-Agent
+            value: insomnia/12.4.0
+            description: ""
+            disabled: false
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://127.0.0.1:1337/api/v2/rollback/character/7f691b54-099a-49b9-a797-bb7015a7d5e5/timestamp
+        name: Character Versions Timestamp
+        meta:
+          id: req_3c9aa023f0dc4695b6925635afca9813
+          created: 1774056206539
+          modified: 1774056543341
+          isPrivate: false
+          description: ""
+          sortKey: -1774056206539
+        method: GET
+        headers:
+          - name: User-Agent
+            value: insomnia/12.4.0
+            description: ""
+            disabled: false
         settings:
           renderRequestBody: true
           encodeUrl: true
