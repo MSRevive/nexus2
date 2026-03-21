@@ -78,7 +78,7 @@ func Run(args []string) (error) {
 		return err
 	}
 
-	fmt.Println("\tConnecting to database...")
+	fmt.Println("\t Connecting to database...")
 	if err := a.DatabaseConnect(); err != nil {
 		return err
 	}
