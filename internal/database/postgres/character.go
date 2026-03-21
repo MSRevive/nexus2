@@ -72,7 +72,8 @@ func applyCharacterUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID, upd pend
 	)
 	err := tx.QueryRow(ctx, `
 		SELECT data_created_at, data_size, data_payload
-		FROM characters WHERE id = $1`,
+		FROM characters WHERE id = $1
+		FOR UPDATE`, // we do FOR UPDATE to let postgres know to lock it ahead of time for updating.
 		id,
 	).Scan(&dataCreatedAt, &dataSize, &dataPayload)
 
@@ -181,6 +182,14 @@ func (d *postgresDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 		c.DeletedAt = &deletedAt.Time
 	}
 
+	// Overlay any pending update that hasn't been flushed yet.
+	d.coalesceMu.RLock()
+	if upd, ok := d.pendingUpdates[id]; ok {
+		c.Data.Size = upd.size
+		c.Data.Data = upd.data
+	}
+	d.coalesceMu.RUnlock()
+
 	// Load version history.
 	rows, err := d.db.Query(ctx, `
 		SELECT created_at, size, data_payload
@@ -231,6 +240,15 @@ func (d *postgresDB) GetCharacters(steamid string) (map[int]schema.Character, er
 		}
 		c.SteamID = steamid
 		c.DeletedAt = deletedAt
+
+		// Overlay any pending update that hasn't been flushed yet.
+		d.coalesceMu.RLock()
+		if upd, ok := d.pendingUpdates[c.ID]; ok {
+			c.Data.Size = upd.size
+			c.Data.Data = upd.data
+		}
+		d.coalesceMu.RUnlock()
+
 		chars[c.Slot] = c
 	}
 	return chars, rows.Err()

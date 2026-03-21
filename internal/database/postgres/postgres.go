@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"sort"
 
 	"github.com/msrevive/nexus2/internal/database"
 
@@ -32,7 +33,7 @@ type postgresDB struct {
 	// pendingUpdates is the coalescing map. When UpdateCharacter is called,
 	// we just overwrite the entry for that character ID. On each flush tick,
 	// all pending entries are committed in a single transaction.
-	coalesceMu     sync.Mutex
+	coalesceMu     sync.RWMutex
 	pendingUpdates map[uuid.UUID]pendingUpdate
 
 	done chan struct{}
@@ -43,7 +44,7 @@ type postgresDB struct {
 
 func New() *postgresDB {
 	return &postgresDB{
-		flushInterval:  500 * time.Millisecond,
+		flushInterval:  3 * time.Second,
 		pendingUpdates: make(map[uuid.UUID]pendingUpdate),
 		done:           make(chan struct{}),
 	}
@@ -171,10 +172,19 @@ func (d *postgresDB) flushPendingUpdates() error {
 	d.pendingUpdates = make(map[uuid.UUID]pendingUpdate)
 	d.coalesceMu.Unlock()
 
+	// Sort IDs to acquire row locks in a consistent order and prevent deadlocks.
+	ids := make([]uuid.UUID, 0, len(snapshot))
+	for id := range snapshot {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool {
+		return ids[i].String() < ids[j].String()
+	})
+
 	ctx := context.Background()
 	return d.execTx(ctx, func(tx pgx.Tx) error {
-		for id, upd := range snapshot {
-			if err := applyCharacterUpdate(ctx, tx, id, upd); err != nil {
+		for _, id := range ids {
+			if err := applyCharacterUpdate(ctx, tx, id, snapshot[id]); err != nil {
 				return fmt.Errorf("flush update for %s: %w", id, err)
 			}
 		}
