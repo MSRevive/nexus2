@@ -73,8 +73,13 @@ func Run(args []string) (error) {
 		return err
 	}
 
-	fmt.Println("-> Connecting to Database...")
+	fmt.Println("-> Initiating Database...")
 	if err := a.SetupDatabase(); err != nil {
+		return err
+	}
+
+	fmt.Println("\tConnecting to database...")
+	if err := a.DatabaseConnect(); err != nil {
 		return err
 	}
 

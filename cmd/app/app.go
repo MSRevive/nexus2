@@ -190,14 +190,18 @@ func (a *App) loadSystemAdminList(path string) error {
 	return a.List.SystemAdmin.LoadFromJSON(utils.StandardJSON(file, file))
 }
 
-func (a *App) Start(mux chi.Router) error {
-	defer a.Logger.Info("Starting Nexus2", "App Version", static.Version, "Go Version", static.GoVersion, "OS", static.OS, "Arch", static.OSArch)
-
+func (a *App) DatabaseConnect() error {
 	if err := a.DB.Connect(a.Config.Database, database.Options{
 		Logger: a.SetUpDatabaseLogger(),
 	}); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (a *App) Start(mux chi.Router) error {
+	defer a.Logger.Info("Starting Nexus2", "App Version", static.Version, "Go Version", static.GoVersion, "OS", static.OS, "Arch", static.OSArch)
 
 	a.httpServer = &http.Server{
 		Handler:      mux,
