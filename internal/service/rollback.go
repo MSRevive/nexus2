@@ -65,3 +65,12 @@ func (s *Service) DeleteCharacterVersions(uid uuid.UUID) error {
 
 	return nil
 }
+
+func (s *Service) GetCharacterVersionsTimestamp(uid uuid.UUID) (data map[int]string, err error) {
+	data, err = s.db.GetRollbackVersionsTimestamp(uid)
+	if len(data) == 0 {
+		return data, static.ErrNoCharacterVersions
+	}
+
+	return
+}

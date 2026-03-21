@@ -523,3 +523,29 @@ func (d *sqliteDB) DeleteCharacterVersions(id uuid.UUID) error {
 		return err
 	})
 }
+
+func (d *sqliteDB) GetRollbackVersionsTimestamp(id uuid.UUID) (map[int]string, error) {
+	rows, err := d.db.Query(`
+		SELECT created_at
+		FROM character_versions
+		WHERE character_id = ?
+		ORDER BY id ASC`,
+		id.String(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	versions := make(map[int]string)
+	idx := 0
+	for rows.Next() {
+		var createdAt time.Time
+		if err := rows.Scan(&createdAt); err != nil {
+			return nil, err
+		}
+		versions[idx] = createdAt.UTC().Format(time.RFC3339)
+		idx++
+	}
+	return versions, rows.Err()
+}

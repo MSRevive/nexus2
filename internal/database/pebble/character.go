@@ -496,3 +496,7 @@ func (d *pebbleDB) DeleteCharacterVersions(id uuid.UUID) error {
 
 	return nil
 }
+
+func (d *pebbleDB) GetRollbackVersionsTimestamp(id uuid.UUID) (map[int]string, error) {
+	return make(map[int]string), nil
+}

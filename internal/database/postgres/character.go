@@ -508,3 +508,30 @@ func (d *postgresDB) DeleteCharacterVersions(id uuid.UUID) error {
 		return err
 	})
 }
+
+func (d *postgresDB) GetRollbackVersionsTimestamp(id uuid.UUID) (map[int]string, error) {
+	ctx := context.Background()
+	rows, err := d.db.Query(ctx, `
+		SELECT created_at
+		FROM character_versions
+		WHERE character_id = $1
+		ORDER BY id ASC`,
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	versions := make(map[int]string)
+	idx := 0
+	for rows.Next() {
+		var createdAt time.Time
+		if err := rows.Scan(&createdAt); err != nil {
+			return nil, err
+		}
+		versions[idx] = createdAt.UTC().Format(time.RFC3339)
+		idx++
+	}
+	return versions, rows.Err()
+}

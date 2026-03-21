@@ -162,6 +162,7 @@ func Run(args []string) (error) {
 				r.Patch("/{uuid}/latest", con.RollbackCharToLatest)
 				r.Patch("/{uuid}/{version:[0-9]+}", con.RollbackCharToVersion)
 				r.Delete("/{uuid}", con.DeleteCharRollbacks)
+				r.Get("/{uuid}/timestamp", con.GetCharacterVersionsTimestamp)
 			})
 
 			r.Route("/unsafe/character", func(r chi.Router) {

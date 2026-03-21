@@ -41,9 +41,11 @@ type Database interface {
 	MoveCharacter(id uuid.UUID, steamid string, slot int) error
 	CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UUID, error)
 	RestoreCharacter(id uuid.UUID) error
+
 	RollbackCharacter(id uuid.UUID, ver int) error
 	RollbackCharacterToLatest(id uuid.UUID) error
 	DeleteCharacterVersions(id uuid.UUID) error
+	GetRollbackVersionsTimestamp(id uuid.UUID) (map[int]string, error)
 
 	SyncToDisk() error
 	RunGC() error

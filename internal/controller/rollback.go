@@ -95,3 +95,25 @@ func (c *Controller) DeleteCharRollbacks(w http.ResponseWriter, r *http.Request)
 
 	response.OKNoContent(w)
 }
+
+func (c *Controller) GetCharacterVersionsTimestamp(w http.ResponseWriter, r *http.Request) {
+	uid, err := uuid.Parse(chi.URLParam(r, "uuid"))
+	if err != nil {
+		c.logger.Error("controller: bad request", "error", err)
+		response.BadRequest(w, err)
+		return
+	}
+
+	data, err := c.service.GetCharacterVersionsTimestamp(uid)
+	if errors.Is(err, static.ErrNoCharacterVersions) {
+		c.logger.Warn("service warning", "error", err)
+		response.OKNoContent(w)
+		return
+	} else if err != nil {
+		c.logger.Error("service failed", "error", err)
+		response.Error(w, err)
+		return
+	}
+
+	response.OK(w, data)
+}
