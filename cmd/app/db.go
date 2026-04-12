@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/msrevive/nexus2/internal/database"
-	"github.com/msrevive/nexus2/internal/database/pebble"
 	"github.com/msrevive/nexus2/internal/database/sqlite"
 	"github.com/msrevive/nexus2/internal/database/postgres"
 	"github.com/msrevive/nexus2/pkg/utils"
@@ -19,9 +18,6 @@ import (
 
 func (a *App) SetupDatabase() error {
 	switch a.Config.Core.DBType {
-	case "pebble":
-		a.Logger.Info("Database set to Pebble!")
-		a.DB = pebble.New()
 	case "sqlite":
 		a.Logger.Info("Database set to SQLite!")
 		a.DB = sqlite.New()

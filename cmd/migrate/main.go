@@ -19,7 +19,6 @@ import (
 	"github.com/msrevive/nexus2/internal/config"
 
 	// Import whichever backends you have implemented.
-	nexusPebble "github.com/msrevive/nexus2/internal/database/pebble"
 	nexusSQLite "github.com/msrevive/nexus2/internal/database/sqlite"
 	nexusPostgres "github.com/msrevive/nexus2/internal/database/postgres"
 )
@@ -85,15 +84,10 @@ func openDB(kind string, dbcfg database.Config) (database.Database, error) {
 	var db database.Database
 
 	switch kind {
-	case "pebble":
-		db = nexusPebble.New()
-
 	case "sqlite":
 		db = nexusSQLite.New()
-
 	case "postgres":
 		db = nexusPostgres.New()
-
 	default:
 		return nil, fmt.Errorf("unknown backend %q (supported: pebble, sqlite)", kind)
 	}
