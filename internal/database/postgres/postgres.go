@@ -51,7 +51,8 @@ func New() *postgresDB {
 }
 
 func (d *postgresDB) Connect(cfg database.Config, opts database.Options) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	defer cancel();
 
 	poolCfg, err := pgxpool.ParseConfig(cfg.Postgres.Conn)
 	if err != nil {

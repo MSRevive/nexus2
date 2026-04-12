@@ -1,12 +1,10 @@
 package database
 
 import (
+	"time"
 )
 
 type Config struct {
-	Pebble struct {
-		Directory string
-	}
 	SQLite struct {
 		Path string
 	}
@@ -14,6 +12,8 @@ type Config struct {
 		Conn string
 		MinConns int32
 		MaxConns int32
+		RetryDelay time.Duration
+		MaxRetries int
 	}
 	Sync string
 	GarbageCollection string

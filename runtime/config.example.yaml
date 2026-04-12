@@ -4,14 +4,14 @@ core:
   timeout: 60 # The HTTP failure timeout.
   dbtype: "sqlite" # The type of database the FN should store characters.
 database:
-  pebble:
-    directory: "" # Where the database should be contained.
   sqlite: # This is the recommended and default database.
     path: ./runtime/game/data.db # Where the database should be contained.
   postgres:
     conn: postgres://user:pass@host:5432/dbname?sslmode=require # Postgres DSN
     minconns: 4 # Minimum connections to PostgreSQL server
     maxconns: 20 # Maximum connections to PostgreSQL server
+    retrydelay: 3 # Time until trying again to connect to via database. In seconds.
+    maxretries: 5 # Maximum number to retry connection to via database. 0 is for infinite.
   sync: "/30 * * * *" # How often the database should sync to disk from memory using crontabs
   garbagecollection: "*/10 * * * *" # How often the database garbage collection should run using crontabs.
 ratelimit:

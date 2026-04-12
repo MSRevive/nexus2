@@ -61,13 +61,58 @@ func (a *App) SetupDatabase() error {
 }
 
 func (a *App) DatabaseConnect() error {
-	if err := a.DB.Connect(a.Config.Database, database.Options{
-		Logger: a.SetUpDatabaseLogger(),
-	}); err != nil {
-		return err
+	maxRetries := a.Config.Database.Postgres.MaxRetries
+	baseDelay := a.Config.Database.Postgres.RetryDelay
+
+	if maxRetries > 0 {
+		for attempt := 1; attempt <= maxRetries; attempt++ {
+			err := a.DB.Connect(a.Config.Database, database.Options{
+				Logger: a.SetUpDatabaseLogger(),
+			})
+			if err == nil {
+				return nil
+			}
+
+			if attempt == maxRetries {
+				return fmt.Errorf("database: failed after %d attempts: %w", maxRetries, err)
+			}
+
+			delay := baseDelay * time.Duration(1<<(attempt-1)) // exponential: 2s, 4s, 8s, 16s
+			if delay > 60*time.Second {
+				delay = 60 * time.Second
+			}
+
+			a.Logger.Warn("database connection failed, retrying",
+				"attempt", attempt,
+				"next_retry_in", delay,
+				"error", err,
+			)
+			time.Sleep(delay)
+		}
+	}else{
+		err := a.DB.Connect(a.Config.Database, database.Options{
+			Logger: a.SetUpDatabaseLogger(),
+		})
+		if err == nil {
+			return nil
+		}
+		attempt := 1
+
+		delay := baseDelay * time.Duration(1<<(attempt-1)) // exponential: 2s, 4s, 8s, 16s
+		if delay > 60*time.Second {
+			delay = 60 * time.Second
+		}
+
+		a.Logger.Warn("database connection failed, retrying",
+			"attempt", attempt,
+			"next_retry_in", delay,
+			"error", err,
+		)
+		time.Sleep(delay)
+		attempt++
 	}
 
-	return nil
+	return nil // unreachable
 }
 
 // TODO: Move this to database package.
