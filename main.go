@@ -39,7 +39,7 @@ func main() {
 }
 
 func crashLog(err error) {
-	path := fmt.Sprintf("crash-%d.log", time.Now().Unix())
+	path := fmt.Sprintf("./crash-%d.log", time.Now().Unix())
 	content := fmt.Sprintf("time: %s\nerror: %v\n", time.Now().Format(time.RFC3339), err)
 	_ = os.WriteFile(path, []byte(content), 0644)
 }
