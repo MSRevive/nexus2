@@ -199,15 +199,15 @@ func Run(args []string) (error) {
 
 				response.OK(w, true)
 			})
-		})
 
-		if flags.debug {
 			r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 				response.OK(w, true)
 			})
 
-			r.Mount("/debug", cmw.Profiler())
-		}
+			if flags.debug {
+				r.Mount("/debug", cmw.Profiler())
+			}
+		})
 	})
 
 	// Let the game server know that's it's trying to use the old API.
