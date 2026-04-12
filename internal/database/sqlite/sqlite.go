@@ -114,10 +114,6 @@ func (d *sqliteDB) SyncToDisk() error {
 // RunGC flushes pending updates and then purges any soft-deleted characters
 // whose expiration timestamp has passed.
 func (d *sqliteDB) RunGC() error {
-	if err := d.flushPendingUpdates(); err != nil {
-		return err
-	}
-
 	return d.exec(func(tx *sql.Tx) error {
 		_, err := tx.Exec(
 			`DELETE FROM characters WHERE expires_at IS NOT NULL AND expires_at <= datetime('now')`,

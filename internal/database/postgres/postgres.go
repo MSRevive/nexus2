@@ -51,7 +51,7 @@ func New() *postgresDB {
 }
 
 func (d *postgresDB) Connect(cfg database.Config, opts database.Options) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
 	defer cancel();
 
 	poolCfg, err := pgxpool.ParseConfig(cfg.Postgres.Conn)
@@ -89,10 +89,12 @@ func (d *postgresDB) Connect(cfg database.Config, opts database.Options) error {
 	d.db = pool
 	d.Logger = opts.Logger
 
-	// if err := migrate(ctx, pool); err != nil {
-	// 	pool.Close()
-	// 	return fmt.Errorf("postgres: migrate: %w", err)
-	// }
+	if cfg.Postgres.CreateTables == true {
+		if err := migrate(ctx, pool); err != nil {
+			pool.Close()
+			return fmt.Errorf("postgres: migrate: %w", err)
+		}
+	}
 
 	d.wg.Add(1)
 	go d.flushWorker()
@@ -115,10 +117,6 @@ func (d *postgresDB) SyncToDisk() error {
 // RunGC flushes pending updates and then purges any soft-deleted characters
 // whose expiration timestamp has passed.
 func (d *postgresDB) RunGC() error {
-	if err := d.flushPendingUpdates(); err != nil {
-		return err
-	}
-
 	ctx := context.Background()
 	_, err := d.db.Exec(ctx,
 		`DELETE FROM characters WHERE expires_at IS NOT NULL AND expires_at <= NOW()`,

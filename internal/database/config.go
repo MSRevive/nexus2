@@ -14,6 +14,7 @@ type Config struct {
 		MaxConns int32
 		RetryDelay time.Duration
 		MaxRetries int
+		CreateTables bool
 	}
 	Sync string
 	GarbageCollection string

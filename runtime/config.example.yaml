@@ -8,6 +8,7 @@ database:
     path: ./runtime/game/data.db # Where the database should be contained.
   postgres:
     conn: postgres://user:pass@host:5432/dbname?sslmode=require # Postgres DSN
+    createtables: true # Create the tables if they don't exists at start of database connection. DB user needs create table permission.
     minconns: 4 # Minimum connections to PostgreSQL server
     maxconns: 20 # Maximum connections to PostgreSQL server
     retrydelay: 3 # Time until trying again to connect to via database. In seconds.
