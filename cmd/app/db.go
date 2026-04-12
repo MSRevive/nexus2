@@ -60,6 +60,16 @@ func (a *App) SetupDatabase() error {
 	return nil
 }
 
+func (a *App) DatabaseConnect() error {
+	if err := a.DB.Connect(a.Config.Database, database.Options{
+		Logger: a.SetUpDatabaseLogger(),
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // TODO: Move this to database package.
 func (a *App) SetUpDatabaseLogger() *log.Logger {
 	if err := os.MkdirAll(a.Config.Log.Dir+"database/", os.ModePerm); err != nil {
