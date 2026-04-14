@@ -44,7 +44,7 @@ type postgresDB struct {
 
 func New() *postgresDB {
 	return &postgresDB{
-		flushInterval:  3 * time.Second,
+		flushInterval:  15 * time.Second,
 		pendingUpdates: make(map[uuid.UUID]pendingUpdate),
 		done:           make(chan struct{}),
 	}
@@ -149,7 +149,7 @@ func (d *postgresDB) flushWorker() {
 		select {
 		case <-ticker.C:
 			if err := d.flushPendingUpdates(); err != nil && d.Logger != nil {
-				d.Logger.Fatalln("postgres: flush error", "error", err)
+				d.Logger.Println("postgres: flush error", "error", err)
 			}
 
 		case <-d.done:
@@ -167,6 +167,7 @@ func (d *postgresDB) flushPendingUpdates() error {
 		d.coalesceMu.Unlock()
 		return nil
 	}
+
 	snapshot := d.pendingUpdates
 	d.pendingUpdates = make(map[uuid.UUID]pendingUpdate)
 	d.coalesceMu.Unlock()
@@ -181,7 +182,7 @@ func (d *postgresDB) flushPendingUpdates() error {
 	})
 
 	ctx := context.Background()
-	return d.execTx(ctx, func(tx pgx.Tx) error {
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		for _, id := range ids {
 			if err := applyCharacterUpdate(ctx, tx, id, snapshot[id]); err != nil {
 				return fmt.Errorf("flush update for %s: %w", id, err)
@@ -189,6 +190,20 @@ func (d *postgresDB) flushPendingUpdates() error {
 		}
 		return nil
 	})
+
+	if err != nil {
+		// Merge the failed snapshot back into the pending map.
+		// Any newer updates written since the swap take priority.
+		d.coalesceMu.Lock()
+		for id, upd := range snapshot {
+			if _, exists := d.pendingUpdates[id]; !exists {
+				d.pendingUpdates[id] = upd
+			}
+		}
+		d.coalesceMu.Unlock()
+	}
+
+	return err
 }
 
 // migrate creates the schema on first run. Uses Postgres-native types.
