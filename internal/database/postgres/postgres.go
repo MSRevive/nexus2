@@ -149,7 +149,7 @@ func (d *postgresDB) flushWorker() {
 		select {
 		case <-ticker.C:
 			if err := d.flushPendingUpdates(); err != nil && d.Logger != nil {
-				d.Logger.Println("postgres: flush error", "error", err)
+				d.Logger.Error("postgres: flush error", "error", err)
 			}
 
 		case <-d.done:

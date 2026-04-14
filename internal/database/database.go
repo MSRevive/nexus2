@@ -2,7 +2,7 @@ package database
 
 import (
 	"time"
-	"log"
+	"log/slog"
 	"errors"
 
 	"github.com/msrevive/nexus2/internal/bitmask"
@@ -18,7 +18,7 @@ var (
 )
 
 type Options struct {
-	Logger *log.Logger
+	Logger *slog.Logger
 }
 
 type Database interface {

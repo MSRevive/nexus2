@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 	"time"
-	"log"
+	"log/slog"
 	"io"
 	"os"
 
@@ -11,6 +11,7 @@ import (
 	"github.com/msrevive/nexus2/internal/database/sqlite"
 	"github.com/msrevive/nexus2/internal/database/postgres"
 	"github.com/msrevive/nexus2/pkg/utils"
+	"github.com/msrevive/nexus2/pkg/loghandler"
 
 	rw "github.com/saintwish/rotatewriter"
 	"github.com/robfig/cron/v3"
@@ -116,7 +117,7 @@ func (a *App) DatabaseConnect() error {
 }
 
 // TODO: Move this to database package.
-func (a *App) SetUpDatabaseLogger() *log.Logger {
+func (a *App) SetUpDatabaseLogger() *slog.Logger {
 	if err := os.MkdirAll(a.Config.Log.Dir+"database/", os.ModePerm); err != nil {
 		fmt.Println(fmt.Errorf("database error: failed to create logging directory %v", err))
 		return nil
@@ -135,6 +136,20 @@ func (a *App) SetUpDatabaseLogger() *log.Logger {
 		MaxSize: 5 * rw.Megabyte,
 	})
 
+	slevel := slog.LevelInfo
+	switch(a.Config.Log.Level) {
+	case "info":
+		slevel = slog.LevelInfo
+	case "warn":
+		slevel = slog.LevelWarn
+	case "error": 
+		slevel = slog.LevelError
+	case "debug":
+		slevel = slog.LevelDebug
+	}
+
 	fmt.Println("\t Setting up database logger...")
-	return log.New(iow, "", log.LstdFlags)
+	return slog.New(loghandler.New(iow, &loghandler.Options{
+		Level: slevel,
+	}))
 }
