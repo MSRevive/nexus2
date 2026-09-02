@@ -106,7 +106,7 @@ func (c *Controller) GetBanVerify(w http.ResponseWriter, r *http.Request) {
 	
 	steamid := chi.URLParam(r, "steamid")
 	
-	flags, err := c.service.GetUserFlags(steamid)
+	flags, err := c.service.GetUserFlags(r.Context(), steamid)
 	if err != nil {
 		c.logger.Error("Unable to get user flags from SteamID", "IP", r.RemoteAddr, "SteamID", steamid)
 		response.GenericError(w)

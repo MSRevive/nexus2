@@ -11,14 +11,20 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/titpetric/oida"
 )
 
 // NewCharacter creates the user row (if missing) and the character row in a
 // single transaction so they are always consistent.
-func (d *postgresDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
+func (d *postgresDB) NewCharacter(ctx context.Context, steamid string, slot int, size int, data string) (uuid.UUID, error) {
 	charID := uuid.New()
 	now := time.Now().UTC()
-	ctx := context.Background()
+
+	ctx, span := oida.Start(ctx, "INSERT character", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+	span.SetAttribute("slot", slot)
+	span.SetAttribute("size", size)
 
 	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		// Upsert the user.
@@ -43,6 +49,7 @@ func (d *postgresDB) NewCharacter(steamid string, slot int, size int, data strin
 		return nil
 	})
 	if err != nil {
+		span.RecordError(err)
 		return uuid.Nil, err
 	}
 	return charID, nil
@@ -50,7 +57,16 @@ func (d *postgresDB) NewCharacter(steamid string, slot int, size int, data strin
 
 // UpdateCharacter stores the latest state in the coalescing map. The next
 // flushWorker tick will commit all coalesced updates in a single transaction.
-func (d *postgresDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
+//
+// The context is only used to record the span: the write happens later on the
+// flush worker, so tying it to the request would cancel it when the client
+// disconnects.
+func (d *postgresDB) UpdateCharacter(ctx context.Context, id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
+	_, span := oida.Start(ctx, "QUEUE character update", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+	span.SetAttribute("size", size)
+
 	d.coalesceMu.Lock()
 	d.pendingUpdates[id] = pendingUpdate{
 		size:       size,
@@ -58,7 +74,10 @@ func (d *postgresDB) UpdateCharacter(id uuid.UUID, size int, data string, backup
 		backupMax:  backupMax,
 		backupTime: backupTime,
 	}
+	pending := len(d.pendingUpdates)
 	d.coalesceMu.Unlock()
+
+	span.SetAttribute("pending", pending)
 	return nil
 }
 
@@ -151,8 +170,11 @@ func applyCharacterUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID, upd pend
 	return err
 }
 
-func (d *postgresDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
-	ctx := context.Background()
+func (d *postgresDB) GetCharacter(ctx context.Context, id uuid.UUID) (*schema.Character, error) {
+	ctx, span := oida.Start(ctx, "SELECT character", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
 	c := &schema.Character{ID: id}
 
 	var (
@@ -174,6 +196,7 @@ func (d *postgresDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 		return nil, database.ErrNoDocument
 	}
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 	c.SteamID = steamID.String
@@ -198,6 +221,7 @@ func (d *postgresDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 		id,
 	)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -205,15 +229,21 @@ func (d *postgresDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	for rows.Next() {
 		var v schema.CharacterData
 		if err := rows.Scan(&v.CreatedAt, &v.Size, &v.Data); err != nil {
+			span.RecordError(err)
 			return nil, err
 		}
 		c.Versions = append(c.Versions, v)
 	}
+
+	span.SetAttribute("versions", len(c.Versions))
 	return c, rows.Err()
 }
 
-func (d *postgresDB) GetCharacters(steamid string) (map[int]schema.Character, error) {
-	ctx := context.Background()
+func (d *postgresDB) GetCharacters(ctx context.Context, steamid string) (map[int]schema.Character, error) {
+	ctx, span := oida.Start(ctx, "SELECT characters", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+
 	rows, err := d.db.Query(ctx, `
 		SELECT id, slot, created_at, deleted_at, data_created_at, data_size, data_payload
 		FROM characters
@@ -221,6 +251,7 @@ func (d *postgresDB) GetCharacters(steamid string) (map[int]schema.Character, er
 		steamid,
 	)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -236,6 +267,7 @@ func (d *postgresDB) GetCharacters(steamid string) (map[int]schema.Character, er
 			&c.Data.CreatedAt, &c.Data.Size, &c.Data.Data,
 		)
 		if err != nil {
+			span.RecordError(err)
 			return nil, err
 		}
 		c.SteamID = steamid
@@ -251,11 +283,17 @@ func (d *postgresDB) GetCharacters(steamid string) (map[int]schema.Character, er
 
 		chars[c.Slot] = c
 	}
+
+	span.SetAttribute("characters", len(chars))
 	return chars, rows.Err()
 }
 
-func (d *postgresDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
-	ctx := context.Background()
+func (d *postgresDB) LookUpCharacterID(ctx context.Context, steamid string, slot int) (uuid.UUID, error) {
+	ctx, span := oida.Start(ctx, "SELECT character id", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+	span.SetAttribute("slot", slot)
+
 	var id uuid.UUID
 	err := d.db.QueryRow(ctx, `
 		SELECT id FROM characters
@@ -266,6 +304,7 @@ func (d *postgresDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, err
 		return uuid.Nil, database.ErrNoDocument
 	}
 	if err != nil {
+		span.RecordError(err)
 		return uuid.Nil, err
 	}
 	return id, nil
@@ -273,12 +312,15 @@ func (d *postgresDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, err
 
 // SoftDeleteCharacter sets deleted_at + expires_at on the character and records
 // the slot in deleted_characters so it can be restored or GC'd later.
-func (d *postgresDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) error {
+func (d *postgresDB) SoftDeleteCharacter(ctx context.Context, id uuid.UUID, expiration time.Duration) error {
 	now := time.Now().UTC()
 	expiresAt := now.Add(expiration)
-	ctx := context.Background()
 
-	return d.execTx(ctx, func(tx pgx.Tx) error {
+	ctx, span := oida.Start(ctx, "UPDATE character deleted", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		var steamID string
 		var slot int
 		err := tx.QueryRow(ctx,
@@ -309,21 +351,32 @@ func (d *postgresDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration)
 		)
 		return err
 	})
+	span.RecordError(err)
+	return err
 }
 
 // DeleteCharacter permanently removes the character and all associated data.
-func (d *postgresDB) DeleteCharacter(id uuid.UUID) error {
-	ctx := context.Background()
-	return d.execTx(ctx, func(tx pgx.Tx) error {
+func (d *postgresDB) DeleteCharacter(ctx context.Context, id uuid.UUID) error {
+	ctx, span := oida.Start(ctx, "DELETE character", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, `DELETE FROM characters WHERE id = $1`, id)
 		return err
 	})
+	span.RecordError(err)
+	return err
 }
 
 // DeleteCharacterReference removes the active slot→character mapping for a user.
-func (d *postgresDB) DeleteCharacterReference(steamid string, slot int) error {
-	ctx := context.Background()
-	return d.execTx(ctx, func(tx pgx.Tx) error {
+func (d *postgresDB) DeleteCharacterReference(ctx context.Context, steamid string, slot int) error {
+	ctx, span := oida.Start(ctx, "UPDATE character reference", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+	span.SetAttribute("slot", slot)
+
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, `
 			UPDATE characters SET steam_id = NULL, slot = NULL
 			WHERE steam_id = $1 AND slot = $2 AND deleted_at IS NULL`,
@@ -331,12 +384,19 @@ func (d *postgresDB) DeleteCharacterReference(steamid string, slot int) error {
 		)
 		return err
 	})
+	span.RecordError(err)
+	return err
 }
 
 // MoveCharacter transfers a character to a different user/slot atomically.
-func (d *postgresDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
-	ctx := context.Background()
-	return d.execTx(ctx, func(tx pgx.Tx) error {
+func (d *postgresDB) MoveCharacter(ctx context.Context, id uuid.UUID, steamid string, slot int) error {
+	ctx, span := oida.Start(ctx, "UPDATE character owner", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+	span.SetAttribute("steamid", steamid)
+	span.SetAttribute("slot", slot)
+
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		var oldSteamID string
 		var oldSlot int
 		err := tx.QueryRow(ctx,
@@ -377,13 +437,21 @@ func (d *postgresDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error
 		)
 		return err
 	})
+	span.RecordError(err)
+	return err
 }
 
 // CopyCharacter duplicates a character's current data under a new UUID.
-func (d *postgresDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+func (d *postgresDB) CopyCharacter(ctx context.Context, id uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
 	newID := uuid.New()
 	now := time.Now().UTC()
-	ctx := context.Background()
+
+	ctx, span := oida.Start(ctx, "INSERT character copy", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+	span.SetAttribute("newUuid", newID.String())
+	span.SetAttribute("steamid", steamid)
+	span.SetAttribute("slot", slot)
 
 	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		var dataCreatedAt time.Time
@@ -416,15 +484,19 @@ func (d *postgresDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid
 		return err
 	})
 	if err != nil {
+		span.RecordError(err)
 		return uuid.Nil, err
 	}
 	return newID, nil
 }
 
 // RestoreCharacter clears the soft-delete markers and makes the character active again.
-func (d *postgresDB) RestoreCharacter(id uuid.UUID) error {
-	ctx := context.Background()
-	return d.execTx(ctx, func(tx pgx.Tx) error {
+func (d *postgresDB) RestoreCharacter(ctx context.Context, id uuid.UUID) error {
+	ctx, span := oida.Start(ctx, "UPDATE character restored", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		var steamID string
 		var slot int
 		err := tx.QueryRow(ctx,
@@ -450,13 +522,19 @@ func (d *postgresDB) RestoreCharacter(id uuid.UUID) error {
 		)
 		return err
 	})
+	span.RecordError(err)
+	return err
 }
 
 // RollbackCharacter replaces the current character data with the version at
 // index ver (0-based, ordered oldest → newest).
-func (d *postgresDB) RollbackCharacter(id uuid.UUID, ver int) error {
-	ctx := context.Background()
-	return d.execTx(ctx, func(tx pgx.Tx) error {
+func (d *postgresDB) RollbackCharacter(ctx context.Context, id uuid.UUID, ver int) error {
+	ctx, span := oida.Start(ctx, "UPDATE character rollback", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+	span.SetAttribute("version", ver)
+
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		var createdAt time.Time
 		var size int
 		var payload string
@@ -483,12 +561,17 @@ func (d *postgresDB) RollbackCharacter(id uuid.UUID, ver int) error {
 		)
 		return err
 	})
+	span.RecordError(err)
+	return err
 }
 
 // RollbackCharacterToLatest replaces the current data with the most recent version.
-func (d *postgresDB) RollbackCharacterToLatest(id uuid.UUID) error {
-	ctx := context.Background()
-	return d.execTx(ctx, func(tx pgx.Tx) error {
+func (d *postgresDB) RollbackCharacterToLatest(ctx context.Context, id uuid.UUID) error {
+	ctx, span := oida.Start(ctx, "UPDATE character rollback latest", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		var createdAt time.Time
 		var size int
 		var payload string
@@ -514,21 +597,31 @@ func (d *postgresDB) RollbackCharacterToLatest(id uuid.UUID) error {
 		)
 		return err
 	})
+	span.RecordError(err)
+	return err
 }
 
 // DeleteCharacterVersions wipes all version history for a character.
-func (d *postgresDB) DeleteCharacterVersions(id uuid.UUID) error {
-	ctx := context.Background()
-	return d.execTx(ctx, func(tx pgx.Tx) error {
+func (d *postgresDB) DeleteCharacterVersions(ctx context.Context, id uuid.UUID) error {
+	ctx, span := oida.Start(ctx, "DELETE character versions", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx,
 			`DELETE FROM character_versions WHERE character_id = $1`, id,
 		)
 		return err
 	})
+	span.RecordError(err)
+	return err
 }
 
-func (d *postgresDB) GetRollbackVersionsTimestamp(id uuid.UUID) (map[int]string, error) {
-	ctx := context.Background()
+func (d *postgresDB) GetRollbackVersionsTimestamp(ctx context.Context, id uuid.UUID) (map[int]string, error) {
+	ctx, span := oida.Start(ctx, "SELECT character version timestamps", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
 	rows, err := d.db.Query(ctx, `
 		SELECT created_at
 		FROM character_versions
@@ -537,6 +630,7 @@ func (d *postgresDB) GetRollbackVersionsTimestamp(id uuid.UUID) (map[int]string,
 		id,
 	)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -546,10 +640,13 @@ func (d *postgresDB) GetRollbackVersionsTimestamp(id uuid.UUID) (map[int]string,
 	for rows.Next() {
 		var createdAt time.Time
 		if err := rows.Scan(&createdAt); err != nil {
+			span.RecordError(err)
 			return nil, err
 		}
 		versions[idx] = createdAt.UTC().Format(time.RFC3339)
 		idx++
 	}
+
+	span.SetAttribute("versions", len(versions))
 	return versions, rows.Err()
 }

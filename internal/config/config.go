@@ -54,6 +54,15 @@ type Config struct {
 		Dir string
 		ExpireTime string
 	}
+	Telemetry struct {
+		Enabled bool
+		Path string
+		RingBufferSize int
+		TopRequests int
+		MaxSpansPerTrace int
+		SampleRate float64
+		IgnorePaths []string
+	}
 }
   
 func Load(path string) (cfg *Config, err error) {

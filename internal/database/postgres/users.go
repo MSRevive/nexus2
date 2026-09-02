@@ -10,10 +10,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/titpetric/oida"
 )
 
-func (d *postgresDB) GetAllUsers() ([]*schema.User, error) {
-	ctx := context.Background()
+func (d *postgresDB) GetAllUsers(ctx context.Context) ([]*schema.User, error) {
+	ctx, span := oida.Start(ctx, "SELECT users", oida.KindDatabase)
+	defer span.End()
 
 	rows, err := d.db.Query(ctx, `
 		SELECT
@@ -29,6 +31,7 @@ func (d *postgresDB) GetAllUsers() ([]*schema.User, error) {
 			ON dc.steam_id = u.id
 		ORDER BY u.id`)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -47,6 +50,7 @@ func (d *postgresDB) GetAllUsers() ([]*schema.User, error) {
 			delID *uuid.UUID
 		)
 		if err := rows.Scan(&id, &revision, &flags, &charSlot, &charID, &delSlot, &delID); err != nil {
+			span.RecordError(err)
 			return nil, err
 		}
 
@@ -71,6 +75,7 @@ func (d *postgresDB) GetAllUsers() ([]*schema.User, error) {
 		}
 	}
 	if err := rows.Err(); err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 
@@ -81,8 +86,10 @@ func (d *postgresDB) GetAllUsers() ([]*schema.User, error) {
 	return users, nil
 }
 
-func (d *postgresDB) GetUser(steamid string) (*schema.User, error) {
-	ctx := context.Background()
+func (d *postgresDB) GetUser(ctx context.Context, steamid string) (*schema.User, error) {
+	ctx, span := oida.Start(ctx, "SELECT user", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
 
 	rows, err := d.db.Query(ctx, `
 		SELECT
@@ -100,6 +107,7 @@ func (d *postgresDB) GetUser(steamid string) (*schema.User, error) {
 		steamid,
 	)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -116,6 +124,7 @@ func (d *postgresDB) GetUser(steamid string) (*schema.User, error) {
 			delID *uuid.UUID
 		)
 		if err := rows.Scan(&id, &revision, &flags, &charSlot, &charID, &delSlot, &delID); err != nil {
+			span.RecordError(err)
 			return nil, err
 		}
 
@@ -137,6 +146,7 @@ func (d *postgresDB) GetUser(steamid string) (*schema.User, error) {
 		}
 	}
 	if err := rows.Err(); err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 
@@ -146,9 +156,13 @@ func (d *postgresDB) GetUser(steamid string) (*schema.User, error) {
 	return u, nil
 }
 
-func (d *postgresDB) SetUserFlags(steamid string, flags bitmask.Bitmask) error {
-	ctx := context.Background()
-	return d.execTx(ctx, func(tx pgx.Tx) error {
+func (d *postgresDB) SetUserFlags(ctx context.Context, steamid string, flags bitmask.Bitmask) error {
+	ctx, span := oida.Start(ctx, "UPDATE user flags", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+	span.SetAttribute("flags", uint32(flags))
+
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		ct, err := tx.Exec(ctx,
 			`UPDATE users SET flags = $1 WHERE id = $2`, uint32(flags), steamid,
 		)
@@ -160,10 +174,15 @@ func (d *postgresDB) SetUserFlags(steamid string, flags bitmask.Bitmask) error {
 		}
 		return nil
 	})
+	span.RecordError(err)
+	return err
 }
 
-func (d *postgresDB) GetUserFlags(steamid string) (bitmask.Bitmask, error) {
-	ctx := context.Background()
+func (d *postgresDB) GetUserFlags(ctx context.Context, steamid string) (bitmask.Bitmask, error) {
+	ctx, span := oida.Start(ctx, "SELECT user flags", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+
 	var flags uint32
 	err := d.db.QueryRow(ctx,
 		`SELECT flags FROM users WHERE id = $1`, steamid,
@@ -172,6 +191,7 @@ func (d *postgresDB) GetUserFlags(steamid string) (bitmask.Bitmask, error) {
 		return 0, database.ErrNoDocument
 	}
 	if err != nil {
+		span.RecordError(err)
 		return 0, fmt.Errorf("get user flags: %w", err)
 	}
 	return bitmask.Bitmask(flags), nil

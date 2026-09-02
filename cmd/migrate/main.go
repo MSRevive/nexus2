@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -72,7 +73,7 @@ func main() {
 		log.Printf("  migrated slot %d / char %s for user %s", slot, charID, steamID)
 	}
 
-	if err := m.Run(); err != nil {
+	if err := m.Run(context.Background()); err != nil {
 		log.Fatalf("migration failed: %v", err)
 	}
 

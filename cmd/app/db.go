@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"time"
 	"log/slog"
@@ -35,7 +36,7 @@ func (a *App) SetupDatabase() error {
 		go func() {
 			a.Logger.Info("Syncing data to disk")
 			t1 := time.Now()
-			if err := a.DB.SyncToDisk(); err != nil {
+			if err := a.DB.SyncToDisk(context.Background()); err != nil {
 				a.Logger.Error("Failed to sync data to disk", "error", err)
 				return
 			}
@@ -50,7 +51,7 @@ func (a *App) SetupDatabase() error {
 		go func() {
 			a.Logger.Info("Running database garbage collection")
 			t1 := time.Now()
-			if err := a.DB.RunGC(); err != nil {
+			if err := a.DB.RunGC(context.Background()); err != nil {
 				a.Logger.Warn("Unable to run garbage collection", "error", err)
 			}
 			a.Logger.Info("Finished running garbage collection", "ping", time.Since(t1))
@@ -65,10 +66,14 @@ func (a *App) DatabaseConnect() error {
 	maxRetries := a.Config.Database.Postgres.MaxRetries
 	baseDelay := a.Config.Database.Postgres.RetryDelay
 
+	// Built once: every retry reusing this avoids opening a new rotating log file per attempt.
+	dbLogger := a.SetUpDatabaseLogger()
+
 	if maxRetries > 0 {
 		for attempt := 1; attempt <= maxRetries; attempt++ {
 			err := a.DB.Connect(a.Config.Database, database.Options{
-				Logger: a.SetUpDatabaseLogger(),
+				Logger: dbLogger,
+				Tracer: a.Tracer,
 			})
 			if err == nil {
 				return nil
@@ -92,7 +97,8 @@ func (a *App) DatabaseConnect() error {
 		}
 	}else{
 		err := a.DB.Connect(a.Config.Database, database.Options{
-			Logger: a.SetUpDatabaseLogger(),
+			Logger: dbLogger,
+			Tracer: a.Tracer,
 		})
 		if err == nil {
 			return nil

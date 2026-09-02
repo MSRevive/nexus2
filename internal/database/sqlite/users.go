@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -9,10 +10,14 @@ import (
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/google/uuid"
+	"github.com/titpetric/oida"
 )
 
-func (d *sqliteDB) GetAllUsers() ([]*schema.User, error) {
-	rows, err := d.db.Query(`
+func (d *sqliteDB) GetAllUsers(ctx context.Context) ([]*schema.User, error) {
+	ctx, span := oida.Start(ctx, "SELECT users", oida.KindDatabase)
+	defer span.End()
+
+	rows, err := d.db.QueryContext(ctx, `
 		SELECT
 			u.id, u.revision, u.flags,
 			c.slot         AS char_slot,
@@ -86,8 +91,12 @@ func (d *sqliteDB) GetAllUsers() ([]*schema.User, error) {
 	return users, nil
 }
 
-func (d *sqliteDB) GetUser(steamid string) (*schema.User, error) {
-	rows, err := d.db.Query(`
+func (d *sqliteDB) GetUser(ctx context.Context, steamid string) (*schema.User, error) {
+	ctx, span := oida.Start(ctx, "SELECT user", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+
+	rows, err := d.db.QueryContext(ctx, `
 		SELECT
 			u.id, u.revision, u.flags,
 			c.slot          AS char_slot,
@@ -157,9 +166,14 @@ func (d *sqliteDB) GetUser(steamid string) (*schema.User, error) {
 	return u, nil
 }
 
-func (d *sqliteDB) SetUserFlags(steamid string, flags bitmask.Bitmask) error {
-	return d.exec(func(tx *sql.Tx) error {
-		res, err := tx.Exec(`UPDATE users SET flags = ? WHERE id = ?`, uint32(flags), steamid)
+func (d *sqliteDB) SetUserFlags(ctx context.Context, steamid string, flags bitmask.Bitmask) error {
+	ctx, span := oida.Start(ctx, "UPDATE user flags", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+	span.SetAttribute("flags", uint32(flags))
+
+	err := d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
+		res, err := tx.ExecContext(ctx, `UPDATE users SET flags = ? WHERE id = ?`, uint32(flags), steamid)
 		if err != nil {
 			return err
 		}
@@ -169,13 +183,20 @@ func (d *sqliteDB) SetUserFlags(steamid string, flags bitmask.Bitmask) error {
 		}
 		return nil
 	})
+	span.RecordError(err)
+	return err
 }
 
-func (d *sqliteDB) GetUserFlags(steamid string) (bitmask.Bitmask, error) {
+func (d *sqliteDB) GetUserFlags(ctx context.Context, steamid string) (bitmask.Bitmask, error) {
+	ctx, span := oida.Start(ctx, "SELECT user flags", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+
 	var flags uint32
-	err := d.db.QueryRow(`SELECT flags FROM users WHERE id = ?`, steamid).Scan(&flags)
+	err := d.db.QueryRowContext(ctx, `SELECT flags FROM users WHERE id = ?`, steamid).Scan(&flags)
 	if err == sql.ErrNoRows {
 		return 0, database.ErrNoDocument
 	}
+	span.RecordError(err)
 	return bitmask.Bitmask(flags), err
 }

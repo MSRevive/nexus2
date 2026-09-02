@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/titpetric/oida"
 )
 
 // pendingUpdate holds the latest state for a character that has been
@@ -87,7 +88,7 @@ func (d *postgresDB) Connect(cfg database.Config, opts database.Options) error {
 	}
 
 	d.db = pool
-	d.Logger = opts.Logger
+	d.Options = opts
 
 	if cfg.Postgres.CreateTables == true {
 		if err := migrate(ctx, pool); err != nil {
@@ -110,18 +111,38 @@ func (d *postgresDB) Disconnect() error {
 }
 
 // SyncToDisk is a no-op for Postgres — data is durable after COMMIT.
-func (d *postgresDB) SyncToDisk() error {
+func (d *postgresDB) SyncToDisk(ctx context.Context) error {
 	return nil
 }
 
 // RunGC flushes pending updates and then purges any soft-deleted characters
 // whose expiration timestamp has passed.
-func (d *postgresDB) RunGC() error {
-	ctx := context.Background()
-	_, err := d.db.Exec(ctx,
-		`DELETE FROM characters WHERE expires_at IS NOT NULL AND expires_at <= NOW()`,
-	)
-	return err
+func (d *postgresDB) RunGC(ctx context.Context) error {
+	return d.observe(ctx, "postgres RunGC", func(ctx context.Context) error {
+		ctx, span := oida.Start(ctx, "DELETE expired characters", oida.KindDatabase)
+		defer span.End()
+
+		tag, err := d.db.Exec(ctx,
+			`DELETE FROM characters WHERE expires_at IS NOT NULL AND expires_at <= NOW()`,
+		)
+		if err != nil {
+			span.RecordError(err)
+			return err
+		}
+
+		span.SetAttribute("deleted", tag.RowsAffected())
+		return nil
+	})
+}
+
+// observe runs fn inside its own trace so background work that has no request
+// behind it still shows up on the dashboard. Without a tracer it just runs fn.
+func (d *postgresDB) observe(ctx context.Context, name string, fn func(context.Context) error) error {
+	if d.Tracer == nil {
+		return fn(ctx)
+	}
+
+	return d.Tracer.Observe(ctx, name, fn)
 }
 
 // execTx runs fn inside a transaction. Postgres supports multiple concurrent
@@ -148,12 +169,12 @@ func (d *postgresDB) flushWorker() {
 	for {
 		select {
 		case <-ticker.C:
-			if err := d.flushPendingUpdates(); err != nil && d.Logger != nil {
+			if err := d.flushPendingUpdates(context.Background()); err != nil && d.Logger != nil {
 				d.Logger.Error("postgres: flush error", "error", err)
 			}
 
 		case <-d.done:
-			_ = d.flushPendingUpdates()
+			_ = d.flushPendingUpdates(context.Background())
 			return
 		}
 	}
@@ -161,7 +182,7 @@ func (d *postgresDB) flushWorker() {
 
 // flushPendingUpdates atomically swaps the coalescing map for a fresh one,
 // then commits all coalesced updates in a single transaction.
-func (d *postgresDB) flushPendingUpdates() error {
+func (d *postgresDB) flushPendingUpdates(ctx context.Context) error {
 	d.coalesceMu.Lock()
 	if len(d.pendingUpdates) == 0 {
 		d.coalesceMu.Unlock()
@@ -181,14 +202,21 @@ func (d *postgresDB) flushPendingUpdates() error {
 		return ids[i].String() < ids[j].String()
 	})
 
-	ctx := context.Background()
-	err := d.execTx(ctx, func(tx pgx.Tx) error {
-		for _, id := range ids {
-			if err := applyCharacterUpdate(ctx, tx, id, snapshot[id]); err != nil {
-				return fmt.Errorf("flush update for %s: %w", id, err)
+	err := d.observe(ctx, "postgres flush", func(ctx context.Context) error {
+		ctx, span := oida.Start(ctx, "UPDATE characters (flush)", oida.KindDatabase)
+		defer span.End()
+		span.SetAttribute("characters", len(ids))
+
+		err := d.execTx(ctx, func(tx pgx.Tx) error {
+			for _, id := range ids {
+				if err := applyCharacterUpdate(ctx, tx, id, snapshot[id]); err != nil {
+					return fmt.Errorf("flush update for %s: %w", id, err)
+				}
 			}
-		}
-		return nil
+			return nil
+		})
+		span.RecordError(err)
+		return err
 	})
 
 	if err != nil {

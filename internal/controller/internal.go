@@ -34,7 +34,7 @@ func (c *Controller) PostCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid, flags, err := c.service.NewCharacter(char); 
+	uid, flags, err := c.service.NewCharacter(r.Context(), char); 
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
@@ -73,7 +73,7 @@ func (c *Controller) PutCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := c.service.UpdateCharacter(uid, char); err != nil {
+	if err := c.service.UpdateCharacter(r.Context(), uid, char); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
@@ -92,7 +92,7 @@ func (c *Controller) GetCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	char, flags, err := c.service.GetCharacter(steamid, slot)
+	char, flags, err := c.service.GetCharacter(r.Context(), steamid, slot)
 	if errors.Is(err, database.ErrNoDocument)  {
 		c.logger.Warn("service warning", "error", err)
 		response.OKNoContent(w)
@@ -122,7 +122,7 @@ func (c *Controller) SoftDeleteCharacter(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := c.service.SoftDeleteCharacter(uid, c.config.Char.DeletedExpireTime); err != nil {
+	if err := c.service.SoftDeleteCharacter(r.Context(), uid, c.config.Char.DeletedExpireTime); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return

@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -9,18 +10,25 @@ import (
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/google/uuid"
+	"github.com/titpetric/oida"
 )
 
 // NewCharacter creates the user row (if missing) and the character row in a
 // single transaction so they are always consistent.
-func (d *sqliteDB) NewCharacter(steamid string, slot int, size int, data string) (uuid.UUID, error) {
+func (d *sqliteDB) NewCharacter(ctx context.Context, steamid string, slot int, size int, data string) (uuid.UUID, error) {
+	ctx, span := oida.Start(ctx, "INSERT character", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+	span.SetAttribute("slot", slot)
+	span.SetAttribute("size", size)
+
 	charID := uuid.New()
 	now := time.Now().UTC()
 
-	err := d.exec(func(tx *sql.Tx) error {
+	err := d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		// Upsert the user — mirrors the pebble logic that creates a new user
 		// document when one doesn't exist yet.
-		_, err := tx.Exec(
+		_, err := tx.ExecContext(ctx, 
 			`INSERT INTO users (id) VALUES (?) ON CONFLICT(id) DO NOTHING`,
 			steamid,
 		)
@@ -28,7 +36,7 @@ func (d *sqliteDB) NewCharacter(steamid string, slot int, size int, data string)
 			return fmt.Errorf("upsert user: %w", err)
 		}
 
-		_, err = tx.Exec(`
+		_, err = tx.ExecContext(ctx, `
 			INSERT INTO characters
 				(id, steam_id, slot, created_at, data_created_at, data_size, data_payload)
 			VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -52,7 +60,12 @@ func (d *sqliteDB) NewCharacter(steamid string, slot int, size int, data string)
 //
 // This means 100 calls to UpdateCharacter for the same character within the
 // flush window result in exactly 1 database write — the one with the final state.
-func (d *sqliteDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
+func (d *sqliteDB) UpdateCharacter(ctx context.Context, id uuid.UUID, size int, data string, backupMax int, backupTime time.Duration) error {
+	_, span := oida.Start(ctx, "QUEUE character update", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+	span.SetAttribute("size", size)
+
 	d.coalesceMu.Lock()
 	d.pendingUpdates[id] = pendingUpdate{
 		size:       size,
@@ -60,7 +73,10 @@ func (d *sqliteDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMa
 		backupMax:  backupMax,
 		backupTime: backupTime,
 	}
+	pending := len(d.pendingUpdates)
 	d.coalesceMu.Unlock()
+
+	span.SetAttribute("pending", pending)
 	return nil
 }
 
@@ -69,14 +85,14 @@ func (d *sqliteDB) UpdateCharacter(id uuid.UUID, size int, data string, backupMa
 // that mirrors the pebble implementation exactly.
 //
 // Called only from within a transaction on the write goroutine.
-func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
+func applyCharacterUpdate(ctx context.Context, tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 	// Read the current character data so we can snapshot it as a version.
 	var (
 		dataCreatedAt time.Time
 		dataSize      int
 		dataPayload   string
 	)
-	err := tx.QueryRow(`
+	err := tx.QueryRowContext(ctx, `
 		SELECT data_created_at, data_size, data_payload
 		FROM characters WHERE id = ?`,
 		id.String(),
@@ -94,7 +110,7 @@ func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 	// ------------------------------------------------------------------
 	if upd.backupMax > 0 {
 		var versionCount int
-		if err := tx.QueryRow(
+		if err := tx.QueryRowContext(ctx, 
 			`SELECT COUNT(*) FROM character_versions WHERE character_id = ?`,
 			id.String(),
 		).Scan(&versionCount); err != nil {
@@ -103,7 +119,7 @@ func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 
 		// If we are at the cap, delete the oldest entry (lowest autoincrement id).
 		if versionCount >= upd.backupMax {
-			if _, err := tx.Exec(`
+			if _, err := tx.ExecContext(ctx, `
 				DELETE FROM character_versions WHERE id = (
 					SELECT id FROM character_versions
 					WHERE character_id = ? ORDER BY id ASC LIMIT 1
@@ -119,7 +135,7 @@ func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 			// the newest existing backup. This prevents rapid-fire updates from
 			// flooding the version table.
 			var newestCreatedAt time.Time
-			err := tx.QueryRow(`
+			err := tx.QueryRowContext(ctx, `
 				SELECT created_at FROM character_versions
 				WHERE character_id = ? ORDER BY id DESC LIMIT 1`,
 				id.String(),
@@ -129,7 +145,7 @@ func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 			}
 
 			if dataCreatedAt.After(newestCreatedAt.Add(upd.backupTime)) {
-				if _, err := tx.Exec(`
+				if _, err := tx.ExecContext(ctx, `
 					INSERT INTO character_versions (character_id, created_at, size, data_payload)
 					VALUES (?, ?, ?, ?)`,
 					id.String(), dataCreatedAt, dataSize, dataPayload,
@@ -139,7 +155,7 @@ func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 			}
 		} else {
 			// No versions yet — always snapshot the current data on the first update.
-			if _, err := tx.Exec(`
+			if _, err := tx.ExecContext(ctx, `
 				INSERT INTO character_versions (character_id, created_at, size, data_payload)
 				VALUES (?, ?, ?, ?)`,
 				id.String(), dataCreatedAt, dataSize, dataPayload,
@@ -150,7 +166,7 @@ func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 	}
 
 	// Write the new current character data.
-	_, err = tx.Exec(`
+	_, err = tx.ExecContext(ctx, `
 		UPDATE characters
 		SET data_created_at = ?, data_size = ?, data_payload = ?
 		WHERE id = ?`,
@@ -159,7 +175,11 @@ func applyCharacterUpdate(tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
 	return err
 }
 
-func (d *sqliteDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
+func (d *sqliteDB) GetCharacter(ctx context.Context, id uuid.UUID) (*schema.Character, error) {
+	ctx, span := oida.Start(ctx, "SELECT character", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
 	c := &schema.Character{ID: id}
 
 	var (
@@ -168,7 +188,7 @@ func (d *sqliteDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 		deletedAt sql.NullTime
 	)
 
-	err := d.db.QueryRow(`
+	err := d.db.QueryRowContext(ctx, `
 		SELECT steam_id, slot, created_at, deleted_at,
 		    data_created_at, data_size, data_payload
 		FROM characters WHERE id = ?`,
@@ -190,7 +210,7 @@ func (d *sqliteDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	}
 
 	// Load the versions slice (Versions []CharacterData).
-	rows, err := d.db.Query(`
+	rows, err := d.db.QueryContext(ctx, `
 		SELECT created_at, size, data_payload
 		FROM character_versions
 		WHERE character_id = ? ORDER BY id ASC`,
@@ -211,8 +231,12 @@ func (d *sqliteDB) GetCharacter(id uuid.UUID) (*schema.Character, error) {
 	return c, rows.Err()
 }
 
-func (d *sqliteDB) GetCharacters(steamid string) (map[int]schema.Character, error) {
-	rows, err := d.db.Query(`
+func (d *sqliteDB) GetCharacters(ctx context.Context, steamid string) (map[int]schema.Character, error) {
+	ctx, span := oida.Start(ctx, "SELECT characters", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+
+	rows, err := d.db.QueryContext(ctx, `
 		SELECT id, slot, created_at, deleted_at, data_created_at, data_size, data_payload
 		FROM characters
 		WHERE steam_id = ? AND deleted_at IS NULL`,
@@ -247,9 +271,14 @@ func (d *sqliteDB) GetCharacters(steamid string) (map[int]schema.Character, erro
 	return chars, rows.Err()
 }
 
-func (d *sqliteDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error) {
+func (d *sqliteDB) LookUpCharacterID(ctx context.Context, steamid string, slot int) (uuid.UUID, error) {
+	ctx, span := oida.Start(ctx, "SELECT character id", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+	span.SetAttribute("slot", slot)
+
 	var idStr string
-	err := d.db.QueryRow(`
+	err := d.db.QueryRowContext(ctx, `
 		SELECT id FROM characters
 		WHERE steam_id = ? AND slot = ? AND deleted_at IS NULL`,
 		steamid, slot,
@@ -265,14 +294,18 @@ func (d *sqliteDB) LookUpCharacterID(steamid string, slot int) (uuid.UUID, error
 
 // SoftDeleteCharacter sets deleted_at + expires_at on the character and records
 // the slot in deleted_characters so it can be restored or GC'd later.
-func (d *sqliteDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) error {
+func (d *sqliteDB) SoftDeleteCharacter(ctx context.Context, id uuid.UUID, expiration time.Duration) error {
+	ctx, span := oida.Start(ctx, "UPDATE character deleted", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
 	now := time.Now().UTC()
 	expiresAt := now.Add(expiration)
 
-	return d.exec(func(tx *sql.Tx) error {
+	return d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		var steamID string
 		var slot int
-		err := tx.QueryRow(
+		err := tx.QueryRowContext(ctx, 
 			`SELECT steam_id, slot FROM characters WHERE id = ?`, id.String(),
 		).Scan(&steamID, &slot)
 		if err == sql.ErrNoRows {
@@ -282,7 +315,7 @@ func (d *sqliteDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 			return err
 		}
 
-		if _, err := tx.Exec(`
+		if _, err := tx.ExecContext(ctx, `
 			UPDATE characters SET deleted_at = ?, expires_at = ?, steam_id = NULL, slot = NULL WHERE id = ?`,
 			now, expiresAt, id.String(),
 		); err != nil {
@@ -291,7 +324,7 @@ func (d *sqliteDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 
 		// Upsert into deleted_characters to preserve the slot → id mapping
 		// (mirrors user.DeletedCharacters in the pebble implementation).
-		_, err = tx.Exec(`
+		_, err = tx.ExecContext(ctx, `
 			INSERT INTO deleted_characters (steam_id, slot, character_id, deleted_at)
 			VALUES (?, ?, ?, ?)
 			ON CONFLICT (steam_id, slot) DO UPDATE
@@ -305,10 +338,14 @@ func (d *sqliteDB) SoftDeleteCharacter(id uuid.UUID, expiration time.Duration) e
 
 // DeleteCharacter permanently removes the character and all associated data.
 // cascade on character_versions handles version cleanup automatically.
-func (d *sqliteDB) DeleteCharacter(id uuid.UUID) error {
-	return d.exec(func(tx *sql.Tx) error {
+func (d *sqliteDB) DeleteCharacter(ctx context.Context, id uuid.UUID) error {
+	ctx, span := oida.Start(ctx, "DELETE character", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
+	return d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		// character_versions are deleted by ON DELETE CASCADE.
-		_, err := tx.Exec(`DELETE FROM characters WHERE id = ?`, id.String())
+		_, err := tx.ExecContext(ctx, `DELETE FROM characters WHERE id = ?`, id.String())
 		return err
 	})
 }
@@ -317,12 +354,17 @@ func (d *sqliteDB) DeleteCharacter(id uuid.UUID) error {
 // leaving the character row intact but unowned (steam_id = NULL).
 // This is called by MoveCharacter to clear the character's old slot before
 // reassigning it, mirroring delete(user.Characters, slot) in the pebble version.
-func (d *sqliteDB) DeleteCharacterReference(steamid string, slot int) error {
-	return d.exec(func(tx *sql.Tx) error {
+func (d *sqliteDB) DeleteCharacterReference(ctx context.Context, steamid string, slot int) error {
+	ctx, span := oida.Start(ctx, "UPDATE character reference", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("steamid", steamid)
+	span.SetAttribute("slot", slot)
+
+	return d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		// Nullify steam_id/slot so the character no longer occupies the slot
 		// on the old owner. The UNIQUE(steam_id, slot) constraint allows NULLs
 		// on both columns, so this is safe.
-		_, err := tx.Exec(`
+		_, err := tx.ExecContext(ctx, `
 			UPDATE characters SET steam_id = NULL, slot = NULL
 			WHERE steam_id = ? AND slot = ? AND deleted_at IS NULL`,
 			steamid, slot,
@@ -332,12 +374,18 @@ func (d *sqliteDB) DeleteCharacterReference(steamid string, slot int) error {
 }
 
 // MoveCharacter transfers a character to a different user/slot atomically.
-func (d *sqliteDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
-	return d.exec(func(tx *sql.Tx) error {
+func (d *sqliteDB) MoveCharacter(ctx context.Context, id uuid.UUID, steamid string, slot int) error {
+	ctx, span := oida.Start(ctx, "UPDATE character owner", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+	span.SetAttribute("steamid", steamid)
+	span.SetAttribute("slot", slot)
+
+	return d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		// Fetch the character's current owner so we can clear that slot.
 		var oldSteamID string
 		var oldSlot int
-		err := tx.QueryRow(
+		err := tx.QueryRowContext(ctx, 
 			`SELECT steam_id, slot FROM characters WHERE id = ?`, id.String(),
 		).Scan(&oldSteamID, &oldSlot)
 		if err == sql.ErrNoRows {
@@ -349,7 +397,7 @@ func (d *sqliteDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 
 		// Ensure the target user exists.
 		var exists int
-		if err := tx.QueryRow(
+		if err := tx.QueryRowContext(ctx, 
 			`SELECT COUNT(*) FROM users WHERE id = ?`, steamid,
 		).Scan(&exists); err != nil {
 			return err
@@ -360,7 +408,7 @@ func (d *sqliteDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 
 		// Clear the old owner's reference by nullifying steam_id/slot so the
 		// UNIQUE constraint on (steam_id, slot) doesn't block the reassignment.
-		if _, err := tx.Exec(`
+		if _, err := tx.ExecContext(ctx, `
 			UPDATE characters SET steam_id = NULL, slot = NULL
 			WHERE steam_id = ? AND slot = ? AND deleted_at IS NULL`,
 			oldSteamID, oldSlot,
@@ -369,7 +417,7 @@ func (d *sqliteDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 		}
 
 		// Now assign the character to the new owner.
-		_, err = tx.Exec(`
+		_, err = tx.ExecContext(ctx, `
 			UPDATE characters SET steam_id = ?, slot = ?, deleted_at = NULL
 			WHERE id = ?`,
 			steamid, slot, id.String(),
@@ -380,15 +428,21 @@ func (d *sqliteDB) MoveCharacter(id uuid.UUID, steamid string, slot int) error {
 
 // CopyCharacter duplicates a character's current data under a new UUID
 // assigned to the target user/slot.
-func (d *sqliteDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+func (d *sqliteDB) CopyCharacter(ctx context.Context, id uuid.UUID, steamid string, slot int) (uuid.UUID, error) {
+	ctx, span := oida.Start(ctx, "INSERT character copy", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+	span.SetAttribute("steamid", steamid)
+	span.SetAttribute("slot", slot)
+
 	newID := uuid.New()
 	now := time.Now().UTC()
 
-	err := d.exec(func(tx *sql.Tx) error {
+	err := d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		var dataCreatedAt time.Time
 		var dataSize int
 		var dataPayload string
-		err := tx.QueryRow(`
+		err := tx.QueryRowContext(ctx, `
 			SELECT data_created_at, data_size, data_payload
 			FROM characters WHERE id = ?`,
 			id.String(),
@@ -401,13 +455,13 @@ func (d *sqliteDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.U
 		}
 
 		// Ensure the target user exists.
-		if _, err := tx.Exec(
+		if _, err := tx.ExecContext(ctx, 
 			`INSERT INTO users (id) VALUES (?) ON CONFLICT(id) DO NOTHING`, steamid,
 		); err != nil {
 			return err
 		}
 
-		_, err = tx.Exec(`
+		_, err = tx.ExecContext(ctx, `
 			INSERT INTO characters
 				(id, steam_id, slot, created_at, data_created_at, data_size, data_payload)
 			VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -423,11 +477,15 @@ func (d *sqliteDB) CopyCharacter(id uuid.UUID, steamid string, slot int) (uuid.U
 
 // RestoreCharacter clears the soft-delete markers and removes the entry from
 // deleted_characters, making the character active again.
-func (d *sqliteDB) RestoreCharacter(id uuid.UUID) error {
-	return d.exec(func(tx *sql.Tx) error {
+func (d *sqliteDB) RestoreCharacter(ctx context.Context, id uuid.UUID) error {
+	ctx, span := oida.Start(ctx, "UPDATE character restored", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
+	return d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		var steamID string
 		var slot int
-		err := tx.QueryRow(
+		err := tx.QueryRowContext(ctx, 
 			`SELECT steam_id, slot FROM deleted_characters WHERE character_id = ?`, id.String(),
 		).Scan(&steamID, &slot)
 		if err == sql.ErrNoRows {
@@ -437,14 +495,14 @@ func (d *sqliteDB) RestoreCharacter(id uuid.UUID) error {
 			return err
 		}
 
-		if _, err := tx.Exec(`
+		if _, err := tx.ExecContext(ctx, `
 			UPDATE characters SET deleted_at = NULL, expires_at = NULL, steam_id = ?, slot = ? WHERE id = ?`,
 			steamID, slot, id.String(),
 		); err != nil {
 			return err
 		}
 
-		_, err = tx.Exec(
+		_, err = tx.ExecContext(ctx, 
 			`DELETE FROM deleted_characters WHERE character_id = ?`,
 			id,
 		)
@@ -454,12 +512,17 @@ func (d *sqliteDB) RestoreCharacter(id uuid.UUID) error {
 
 // RollbackCharacter replaces the current character data with the version at
 // index ver (0-based, ordered oldest → newest). Mirrors the pebble implementation.
-func (d *sqliteDB) RollbackCharacter(id uuid.UUID, ver int) error {
-	return d.exec(func(tx *sql.Tx) error {
+func (d *sqliteDB) RollbackCharacter(ctx context.Context, id uuid.UUID, ver int) error {
+	ctx, span := oida.Start(ctx, "UPDATE character rollback", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+	span.SetAttribute("version", ver)
+
+	return d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		var createdAt time.Time
 		var size int
 		var payload string
-		err := tx.QueryRow(`
+		err := tx.QueryRowContext(ctx, `
 			SELECT created_at, size, data_payload
 			FROM character_versions
 			WHERE character_id = ?
@@ -474,7 +537,7 @@ func (d *sqliteDB) RollbackCharacter(id uuid.UUID, ver int) error {
 			return err
 		}
 
-		_, err = tx.Exec(`
+		_, err = tx.ExecContext(ctx, `
 			UPDATE characters
 			SET data_created_at = ?, data_size = ?, data_payload = ?
 			WHERE id = ?`,
@@ -485,12 +548,16 @@ func (d *sqliteDB) RollbackCharacter(id uuid.UUID, ver int) error {
 }
 
 // RollbackCharacterToLatest replaces the current data with the most recent version.
-func (d *sqliteDB) RollbackCharacterToLatest(id uuid.UUID) error {
-	return d.exec(func(tx *sql.Tx) error {
+func (d *sqliteDB) RollbackCharacterToLatest(ctx context.Context, id uuid.UUID) error {
+	ctx, span := oida.Start(ctx, "UPDATE character rollback latest", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
+	return d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		var createdAt time.Time
 		var size int
 		var payload string
-		err := tx.QueryRow(`
+		err := tx.QueryRowContext(ctx, `
 			SELECT created_at, size, data_payload
 			FROM character_versions
 			WHERE character_id = ?
@@ -504,7 +571,7 @@ func (d *sqliteDB) RollbackCharacterToLatest(id uuid.UUID) error {
 			return err
 		}
 
-		_, err = tx.Exec(`
+		_, err = tx.ExecContext(ctx, `
 			UPDATE characters
 			SET data_created_at = ?, data_size = ?, data_payload = ?
 			WHERE id = ?`,
@@ -515,17 +582,25 @@ func (d *sqliteDB) RollbackCharacterToLatest(id uuid.UUID) error {
 }
 
 // DeleteCharacterVersions wipes all version history for a character.
-func (d *sqliteDB) DeleteCharacterVersions(id uuid.UUID) error {
-	return d.exec(func(tx *sql.Tx) error {
-		_, err := tx.Exec(
+func (d *sqliteDB) DeleteCharacterVersions(ctx context.Context, id uuid.UUID) error {
+	ctx, span := oida.Start(ctx, "DELETE character versions", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
+	return d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, 
 			`DELETE FROM character_versions WHERE character_id = ?`, id.String(),
 		)
 		return err
 	})
 }
 
-func (d *sqliteDB) GetRollbackVersionsTimestamp(id uuid.UUID) (map[int]string, error) {
-	rows, err := d.db.Query(`
+func (d *sqliteDB) GetRollbackVersionsTimestamp(ctx context.Context, id uuid.UUID) (map[int]string, error) {
+	ctx, span := oida.Start(ctx, "SELECT character version timestamps", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("uuid", id.String())
+
+	rows, err := d.db.QueryContext(ctx, `
 		SELECT created_at
 		FROM character_versions
 		WHERE character_id = ?

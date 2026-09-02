@@ -1,14 +1,16 @@
 package service
 
 import (
+	"context"
+
 	"github.com/msrevive/nexus2/pkg/database/schema"
 	"github.com/msrevive/nexus2/internal/static"
 
 	"github.com/google/uuid"
 )
 
-func (s *Service) GetCharacterVersions(uid uuid.UUID) (map[int]schema.CharacterData, error) {
-	char, err := s.db.GetCharacter(uid)
+func (s *Service) GetCharacterVersions(ctx context.Context, uid uuid.UUID) (map[int]schema.CharacterData, error) {
+	char, err := s.db.GetCharacter(ctx, uid)
 	if err != nil {
 		return nil, err
 	}
@@ -23,16 +25,16 @@ func (s *Service) GetCharacterVersions(uid uuid.UUID) (map[int]schema.CharacterD
 
 		return datas, nil
 	}
-	
+
 	return nil, static.ErrNoCharacterVersions
 }
 
-func (s *Service) RollbackCharacter(uid uuid.UUID, ver int) error {
+func (s *Service) RollbackCharacter(ctx context.Context, uid uuid.UUID, ver int) error {
 	if s.readonly {
 		return nil
 	}
 
-	err := s.db.RollbackCharacter(uid, ver)
+	err := s.db.RollbackCharacter(ctx, uid, ver)
 	if err != nil {
 		return err
 	}
@@ -40,12 +42,12 @@ func (s *Service) RollbackCharacter(uid uuid.UUID, ver int) error {
 	return nil
 }
 
-func (s *Service) RollbackCharacterToLatest(uid uuid.UUID) error {
+func (s *Service) RollbackCharacterToLatest(ctx context.Context, uid uuid.UUID) error {
 	if s.readonly {
 		return nil
 	}
 
-	err := s.db.RollbackCharacterToLatest(uid)
+	err := s.db.RollbackCharacterToLatest(ctx, uid)
 	if err != nil {
 		return err
 	}
@@ -53,12 +55,12 @@ func (s *Service) RollbackCharacterToLatest(uid uuid.UUID) error {
 	return nil
 }
 
-func (s *Service) DeleteCharacterVersions(uid uuid.UUID) error {
+func (s *Service) DeleteCharacterVersions(ctx context.Context, uid uuid.UUID) error {
 	if s.readonly {
 		return nil
 	}
 
-	err := s.db.DeleteCharacterVersions(uid)
+	err := s.db.DeleteCharacterVersions(ctx, uid)
 	if err != nil {
 		return err
 	}
@@ -66,8 +68,8 @@ func (s *Service) DeleteCharacterVersions(uid uuid.UUID) error {
 	return nil
 }
 
-func (s *Service) GetCharacterVersionsTimestamp(uid uuid.UUID) (data map[int]string, err error) {
-	data, err = s.db.GetRollbackVersionsTimestamp(uid)
+func (s *Service) GetCharacterVersionsTimestamp(ctx context.Context, uid uuid.UUID) (data map[int]string, err error) {
+	data, err = s.db.GetRollbackVersionsTimestamp(ctx, uid)
 	if len(data) == 0 {
 		return data, static.ErrNoCharacterVersions
 	}

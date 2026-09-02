@@ -43,3 +43,11 @@ log:
   level: debug # Logging level.
   dir: ./runtime/logs/ # The directory we should keep all the log files for the FN.
   expiretime: 1d # How long before we switch to a new log file.
+telemetry:
+  enabled: false # Record traces of requests and database operations.
+  path: /debug/oida # Where the telemetry dashboard is served, behind ExternalAuth.
+  ringbuffersize: 200 # How many completed traces to keep in memory. 0 uses the default.
+  toprequests: 20 # How many endpoints to keep in the rolling statistics. 0 uses the default.
+  maxspanspertrace: 1000 # Maximum spans recorded per trace, excess is counted and dropped. 0 is unlimited.
+  samplerate: 100 # Percentage of requests to trace, between 0 and 100.
+  ignorepaths: [] # Request paths that are never traced. Entries ending in "/*" match by prefix.
