@@ -83,7 +83,7 @@ func Run(args []string) (error) {
 		a.Tracer = tracer
 
 		if !a.Config.ApiAuth.EnforceIP {
-			a.Logger.Warn("Telemetry dashboard is world readable! ExternalAuth does nothing while apiauth.enforceip is false.", "path", telemetry.Path(tracer))
+			fmt.Printf("\t!!! Telemetry dashboard is open to the world! %s !!!\n", telemetry.Path(tracer))
 		}
 	}
 
