@@ -226,11 +226,10 @@ func (a *App) Start(mux chi.Router) error {
 	fmt.Println("\t Starting HTTP Server...")
 	if a.Config.Cert.Enable {
 		return a.StartHTTPWithCert()
-	}else{
-		return a.StartHTTP()
 	}
 
-	return nil
+	//default to starting normal HTTP service.
+	return a.StartHTTP()
 }
 
 func (a *App) Close() error {
