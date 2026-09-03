@@ -1,15 +1,28 @@
 package utils
 
 import (
+	"bytes"
 	"strconv"
 	"net"
 	"strings"
 	"net/http"
 	"errors"
 	"fmt"
-	"io"
 
-	json "github.com/sugawarayuuta/sonnet"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
+)
+
+// JSONOptions pins the encoding/json/v2 behaviors that would otherwise change the wire
+// format relative to the v1-compatible library this replaced: nil slices and maps encode
+// as null rather than []/{}, map keys stay sorted, HTML characters stay escaped, and
+// object member names match case-insensitively.
+var JSONOptions = json.JoinOptions(
+	json.FormatNilSliceAsNull(true),
+	json.FormatNilMapAsNull(true),
+	json.Deterministic(true),
+	json.MatchCaseInsensitiveNames(true),
+	jsontext.EscapeForHTML(true),
 )
 
 func GetIP(r *http.Request) string {
@@ -116,27 +129,22 @@ func StandardJSON(src, dst []byte) []byte {
 }
 
 func ProcessJSON(body []byte, v any) error {
-	if err := json.Unmarshal(body, v); err != nil {
-		var errln error
-		var syntaxErr *json.SyntaxError
-		var unmarshalErr *json.UnmarshalTypeError
+	if len(bytes.TrimSpace(body)) == 0 {
+		return fmt.Errorf("request body is empty")
+	}
+
+	if err := json.Unmarshal(body, v, JSONOptions); err != nil {
+		var syntaxErr *jsontext.SyntacticError
+		var semanticErr *json.SemanticError
 
 		switch {
 		case errors.As(err, &syntaxErr):
-			errln = fmt.Errorf("json syntax error at byte %d: %w", syntaxErr.Offset, err)
-		case errors.As(err, &unmarshalErr):
-			errln = fmt.Errorf("json type mismatch for field %q: %w", unmarshalErr.Field, err)
-		case errors.Is(err, io.EOF):
-			errln = fmt.Errorf("request body is empty")
+			return fmt.Errorf("json syntax error at byte %d: %w", syntaxErr.ByteOffset, err)
+		case errors.As(err, &semanticErr):
+			return fmt.Errorf("json type mismatch for field %q: %w", semanticErr.JSONPointer.LastToken(), err)
 		default:
-			errln = fmt.Errorf("malformed json: %w", err)
+			return fmt.Errorf("malformed json: %w", err)
 		}
-
-		if errln == nil {
-			errln = fmt.Errorf("unknown error: %w", err)
-		}
-
-		return errln
 	}
 
 	return nil

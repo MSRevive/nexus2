@@ -3,7 +3,9 @@ package response
 import (
 	"net/http"
 
-	json "github.com/sugawarayuuta/sonnet"
+	"encoding/json/v2"
+
+	"github.com/msrevive/nexus2/pkg/utils"
 )
 
 //make public so other packages can create custom responses.
@@ -20,7 +22,8 @@ type Response struct {
 func (r Response) SendJson() {
 	r.w.Header().Set("Content-Type", "application/json")
 	r.w.WriteHeader(r.Code)
-	json.NewEncoder(r.w).Encode(r)
+	json.MarshalWrite(r.w, r, utils.JSONOptions)
+	r.w.Write([]byte("\n"))
 }
 
 func TooManyRequests(w http.ResponseWriter) {

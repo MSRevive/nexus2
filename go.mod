@@ -13,7 +13,6 @@ require (
 	github.com/saintwish/rotatewriter v1.0.2
 	github.com/spf13/pflag v1.0.7
 	github.com/stretchr/testify v1.11.1
-	github.com/sugawarayuuta/sonnet v0.0.0-20231004000330-239c7b6e4ce8
 	github.com/titpetric/oida v0.3.0
 	golang.org/x/crypto v0.55.0
 	gopkg.in/ini.v1 v1.67.0

@@ -5,8 +5,9 @@ import (
 	"time"
 
 	"github.com/msrevive/nexus2/pkg/database/schema"
+	"github.com/msrevive/nexus2/pkg/utils"
 
-	json "github.com/sugawarayuuta/sonnet"
+	"encoding/json/v2"
 	"github.com/google/uuid"
 	"github.com/fxamacker/cbor/v2"
 )
@@ -42,7 +43,7 @@ func Benchmark_JSON(b * testing.B) {
 		},
 	}
 
-	_,_ = json.Marshal(&char)
+	_,_ = json.Marshal(&char, utils.JSONOptions)
 }
 
 func Benchmark_CBOR(b * testing.B) {
