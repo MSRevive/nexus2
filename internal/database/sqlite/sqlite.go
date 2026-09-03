@@ -72,7 +72,11 @@ func (d *sqliteDB) Connect(cfg database.Config, opts database.Options) error {
 		}
 	}
 
-	dsn := fmt.Sprintf("%s?_journal=WAL&_synchronous=NORMAL&_busy_timeout=5000", cfg.SQLite.Path)
+	// modernc.org/sqlite takes pragmas as _pragma=name(value); the _journal /
+	// _synchronous / _busy_timeout spelling is mattn/go-sqlite3's and is silently
+	// ignored by this driver, which left the database in the default rollback
+	// journal with no busy timeout.
+	dsn := fmt.Sprintf("%s?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)", cfg.SQLite.Path)
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return err
