@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"sync"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/msrevive/nexus2/internal/database"
 	"github.com/google/uuid"
+	"github.com/titpetric/oida"
 	_ "modernc.org/sqlite"
 )
 
@@ -17,7 +19,8 @@ import (
 // Every mutating DB call goes through here so SQLite's single-writer
 // constraint is respected without any external locking.
 type writeOp struct {
-	fn   func(tx *sql.Tx) error
+	ctx  context.Context
+	fn   func(ctx context.Context, tx *sql.Tx) error
 	resp chan error
 }
 
@@ -55,7 +58,7 @@ type sqliteDB struct {
 func New() *sqliteDB {
 	return &sqliteDB{
 		writeCh:        make(chan writeOp, 512),
-		flushInterval:  500 * time.Millisecond,
+		flushInterval:  5 * time.Second,
 		pendingUpdates: make(map[uuid.UUID]pendingUpdate),
 		done:           make(chan struct{}),
 	}
@@ -69,7 +72,11 @@ func (d *sqliteDB) Connect(cfg database.Config, opts database.Options) error {
 		}
 	}
 
-	dsn := fmt.Sprintf("%s?_journal=WAL&_synchronous=NORMAL&_busy_timeout=5000", cfg.SQLite.Path)
+	// modernc.org/sqlite takes pragmas as _pragma=name(value); the _journal /
+	// _synchronous / _busy_timeout spelling is mattn/go-sqlite3's and is silently
+	// ignored by this driver, which left the database in the default rollback
+	// journal with no busy timeout.
+	dsn := fmt.Sprintf("%s?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)", cfg.SQLite.Path)
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return err
@@ -89,7 +96,7 @@ func (d *sqliteDB) Connect(cfg database.Config, opts database.Options) error {
 	}
 
 	d.db = db
-	d.Logger = opts.Logger
+	d.Options = opts
 
 	d.wg.Add(2)
 	go d.writeWorker()
@@ -104,31 +111,83 @@ func (d *sqliteDB) Disconnect() error {
 	return d.db.Close()
 }
 
-// SyncToDisk issues a passive WAL checkpoint so data in the WAL file
-// is folded back into the main database file.
-func (d *sqliteDB) SyncToDisk() error {
-	_, err := d.db.Exec("PRAGMA wal_checkpoint(PASSIVE)")
-	return err
+// SyncToDisk drains the coalescing buffer, then issues a passive WAL checkpoint
+// so data in the WAL file is folded back into the main database file. Without
+// the flush the buffered updates aren't in the WAL yet, so there'd be nothing
+// for the checkpoint to fold back.
+func (d *sqliteDB) SyncToDisk(ctx context.Context) error {
+	return d.observe(ctx, "sqlite SyncToDisk", func(ctx context.Context) error {
+		if err := d.flushPendingUpdates(ctx); err != nil {
+			return err
+		}
+
+		ctx, span := oida.Start(ctx, "PRAGMA wal_checkpoint", oida.KindDatabase)
+		defer span.End()
+
+		_, err := d.db.ExecContext(ctx, "PRAGMA wal_checkpoint(PASSIVE)")
+		span.RecordError(err)
+		return err
+	})
 }
 
 // RunGC flushes pending updates and then purges any soft-deleted characters
 // whose expiration timestamp has passed.
-func (d *sqliteDB) RunGC() error {
-	return d.exec(func(tx *sql.Tx) error {
-		_, err := tx.Exec(
-			`DELETE FROM characters WHERE expires_at IS NOT NULL AND expires_at <= datetime('now')`,
-		)
+func (d *sqliteDB) RunGC(ctx context.Context) error {
+	return d.observe(ctx, "sqlite RunGC", func(ctx context.Context) error {
+		// Flush first: purging a row that still has a queued update would make the
+		// next flush fail on it, and a failed flush drops the whole snapshot.
+		if err := d.flushPendingUpdates(ctx); err != nil {
+			return err
+		}
+
+		ctx, span := oida.Start(ctx, "DELETE expired characters", oida.KindDatabase)
+		defer span.End()
+
+		err := d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
+			res, err := tx.ExecContext(ctx,
+				`DELETE FROM characters WHERE expires_at IS NOT NULL AND expires_at <= datetime('now')`,
+			)
+			if err != nil {
+				return err
+			}
+			if n, err := res.RowsAffected(); err == nil {
+				span.SetAttribute("deleted", n)
+			}
+			return nil
+		})
+		span.RecordError(err)
 		return err
 	})
+}
+
+// observe runs fn inside its own trace so background work that has no request
+// behind it still shows up on the dashboard. Without a tracer it just runs fn.
+func (d *sqliteDB) observe(ctx context.Context, name string, fn func(context.Context) error) error {
+	if d.Tracer == nil {
+		return fn(ctx)
+	}
+
+	return d.Tracer.Observe(ctx, name, fn)
 }
 
 // exec is the public helper for ad-hoc write operations. It packages the
 // function into a writeOp, ships it to the single writer goroutine, and
 // blocks until the result comes back.
-func (d *sqliteDB) exec(fn func(tx *sql.Tx) error) error {
+func (d *sqliteDB) exec(ctx context.Context, fn func(ctx context.Context, tx *sql.Tx) error) error {
 	resp := make(chan error, 1)
-	d.writeCh <- writeOp{fn: fn, resp: resp}
-	return <-resp
+
+	select {
+	case d.writeCh <- writeOp{ctx: ctx, fn: fn, resp: resp}:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	select {
+	case err := <-resp:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // writeWorker is the ONLY goroutine that opens transactions and writes to
@@ -137,12 +196,17 @@ func (d *sqliteDB) writeWorker() {
 	defer d.wg.Done()
 
 	runOp := func(op writeOp) {
-		tx, err := d.db.Begin()
+		ctx := op.ctx
+		if ctx == nil {
+			ctx = context.Background()
+		}
+
+		tx, err := d.db.BeginTx(ctx, nil)
 		if err != nil {
 			op.resp <- err
 			return
 		}
-		if err := op.fn(tx); err != nil {
+		if err := op.fn(ctx, tx); err != nil {
 			_ = tx.Rollback()
 			op.resp <- err
 			return
@@ -171,7 +235,7 @@ func (d *sqliteDB) writeWorker() {
 
 // flushWorker ticks on flushInterval and drains the coalescing buffer.
 // On shutdown it performs one final flush so no updates are lost.
-func (d *sqliteDB) flushWorker() error {
+func (d *sqliteDB) flushWorker() {
 	defer d.wg.Done()
 	ticker := time.NewTicker(d.flushInterval)
 	defer ticker.Stop()
@@ -179,15 +243,15 @@ func (d *sqliteDB) flushWorker() error {
 	for {
 		select {
 		case <-ticker.C:
-			if err := d.flushPendingUpdates(); err != nil {
-				return fmt.Errorf("sqlite: flush error: %v", err)
+			if err := d.flushPendingUpdates(context.Background()); err != nil && d.Logger != nil {
+				d.Logger.Error("sqlite: flush error", "error", err)
 			}
 
 		case <-d.done:
-			if err := d.flushPendingUpdates(); err != nil {
-				return fmt.Errorf("sqlite: final flush error: %v", err)
+			if err := d.flushPendingUpdates(context.Background()); err != nil && d.Logger != nil {
+				d.Logger.Error("sqlite: final flush error", "error", err)
 			}
-			return nil
+			return
 		}
 	}
 }
@@ -196,7 +260,7 @@ func (d *sqliteDB) flushWorker() error {
 // then commits all coalesced updates in a single transaction. N calls to
 // UpdateCharacter for the same character between ticks become exactly 1
 // database write.
-func (d *sqliteDB) flushPendingUpdates() error {
+func (d *sqliteDB) flushPendingUpdates(ctx context.Context) error {
 	d.coalesceMu.Lock()
 	if len(d.pendingUpdates) == 0 {
 		d.coalesceMu.Unlock()
@@ -207,14 +271,20 @@ func (d *sqliteDB) flushPendingUpdates() error {
 	d.pendingUpdates = make(map[uuid.UUID]pendingUpdate)
 	d.coalesceMu.Unlock()
 
-	return d.exec(func(tx *sql.Tx) error {
+	ctx, span := oida.Start(ctx, "UPDATE characters (flush)", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("characters", len(snapshot))
+
+	err := d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		for id, upd := range snapshot {
-			if err := applyCharacterUpdate(tx, id, upd); err != nil {
+			if err := applyCharacterUpdate(ctx, tx, id, upd); err != nil {
 				return fmt.Errorf("flush update for %s: %w", id, err)
 			}
 		}
 		return nil
 	})
+	span.RecordError(err)
+	return err
 }
 
 // migrate creates the schema on first run. Queries are idempotent (IF NOT EXISTS).

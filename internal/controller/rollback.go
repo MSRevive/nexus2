@@ -21,7 +21,7 @@ func (c *Controller) GetCharacterVersions(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	data, err := c.service.GetCharacterVersions(uid)
+	data, err := c.service.GetCharacterVersions(r.Context(), uid)
 	if errors.Is(err, static.ErrNoCharacterVersions) {
 		c.logger.Warn("service warning", "error", err)
 		response.OKNoContent(w)
@@ -45,7 +45,7 @@ func (c *Controller) RollbackCharToLatest(w http.ResponseWriter, r *http.Request
 	}
 
 	// 0 will be the first backup
-	if err := c.service.RollbackCharacterToLatest(uid); err != nil {
+	if err := c.service.RollbackCharacterToLatest(r.Context(), uid); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
@@ -69,7 +69,7 @@ func (c *Controller) RollbackCharToVersion(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := c.service.RollbackCharacter(uid, ver); err != nil {
+	if err := c.service.RollbackCharacter(r.Context(), uid, ver); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
@@ -87,7 +87,7 @@ func (c *Controller) DeleteCharRollbacks(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := c.service.DeleteCharacterVersions(uid); err != nil {
+	if err := c.service.DeleteCharacterVersions(r.Context(), uid); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
@@ -104,7 +104,7 @@ func (c *Controller) GetCharacterVersionsTimestamp(w http.ResponseWriter, r *htt
 		return
 	}
 
-	data, err := c.service.GetCharacterVersionsTimestamp(uid)
+	data, err := c.service.GetCharacterVersionsTimestamp(r.Context(), uid)
 	if errors.Is(err, static.ErrNoCharacterVersions) {
 		c.logger.Warn("service warning", "error", err)
 		response.OKNoContent(w)

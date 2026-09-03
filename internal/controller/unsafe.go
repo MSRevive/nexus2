@@ -26,7 +26,7 @@ func (c *Controller) UnsafeMoveCharacter(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	newUID, err := c.service.MoveCharacter(uid, steamid, slot)
+	newUID, err := c.service.MoveCharacter(r.Context(), uid, steamid, slot)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.BadRequest(w, err)
@@ -52,7 +52,7 @@ func (c *Controller) UnsafeCopyCharacter(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	newUID, err := c.service.CopyCharacter(uid, steamid, slot)
+	newUID, err := c.service.CopyCharacter(r.Context(), uid, steamid, slot)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.BadRequest(w, err)
@@ -71,7 +71,7 @@ func (c *Controller) UnsafeDeleteCharacter(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := c.service.HardDeleteCharacter(uid); err != nil {
+	if err := c.service.HardDeleteCharacter(r.Context(), uid); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.BadRequest(w, err)
 		return

@@ -1,6 +1,7 @@
 package migration
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -31,8 +32,8 @@ func New(src, dst database.Database) *Migrator {
 //
 // The destination database must be connected and empty before calling Run.
 // Run does not disconnect either database — the caller is responsible for that.
-func (m *Migrator) Run() error {
-	users, err := m.src.GetAllUsers()
+func (m *Migrator) Run(ctx context.Context) error {
+	users, err := m.src.GetAllUsers(ctx)
 	if err != nil {
 		return fmt.Errorf("migration: fetch users: %w", err)
 	}
@@ -40,13 +41,13 @@ func (m *Migrator) Run() error {
 	log.Printf("migration: found %d users to migrate", len(users))
 
 	for _, user := range users {
-		if err := m.migrateUser(user); err != nil {
+		if err := m.migrateUser(ctx, user); err != nil {
 			return fmt.Errorf("migration: user %s: %w", user.ID, err)
 		}
 	}
 
 	// Final sync so everything is durably written before the caller disconnects.
-	if err := m.dst.SyncToDisk(); err != nil {
+	if err := m.dst.SyncToDisk(ctx); err != nil {
 		return fmt.Errorf("migration: final sync: %w", err)
 	}
 
@@ -54,18 +55,18 @@ func (m *Migrator) Run() error {
 	return nil
 }
 
-func (m *Migrator) migrateUser(user *schema.User) error {
+func (m *Migrator) migrateUser(ctx context.Context, user *schema.User) error {
 	log.Printf("migration: migrating user %s (%d active, %d deleted characters)",
 		user.ID, len(user.Characters), len(user.DeletedCharacters))
 
 	// Migrate active characters first.
 	for slot, charID := range user.Characters {
-		char, err := m.src.GetCharacter(charID)
+		char, err := m.src.GetCharacter(ctx, charID)
 		if err != nil {
 			return fmt.Errorf("get character %s (slot %d): %w", charID, slot, err)
 		}
 
-		if err := m.migrateCharacter(user, char); err != nil {
+		if err := m.migrateCharacter(ctx, user, char); err != nil {
 			return fmt.Errorf("migrate character %s (slot %d): %w", charID, slot, err)
 		}
 
@@ -75,12 +76,12 @@ func (m *Migrator) migrateUser(user *schema.User) error {
 	}
 
 	// Migrate user flags last so the user row definitely exists in dst.
-	flags, err := m.src.GetUserFlags(user.ID)
+	flags, err := m.src.GetUserFlags(ctx, user.ID)
 	if err != nil {
 		return fmt.Errorf("get flags for user %s: %w", user.ID, err)
 	}
 	if flags != 0 {
-		if err := m.dst.SetUserFlags(user.ID, flags); err != nil {
+		if err := m.dst.SetUserFlags(ctx, user.ID, flags); err != nil {
 			return fmt.Errorf("set flags for user %s: %w", user.ID, err)
 		}
 	}
@@ -91,10 +92,11 @@ func (m *Migrator) migrateUser(user *schema.User) error {
 // migrateCharacter writes a single character and all of its versions to dst.
 // It uses NewCharacter to create the initial row and then replays each version
 // through UpdateCharacter so that the version history is preserved in order.
-func (m *Migrator) migrateCharacter(user *schema.User, char *schema.Character) error {
+func (m *Migrator) migrateCharacter(ctx context.Context, user *schema.User, char *schema.Character) error {
 	// NewCharacter creates the user row if it doesn't exist yet, so we don't
 	// need a separate "create user" step.
 	newID, err := m.dst.NewCharacter(
+		ctx,
 		char.SteamID,
 		char.Slot,
 		char.Data.Size,
@@ -118,6 +120,7 @@ func (m *Migrator) migrateCharacter(user *schema.User, char *schema.Character) e
 	// time-gap check is always satisfied.
 	for _, ver := range char.Versions {
 		if err := m.dst.UpdateCharacter(
+			ctx,
 			newID,
 			ver.Size,
 			ver.Data,
@@ -131,11 +134,12 @@ func (m *Migrator) migrateCharacter(user *schema.User, char *schema.Character) e
 	// If there were versions, flush them and then restore the current data so
 	// the active data_payload reflects char.Data and not the last version entry.
 	if len(char.Versions) > 0 {
-		if err := m.dst.SyncToDisk(); err != nil {
+		if err := m.dst.SyncToDisk(ctx); err != nil {
 			return fmt.Errorf("sync after version replay: %w", err)
 		}
 		// Write the real current data as a final update on top of the versions.
 		if err := m.dst.UpdateCharacter(
+			ctx,
 			newID,
 			char.Data.Size,
 			char.Data.Data,

@@ -25,7 +25,7 @@ func (c *Controller) LookUpCharacterID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid, err := c.service.LookUpCharacterID(steamid, slot)
+	uid, err := c.service.LookUpCharacterID(r.Context(), steamid, slot)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
@@ -44,7 +44,7 @@ func (c *Controller) RestoreCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := c.service.RestoreCharacter(uid); err != nil {
+	if err := c.service.RestoreCharacter(r.Context(), uid); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
@@ -62,7 +62,7 @@ func (c *Controller) ExportCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	char, err := c.service.GetCharacterByID(uid)
+	char, err := c.service.GetCharacterByID(r.Context(), uid)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
@@ -90,7 +90,7 @@ func (c *Controller) GetCharacterByIDExternal(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	char, err := c.service.GetCharacterByID(uid)
+	char, err := c.service.GetCharacterByID(r.Context(), uid)
 	if errors.Is(err, database.ErrNoDocument)  {
 		c.logger.Warn("service warning", "error", err)
 		response.OKNoContent(w)
@@ -108,7 +108,7 @@ func (c *Controller) GetCharacterByIDExternal(w http.ResponseWriter, r *http.Req
 func (c *Controller) GetDeletedCharacters(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 
-	chars, err := c.service.GetDeletedCharacters(steamid)
+	chars, err := c.service.GetDeletedCharacters(r.Context(), steamid)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
@@ -122,7 +122,7 @@ func (c *Controller) GetDeletedCharacters(w http.ResponseWriter, r *http.Request
 func (c *Controller) GetCharacters(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 
-	chars, _, err := c.service.GetCharacters(steamid)
+	chars, _, err := c.service.GetCharacters(r.Context(), steamid)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)

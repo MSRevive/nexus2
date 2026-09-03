@@ -12,7 +12,7 @@ import (
 func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 
-	user, err := c.service.GetUser(steamid)
+	user, err := c.service.GetUser(r.Context(), steamid)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
@@ -24,7 +24,7 @@ func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := c.service.GetAllUsers()
+	users, err := c.service.GetAllUsers(r.Context())
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
@@ -39,7 +39,7 @@ func (c *Controller) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) PatchBanSteamID(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	
-	if err := c.service.AddUserFlag(steamid, bitmask.BANNED); err != nil {
+	if err := c.service.AddUserFlag(r.Context(), steamid, bitmask.BANNED); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
@@ -53,7 +53,7 @@ func (c *Controller) PatchBanSteamID(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) PatchUnBanSteamID(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	
-	if err := c.service.RemoveUserFlag(steamid, bitmask.BANNED); err != nil {
+	if err := c.service.RemoveUserFlag(r.Context(), steamid, bitmask.BANNED); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
@@ -67,7 +67,7 @@ func (c *Controller) PatchUnBanSteamID(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) PatchAdminSteamID(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	
-	if err := c.service.AddUserFlag(steamid, bitmask.ADMIN); err != nil {
+	if err := c.service.AddUserFlag(r.Context(), steamid, bitmask.ADMIN); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
@@ -81,7 +81,7 @@ func (c *Controller) PatchAdminSteamID(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) PatchUnAdminSteamID(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	
-	if err := c.service.RemoveUserFlag(steamid, bitmask.ADMIN); err != nil {
+	if err := c.service.RemoveUserFlag(r.Context(), steamid, bitmask.ADMIN); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
@@ -95,7 +95,7 @@ func (c *Controller) PatchUnAdminSteamID(w http.ResponseWriter, r *http.Request)
 func (c *Controller) PatchDonorSteamID(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	
-	if err := c.service.AddUserFlag(steamid, bitmask.DONOR); err != nil {
+	if err := c.service.AddUserFlag(r.Context(), steamid, bitmask.DONOR); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
@@ -109,7 +109,7 @@ func (c *Controller) PatchDonorSteamID(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) PatchUnDonorSteamID(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	
-	if err := c.service.RemoveUserFlag(steamid, bitmask.DONOR); err != nil {
+	if err := c.service.RemoveUserFlag(r.Context(), steamid, bitmask.DONOR); err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)
 		return
@@ -123,7 +123,7 @@ func (c *Controller) PatchUnDonorSteamID(w http.ResponseWriter, r *http.Request)
 func (c *Controller) GetIsDonorSteamID(w http.ResponseWriter, r *http.Request) {
 	steamid := chi.URLParam(r, "steamid")
 	
-	flags, err := c.service.GetUserFlags(steamid)
+	flags, err := c.service.GetUserFlags(r.Context(), steamid)
 	if err != nil {
 		c.logger.Error("service failed", "error", err)
 		response.Error(w, err)

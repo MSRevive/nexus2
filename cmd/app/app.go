@@ -20,12 +20,14 @@ import (
 	"github.com/saintwish/kv/ccmap"
 	rw "github.com/saintwish/rotatewriter"
 	"github.com/go-chi/chi/v5"
+	"github.com/titpetric/oida"
 )
 
 type App struct {
 	Config *config.Config
 	DB database.Database
 	Logger *slog.Logger
+	Tracer *oida.Tracer
 	List struct {
 		SystemAdmin *ccmap.Cache[string, string]
 		IP *ccmap.Cache[string, string]
@@ -232,6 +234,11 @@ func (a *App) Start(mux chi.Router) error {
 }
 
 func (a *App) Close() error {
+	//stop recording so late requests aren't traced while everything is torn down.
+	if a.Tracer != nil {
+		a.Tracer.SetEnabled(false)
+	}
+
 	//close database connection
 	a.Logger.Info("Closing database connection")
 	if err := a.DB.Disconnect(); err != nil {

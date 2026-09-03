@@ -15,6 +15,7 @@ import (
 	"github.com/msrevive/nexus2/internal/service"
 	"github.com/msrevive/nexus2/internal/static"
 	"github.com/msrevive/nexus2/internal/response"
+	"github.com/msrevive/nexus2/internal/telemetry"
 
 	"github.com/go-chi/chi/v5"
 	cmw "github.com/go-chi/chi/v5/middleware"
@@ -73,6 +74,19 @@ func Run(args []string) (error) {
 		return err
 	}
 
+	fmt.Println("-> Initiating Telemetry...")
+	tracer, err := telemetry.New(a.Config, a.Logger)
+	if err != nil {
+		return err
+	}
+	if tracer != nil {
+		a.Tracer = tracer
+
+		if !a.Config.ApiAuth.EnforceIP {
+			a.Logger.Warn("Telemetry dashboard is world readable! ExternalAuth does nothing while apiauth.enforceip is false.", "path", telemetry.Path(tracer))
+		}
+	}
+
 	fmt.Println("-> Initiating Database...")
 	if err := a.SetupDatabase(); err != nil {
 		return err
@@ -113,7 +127,15 @@ func Run(args []string) (error) {
 	}
 	router.Use(mw.Log)
 	router.Use(mw.PanicRecovery)
-	router.Use(cmw.Timeout(time.Duration(a.Config.Core.Timeout) * time.Second))
+	// After PanicRecovery, oida records the panic then re-panics and we still want to recover it.
+	router.Use(tracer.Middleware)
+
+	// Not global: the telemetry dashboard streams server sent events and a timeout kills them.
+	timeout := cmw.Timeout(time.Duration(a.Config.Core.Timeout) * time.Second)
+
+	if tracer != nil {
+		router.Mount(telemetry.Path(tracer), mw.ExternalAuth(tracer))
+	}
 
 	service := service.New(a.DB, a.Config, flags.readonly)
 	con := controller.New(service, a.Logger, a.Config, controller.Options{
@@ -122,6 +144,7 @@ func Run(args []string) (error) {
 
 	// API version 2
 	router.Route(static.APIVersion, func(r chi.Router) {
+		r.Use(timeout)
 		r.Use(mw.BasicAuth)
 		
 		// Internal use for the game server only.
@@ -212,6 +235,8 @@ func Run(args []string) (error) {
 
 	// Let the game server know that's it's trying to use the old API.
 	router.Route(static.OldAPIVersion, func(r chi.Router) {
+		r.Use(timeout)
+
 		r.Route("/", func(r chi.Router) {
 			if !flags.debug {
 				r.Use(mw.InternalAuth)
