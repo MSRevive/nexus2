@@ -119,6 +119,13 @@ func (d *postgresDB) SyncToDisk(ctx context.Context) error {
 // whose expiration timestamp has passed.
 func (d *postgresDB) RunGC(ctx context.Context) error {
 	return d.observe(ctx, "postgres RunGC", func(ctx context.Context) error {
+		// Flush first: purging a row that still has a queued update makes
+		// applyCharacterUpdate return ErrNoDocument, which rolls back the whole
+		// batch and re-queues it to fail again on every subsequent tick.
+		if err := d.flushPendingUpdates(ctx); err != nil {
+			return err
+		}
+
 		ctx, span := oida.Start(ctx, "DELETE expired characters", oida.KindDatabase)
 		defer span.End()
 
@@ -202,22 +209,19 @@ func (d *postgresDB) flushPendingUpdates(ctx context.Context) error {
 		return ids[i].String() < ids[j].String()
 	})
 
-	err := d.observe(ctx, "postgres flush", func(ctx context.Context) error {
-		ctx, span := oida.Start(ctx, "UPDATE characters (flush)", oida.KindDatabase)
-		defer span.End()
-		span.SetAttribute("characters", len(ids))
+	ctx, span := oida.Start(ctx, "UPDATE characters (flush)", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("characters", len(ids))
 
-		err := d.execTx(ctx, func(tx pgx.Tx) error {
-			for _, id := range ids {
-				if err := applyCharacterUpdate(ctx, tx, id, snapshot[id]); err != nil {
-					return fmt.Errorf("flush update for %s: %w", id, err)
-				}
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
+		for _, id := range ids {
+			if err := applyCharacterUpdate(ctx, tx, id, snapshot[id]); err != nil {
+				return fmt.Errorf("flush update for %s: %w", id, err)
 			}
-			return nil
-		})
-		span.RecordError(err)
-		return err
+		}
+		return nil
 	})
+	span.RecordError(err)
 
 	if err != nil {
 		// Merge the failed snapshot back into the pending map.

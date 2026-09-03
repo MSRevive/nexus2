@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/titpetric/oida"
 )
+
 func New(cfg *config.Config, logger *slog.Logger) (*oida.Tracer, error) {
 	if !cfg.Telemetry.Enabled {
 		return nil, nil

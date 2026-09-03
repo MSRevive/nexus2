@@ -58,7 +58,7 @@ type sqliteDB struct {
 func New() *sqliteDB {
 	return &sqliteDB{
 		writeCh:        make(chan writeOp, 512),
-		flushInterval:  500 * time.Millisecond,
+		flushInterval:  5 * time.Second,
 		pendingUpdates: make(map[uuid.UUID]pendingUpdate),
 		done:           make(chan struct{}),
 	}
@@ -107,10 +107,16 @@ func (d *sqliteDB) Disconnect() error {
 	return d.db.Close()
 }
 
-// SyncToDisk issues a passive WAL checkpoint so data in the WAL file
-// is folded back into the main database file.
+// SyncToDisk drains the coalescing buffer, then issues a passive WAL checkpoint
+// so data in the WAL file is folded back into the main database file. Without
+// the flush the buffered updates aren't in the WAL yet, so there'd be nothing
+// for the checkpoint to fold back.
 func (d *sqliteDB) SyncToDisk(ctx context.Context) error {
 	return d.observe(ctx, "sqlite SyncToDisk", func(ctx context.Context) error {
+		if err := d.flushPendingUpdates(ctx); err != nil {
+			return err
+		}
+
 		ctx, span := oida.Start(ctx, "PRAGMA wal_checkpoint", oida.KindDatabase)
 		defer span.End()
 
@@ -124,6 +130,12 @@ func (d *sqliteDB) SyncToDisk(ctx context.Context) error {
 // whose expiration timestamp has passed.
 func (d *sqliteDB) RunGC(ctx context.Context) error {
 	return d.observe(ctx, "sqlite RunGC", func(ctx context.Context) error {
+		// Flush first: purging a row that still has a queued update would make the
+		// next flush fail on it, and a failed flush drops the whole snapshot.
+		if err := d.flushPendingUpdates(ctx); err != nil {
+			return err
+		}
+
 		ctx, span := oida.Start(ctx, "DELETE expired characters", oida.KindDatabase)
 		defer span.End()
 
@@ -255,22 +267,20 @@ func (d *sqliteDB) flushPendingUpdates(ctx context.Context) error {
 	d.pendingUpdates = make(map[uuid.UUID]pendingUpdate)
 	d.coalesceMu.Unlock()
 
-	return d.observe(ctx, "sqlite flush", func(ctx context.Context) error {
-		ctx, span := oida.Start(ctx, "UPDATE characters (flush)", oida.KindDatabase)
-		defer span.End()
-		span.SetAttribute("characters", len(snapshot))
+	ctx, span := oida.Start(ctx, "UPDATE characters (flush)", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("characters", len(snapshot))
 
-		err := d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
-			for id, upd := range snapshot {
-				if err := applyCharacterUpdate(ctx, tx, id, upd); err != nil {
-					return fmt.Errorf("flush update for %s: %w", id, err)
-				}
+	err := d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
+		for id, upd := range snapshot {
+			if err := applyCharacterUpdate(ctx, tx, id, upd); err != nil {
+				return fmt.Errorf("flush update for %s: %w", id, err)
 			}
-			return nil
-		})
-		span.RecordError(err)
-		return err
+		}
+		return nil
 	})
+	span.RecordError(err)
+	return err
 }
 
 // migrate creates the schema on first run. Queries are idempotent (IF NOT EXISTS).
