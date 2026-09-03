@@ -1,15 +1,15 @@
 package main
 
 import (
-	"testing"
-	"time"
+	// "testing"
+	// "time"
 
-	"github.com/msrevive/nexus2/pkg/database/schema"
-	"github.com/msrevive/nexus2/pkg/utils"
+	// "github.com/msrevive/nexus2/pkg/database/schema"
+	// "github.com/msrevive/nexus2/pkg/utils"
 
-	"encoding/json/v2"
-	"github.com/google/uuid"
-	"github.com/fxamacker/cbor/v2"
+	// "encoding/json/v2"
+	// "github.com/google/uuid"
+	// "github.com/fxamacker/cbor/v2"
 )
 
 /*
@@ -28,7 +28,7 @@ func Benchmark_BSON(b *testing.B) {
 
 	_,_ = bsoncoder.Encode(&char)
 }
-*/
+
 
 func Benchmark_JSON(b * testing.B) {
 	char := schema.Character{
@@ -61,3 +61,4 @@ func Benchmark_CBOR(b * testing.B) {
 
 	_,_ = cbor.Marshal(&char)
 }
+*/

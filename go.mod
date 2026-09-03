@@ -3,7 +3,6 @@ module github.com/msrevive/nexus2
 go 1.27.0
 
 require (
-	github.com/fxamacker/cbor/v2 v2.9.0
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/go-chi/httprate v0.15.0
 	github.com/google/uuid v1.6.0
@@ -34,7 +33,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
-	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546 // indirect
 	golang.org/x/net v0.57.0 // indirect
