@@ -3,12 +3,44 @@ package telemetry
 import (
 	"log/slog"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/msrevive/nexus2/internal/config"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/titpetric/oida"
 )
+
+var (
+	clockMu sync.Mutex
+	clockLast time.Time
+)
+
+/* ---
+	Monotonic clock
+	time.Now() on Windows is coarse enough that a fast operation can start and
+	finish on the same reading, leaving the span with Duration == 0. oida's
+	timeline treats a zero duration as "still open" (frontend/view/timeline.go
+	renders the word "open" instead of a time), so completed spans on quick work
+	like RunGC, SyncToDisk or a 404 look like they never ended.
+
+	Handing oida a clock that never returns the same time twice keeps every span
+	at 1ns or more, which is the difference between "0s" and "open" on the
+	dashboard. Drop this once oida checks Ended() there instead.
+--- */
+func monotonicNow() time.Time {
+	clockMu.Lock()
+	defer clockMu.Unlock()
+
+	now := time.Now()
+	if !now.After(clockLast) {
+		now = clockLast.Add(time.Nanosecond)
+	}
+	clockLast = now
+
+	return now
+}
 
 func New(cfg *config.Config, logger *slog.Logger) (*oida.Tracer, error) {
 	if !cfg.Telemetry.Enabled {
@@ -35,9 +67,11 @@ func New(cfg *config.Config, logger *slog.Logger) (*oida.Tracer, error) {
 		opts.SampleRate = cfg.Telemetry.SampleRate
 	}
 
-	// Don't trace the dashboard itself, it would fill the ring buffer with views of the ring buffer.
-	opts.IgnorePaths = append(opts.IgnorePaths, opts.Path, opts.Path+"/*")
+	// oida already excludes its own dashboard subtree, so only ours need adding.
 	opts.IgnorePaths = append(opts.IgnorePaths, cfg.Telemetry.IgnorePaths...)
+
+	// Never report the same instant twice, so a fast span can't measure as zero.
+	opts.Clock = monotonicNow
 
 	// oida falls back to r.Pattern, which only net/http's ServeMux sets. Without this
 	// every steamid and uuid becomes its own group in the statistics.
