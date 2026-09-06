@@ -13,8 +13,10 @@ database:
     maxconns: 20 # Maximum connections to PostgreSQL server
     retrydelay: 3 # Time until trying again to connect to via database. In seconds.
     maxretries: 5 # Maximum number to retry connection to via database. 0 is for infinite.
-  sync: "/30 * * * *" # How often the database should sync to disk from memory using crontabs
+  sync: "*/5 * * * *" # How often the database should sync to disk from memory using crontabs
   garbagecollection: "*/10 * * * *" # How often the database garbage collection should run using crontabs.
+  flushinterval: 5s # How long a character save may sit in memory before it's written. Also the worst case data loss on a crash. 0 uses the default.
+  flushthreshold: 256 # Number of queued characters that forces a write without waiting for flushinterval. Bounds memory use. 0 uses the default, negative disables it.
 ratelimit:
   maxrequests: 0 # Max amount of requests in time range of MaxAge
   maxage: "" # Max age of ratelimiter bucket in minutes

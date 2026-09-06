@@ -65,7 +65,7 @@ func main() {
 	defer dst.Disconnect()
 
 	// actually start migration now
-	fmt.Printf("Beginning migration of DB to %s...\n", dstType)
+	fmt.Printf("Beginning migration of DB to %s...\n", *dstType)
 	start := time.Now()
 
 	m := migration.New(src, dst)

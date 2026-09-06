@@ -3,52 +3,29 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
-	"sort"
 
 	"github.com/msrevive/nexus2/internal/database"
+	"github.com/msrevive/nexus2/internal/database/coalesce"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/titpetric/oida"
 )
 
-// pendingUpdate holds the latest state for a character that has been
-// updated but not yet flushed to the database.
-type pendingUpdate struct {
-	size       int
-	data       string
-	backupMax  int
-	backupTime time.Duration
-}
-
 type postgresDB struct {
 	db *pgxpool.Pool
 
-	// flushInterval controls how often the coalescing buffer is drained.
-	flushInterval time.Duration
-
-	// pendingUpdates is the coalescing map. When UpdateCharacter is called,
-	// we just overwrite the entry for that character ID. On each flush tick,
-	// all pending entries are committed in a single transaction.
-	coalesceMu     sync.RWMutex
-	pendingUpdates map[uuid.UUID]pendingUpdate
-
-	done chan struct{}
-	wg   sync.WaitGroup
+	// buf coalesces character updates so repeated saves for the same character
+	// collapse into one write. See internal/database/coalesce.
+	buf *coalesce.Buffer
 
 	database.Options
 }
 
 func New() *postgresDB {
-	return &postgresDB{
-		flushInterval:  15 * time.Second,
-		pendingUpdates: make(map[uuid.UUID]pendingUpdate),
-		done:           make(chan struct{}),
-	}
+	return &postgresDB{}
 }
 
 func (d *postgresDB) Connect(cfg database.Config, opts database.Options) error {
@@ -97,33 +74,89 @@ func (d *postgresDB) Connect(cfg database.Config, opts database.Options) error {
 		}
 	}
 
-	d.wg.Add(1)
-	go d.flushWorker()
+	d.buf = coalesce.New(coalesce.Config{
+		Interval:  cfg.FlushInterval,
+		Threshold: cfg.FlushThreshold,
+		Name:      "postgres",
+		Logger:    opts.Logger,
+	}, d.applyUpdates)
+	d.buf.Start()
 
 	return nil
 }
 
 func (d *postgresDB) Disconnect() error {
-	close(d.done)
-	d.wg.Wait()
+	if d.db == nil {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := d.buf.Stop(ctx); err != nil && d.Logger != nil {
+		d.Logger.Error("postgres: final flush error", "error", err)
+	}
+
 	d.db.Close()
 	return nil
 }
 
-// SyncToDisk is a no-op for Postgres — data is durable after COMMIT.
+// SyncToDisk drains the coalescing buffer. Postgres data is durable the moment
+// it commits, so there is nothing to checkpoint — but the buffer still holds
+// updates that have not reached a transaction yet, and callers (the sync cron,
+// and the migrator between version replays) rely on this to force them out.
 func (d *postgresDB) SyncToDisk(ctx context.Context) error {
-	return nil
+	// The sync and GC crons are scheduled before Connect runs, so a tick can
+	// land while the connection is still being established.
+	if d.db == nil {
+		return database.ErrNotAvailable
+	}
+
+	return d.observe(ctx, "postgres SyncToDisk", func(ctx context.Context) error {
+		return d.buf.Flush(ctx)
+	})
 }
 
-// RunGC flushes pending updates and then purges any soft-deleted characters
-// whose expiration timestamp has passed.
+// applyUpdates commits a batch of coalesced character updates in one
+// transaction. It is the ApplyFunc handed to the buffer.
+func (d *postgresDB) applyUpdates(ctx context.Context, batch []coalesce.Entry) error {
+	ctx, span := oida.Start(ctx, "UPDATE characters (flush)", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("characters", len(batch))
+
+	// The buffer hands batches over already sorted by ID, so row locks are
+	// always acquired in the same order and overlapping flushes can't deadlock.
+	err := d.execTx(ctx, func(tx pgx.Tx) error {
+		for _, e := range batch {
+			if err := applyCharacterUpdate(ctx, tx, e.ID, e.Update); err != nil {
+				return fmt.Errorf("flush update for %s: %w", e.ID, err)
+			}
+		}
+		return nil
+	})
+	span.RecordError(err)
+	return err
+}
+
+// RunGC purges any soft-deleted characters whose expiration timestamp has passed.
+//
+// It flushes first so updates queued before the purge are written rather than
+// discarded, but that flush is advisory: the buffer tolerates a character
+// vanishing underneath it, so a flush failure must not stop garbage collection
+// from running.
+//
+// There is deliberately no attempt to evict the purged IDs from the buffer.
+// Only soft-deleted characters can expire, SoftDeleteCharacter already drops
+// whatever was queued for them, and nothing can queue an update for a character
+// it can no longer look up — so there would be nothing to evict.
 func (d *postgresDB) RunGC(ctx context.Context) error {
+	if d.db == nil {
+		return database.ErrNotAvailable
+	}
+
 	return d.observe(ctx, "postgres RunGC", func(ctx context.Context) error {
-		// Flush first: purging a row that still has a queued update makes
-		// applyCharacterUpdate return ErrNoDocument, which rolls back the whole
-		// batch and re-queues it to fail again on every subsequent tick.
-		if err := d.flushPendingUpdates(ctx); err != nil {
-			return err
+		if err := d.buf.Flush(ctx); err != nil && d.Logger != nil {
+			d.Logger.Warn("postgres: flush before GC failed, collecting anyway", "error", err)
 		}
 
 		ctx, span := oida.Start(ctx, "DELETE expired characters", oida.KindDatabase)
@@ -164,78 +197,6 @@ func (d *postgresDB) execTx(ctx context.Context, fn func(tx pgx.Tx) error) error
 		return err
 	}
 	return tx.Commit(ctx)
-}
-
-// flushWorker ticks on flushInterval and drains the coalescing buffer.
-// On shutdown it performs one final flush so no updates are lost.
-func (d *postgresDB) flushWorker() {
-	defer d.wg.Done()
-	ticker := time.NewTicker(d.flushInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			if err := d.flushPendingUpdates(context.Background()); err != nil && d.Logger != nil {
-				d.Logger.Error("postgres: flush error", "error", err)
-			}
-
-		case <-d.done:
-			_ = d.flushPendingUpdates(context.Background())
-			return
-		}
-	}
-}
-
-// flushPendingUpdates atomically swaps the coalescing map for a fresh one,
-// then commits all coalesced updates in a single transaction.
-func (d *postgresDB) flushPendingUpdates(ctx context.Context) error {
-	d.coalesceMu.Lock()
-	if len(d.pendingUpdates) == 0 {
-		d.coalesceMu.Unlock()
-		return nil
-	}
-
-	snapshot := d.pendingUpdates
-	d.pendingUpdates = make(map[uuid.UUID]pendingUpdate)
-	d.coalesceMu.Unlock()
-
-	// Sort IDs to acquire row locks in a consistent order and prevent deadlocks.
-	ids := make([]uuid.UUID, 0, len(snapshot))
-	for id := range snapshot {
-		ids = append(ids, id)
-	}
-	sort.Slice(ids, func(i, j int) bool {
-		return ids[i].String() < ids[j].String()
-	})
-
-	ctx, span := oida.Start(ctx, "UPDATE characters (flush)", oida.KindDatabase)
-	defer span.End()
-	span.SetAttribute("characters", len(ids))
-
-	err := d.execTx(ctx, func(tx pgx.Tx) error {
-		for _, id := range ids {
-			if err := applyCharacterUpdate(ctx, tx, id, snapshot[id]); err != nil {
-				return fmt.Errorf("flush update for %s: %w", id, err)
-			}
-		}
-		return nil
-	})
-	span.RecordError(err)
-
-	if err != nil {
-		// Merge the failed snapshot back into the pending map.
-		// Any newer updates written since the swap take priority.
-		d.coalesceMu.Lock()
-		for id, upd := range snapshot {
-			if _, exists := d.pendingUpdates[id]; !exists {
-				d.pendingUpdates[id] = upd
-			}
-		}
-		d.coalesceMu.Unlock()
-	}
-
-	return err
 }
 
 // migrate creates the schema on first run. Uses Postgres-native types.

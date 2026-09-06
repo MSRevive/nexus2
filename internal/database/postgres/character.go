@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/msrevive/nexus2/internal/database"
+	"github.com/msrevive/nexus2/internal/database/coalesce"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/google/uuid"
@@ -67,15 +68,12 @@ func (d *postgresDB) UpdateCharacter(ctx context.Context, id uuid.UUID, size int
 	span.SetAttribute("uuid", id.String())
 	span.SetAttribute("size", size)
 
-	d.coalesceMu.Lock()
-	d.pendingUpdates[id] = pendingUpdate{
-		size:       size,
-		data:       data,
-		backupMax:  backupMax,
-		backupTime: backupTime,
-	}
-	pending := len(d.pendingUpdates)
-	d.coalesceMu.Unlock()
+	pending := d.buf.Queue(id, coalesce.Update{
+		Size:       size,
+		Data:       data,
+		BackupMax:  backupMax,
+		BackupTime: backupTime,
+	})
 
 	span.SetAttribute("pending", pending)
 	return nil
@@ -83,7 +81,7 @@ func (d *postgresDB) UpdateCharacter(ctx context.Context, id uuid.UUID, size int
 
 // applyCharacterUpdate is called inside the flush transaction. It performs the
 // read-modify-write cycle for one character, applying version/backup logic.
-func applyCharacterUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID, upd pendingUpdate) error {
+func applyCharacterUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID, upd coalesce.Update) error {
 	var (
 		dataCreatedAt time.Time
 		dataSize      int
@@ -106,7 +104,7 @@ func applyCharacterUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID, upd pend
 	// ------------------------------------------------------------------
 	// Version / backup logic
 	// ------------------------------------------------------------------
-	if upd.backupMax > 0 {
+	if upd.BackupMax > 0 {
 		var versionCount int
 		if err := tx.QueryRow(ctx,
 			`SELECT COUNT(*) FROM character_versions WHERE character_id = $1`,
@@ -116,7 +114,7 @@ func applyCharacterUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID, upd pend
 		}
 
 		// If at the cap, delete the oldest entry.
-		if versionCount >= upd.backupMax {
+		if versionCount >= upd.BackupMax {
 			if _, err := tx.Exec(ctx, `
 				DELETE FROM character_versions WHERE id = (
 					SELECT id FROM character_versions
@@ -139,7 +137,7 @@ func applyCharacterUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID, upd pend
 				return err
 			}
 
-			if dataCreatedAt.After(newestCreatedAt.Add(upd.backupTime)) {
+			if dataCreatedAt.After(newestCreatedAt.Add(upd.BackupTime)) {
 				if _, err := tx.Exec(ctx, `
 					INSERT INTO character_versions (character_id, created_at, size, data_payload)
 					VALUES ($1, $2, $3, $4)`,
@@ -165,7 +163,7 @@ func applyCharacterUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID, upd pend
 		UPDATE characters
 		SET data_created_at = $1, data_size = $2, data_payload = $3
 		WHERE id = $4`,
-		time.Now().UTC(), upd.size, upd.data, id,
+		time.Now().UTC(), upd.Size, upd.Data, id,
 	)
 	return err
 }
@@ -205,13 +203,12 @@ func (d *postgresDB) GetCharacter(ctx context.Context, id uuid.UUID) (*schema.Ch
 		c.DeletedAt = &deletedAt.Time
 	}
 
-	// Overlay any pending update that hasn't been flushed yet.
-	d.coalesceMu.RLock()
-	if upd, ok := d.pendingUpdates[id]; ok {
-		c.Data.Size = upd.size
-		c.Data.Data = upd.data
+	// Overlay any queued update that hasn't been flushed yet, so a read that
+	// follows a write sees what was written rather than the last committed state.
+	if upd, ok := d.buf.Peek(id); ok {
+		c.Data.Size = upd.Size
+		c.Data.Data = upd.Data
 	}
-	d.coalesceMu.RUnlock()
 
 	// Load version history.
 	rows, err := d.db.Query(ctx, `
@@ -273,13 +270,11 @@ func (d *postgresDB) GetCharacters(ctx context.Context, steamid string) (map[int
 		c.SteamID = steamid
 		c.DeletedAt = deletedAt
 
-		// Overlay any pending update that hasn't been flushed yet.
-		d.coalesceMu.RLock()
-		if upd, ok := d.pendingUpdates[c.ID]; ok {
-			c.Data.Size = upd.size
-			c.Data.Data = upd.data
+		// Overlay any queued update that hasn't been flushed yet.
+		if upd, ok := d.buf.Peek(c.ID); ok {
+			c.Data.Size = upd.Size
+			c.Data.Data = upd.Data
 		}
-		d.coalesceMu.RUnlock()
 
 		chars[c.Slot] = c
 	}
@@ -319,6 +314,10 @@ func (d *postgresDB) SoftDeleteCharacter(ctx context.Context, id uuid.UUID, expi
 	ctx, span := oida.Start(ctx, "UPDATE character deleted", oida.KindDatabase)
 	defer span.End()
 	span.SetAttribute("uuid", id.String())
+
+	// A queued update would otherwise be written back onto the character after
+	// it was deleted, resurrecting the data the caller just asked us to remove.
+	d.buf.Drop(id)
 
 	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		var steamID string
@@ -360,6 +359,10 @@ func (d *postgresDB) DeleteCharacter(ctx context.Context, id uuid.UUID) error {
 	ctx, span := oida.Start(ctx, "DELETE character", oida.KindDatabase)
 	defer span.End()
 	span.SetAttribute("uuid", id.String())
+
+	// Drop before deleting: the row is about to be gone, so a queued update for
+	// it can never be applied again.
+	d.buf.Drop(id)
 
 	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, `DELETE FROM characters WHERE id = $1`, id)
@@ -469,6 +472,13 @@ func (d *postgresDB) CopyCharacter(ctx context.Context, id uuid.UUID, steamid st
 			return err
 		}
 
+		// Prefer the queued payload over the committed row, otherwise a copy
+		// taken shortly after a save silently duplicates the older data.
+		if upd, ok := d.buf.Peek(id); ok {
+			dataSize = upd.Size
+			dataPayload = upd.Data
+		}
+
 		if _, err := tx.Exec(ctx,
 			`INSERT INTO users (id) VALUES ($1) ON CONFLICT(id) DO NOTHING`, steamid,
 		); err != nil {
@@ -534,6 +544,10 @@ func (d *postgresDB) RollbackCharacter(ctx context.Context, id uuid.UUID, ver in
 	span.SetAttribute("uuid", id.String())
 	span.SetAttribute("version", ver)
 
+	// Any queued update holds pre-rollback data. Flushing it afterwards would
+	// silently undo the rollback, so discard it.
+	d.buf.Drop(id)
+
 	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		var createdAt time.Time
 		var size int
@@ -570,6 +584,9 @@ func (d *postgresDB) RollbackCharacterToLatest(ctx context.Context, id uuid.UUID
 	ctx, span := oida.Start(ctx, "UPDATE character rollback latest", oida.KindDatabase)
 	defer span.End()
 	span.SetAttribute("uuid", id.String())
+
+	// See RollbackCharacter: the queued update predates the rollback.
+	d.buf.Drop(id)
 
 	err := d.execTx(ctx, func(tx pgx.Tx) error {
 		var createdAt time.Time

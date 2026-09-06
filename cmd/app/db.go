@@ -30,9 +30,11 @@ func (a *App) SetupDatabase() error {
 		return database.ErrNotAvailable
 	}
 
-	// Setup database sync
+	// Setup database sync. An unusable crontab must be reported rather than
+	// swallowed: a silently unscheduled job means the database never syncs and
+	// nothing ever says so.
 	syncCron := cron.New()
-	syncCron.AddFunc(a.Config.Database.Sync, func() {
+	if _, err := syncCron.AddFunc(a.Config.Database.Sync, func() {
 		go func() {
 			a.Logger.Info("Syncing data to disk")
 			t1 := time.Now()
@@ -42,12 +44,14 @@ func (a *App) SetupDatabase() error {
 			}
 			a.Logger.Info("Finished syncing data to disk", "ping", time.Since(t1))
 		}()
-	})
+	}); err != nil {
+		return fmt.Errorf("database.sync %q is not a valid crontab: %w", a.Config.Database.Sync, err)
+	}
 	syncCron.Start()
 
 	// Setup database garbage collection
 	gcCron := cron.New()
-	gcCron.AddFunc(a.Config.Database.GarbageCollection, func() { //This runs on the 10th minute
+	if _, err := gcCron.AddFunc(a.Config.Database.GarbageCollection, func() { //This runs on the 10th minute
 		go func() {
 			a.Logger.Info("Running database garbage collection")
 			t1 := time.Now()
@@ -56,7 +60,9 @@ func (a *App) SetupDatabase() error {
 			}
 			a.Logger.Info("Finished running garbage collection", "ping", time.Since(t1))
 		}()
-	})
+	}); err != nil {
+		return fmt.Errorf("database.garbagecollection %q is not a valid crontab: %w", a.Config.Database.GarbageCollection, err)
+	}
 	gcCron.Start()
 
 	return nil

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/msrevive/nexus2/internal/database"
+	"github.com/msrevive/nexus2/internal/database/coalesce"
 	"github.com/msrevive/nexus2/pkg/database/schema"
 
 	"github.com/google/uuid"
@@ -66,15 +67,12 @@ func (d *sqliteDB) UpdateCharacter(ctx context.Context, id uuid.UUID, size int, 
 	span.SetAttribute("uuid", id.String())
 	span.SetAttribute("size", size)
 
-	d.coalesceMu.Lock()
-	d.pendingUpdates[id] = pendingUpdate{
-		size:       size,
-		data:       data,
-		backupMax:  backupMax,
-		backupTime: backupTime,
-	}
-	pending := len(d.pendingUpdates)
-	d.coalesceMu.Unlock()
+	pending := d.buf.Queue(id, coalesce.Update{
+		Size:       size,
+		Data:       data,
+		BackupMax:  backupMax,
+		BackupTime: backupTime,
+	})
 
 	span.SetAttribute("pending", pending)
 	return nil
@@ -85,7 +83,7 @@ func (d *sqliteDB) UpdateCharacter(ctx context.Context, id uuid.UUID, size int, 
 // that mirrors the pebble implementation exactly.
 //
 // Called only from within a transaction on the write goroutine.
-func applyCharacterUpdate(ctx context.Context, tx *sql.Tx, id uuid.UUID, upd pendingUpdate) error {
+func applyCharacterUpdate(ctx context.Context, tx *sql.Tx, id uuid.UUID, upd coalesce.Update) error {
 	// Read the current character data so we can snapshot it as a version.
 	var (
 		dataCreatedAt time.Time
@@ -108,7 +106,7 @@ func applyCharacterUpdate(ctx context.Context, tx *sql.Tx, id uuid.UUID, upd pen
 	// ------------------------------------------------------------------
 	// Version / backup logic — mirrors the pebble UpdateCharacter exactly.
 	// ------------------------------------------------------------------
-	if upd.backupMax > 0 {
+	if upd.BackupMax > 0 {
 		var versionCount int
 		if err := tx.QueryRowContext(ctx, 
 			`SELECT COUNT(*) FROM character_versions WHERE character_id = ?`,
@@ -118,7 +116,7 @@ func applyCharacterUpdate(ctx context.Context, tx *sql.Tx, id uuid.UUID, upd pen
 		}
 
 		// If we are at the cap, delete the oldest entry (lowest autoincrement id).
-		if versionCount >= upd.backupMax {
+		if versionCount >= upd.BackupMax {
 			if _, err := tx.ExecContext(ctx, `
 				DELETE FROM character_versions WHERE id = (
 					SELECT id FROM character_versions
@@ -144,7 +142,7 @@ func applyCharacterUpdate(ctx context.Context, tx *sql.Tx, id uuid.UUID, upd pen
 				return err
 			}
 
-			if dataCreatedAt.After(newestCreatedAt.Add(upd.backupTime)) {
+			if dataCreatedAt.After(newestCreatedAt.Add(upd.BackupTime)) {
 				if _, err := tx.ExecContext(ctx, `
 					INSERT INTO character_versions (character_id, created_at, size, data_payload)
 					VALUES (?, ?, ?, ?)`,
@@ -170,7 +168,7 @@ func applyCharacterUpdate(ctx context.Context, tx *sql.Tx, id uuid.UUID, upd pen
 		UPDATE characters
 		SET data_created_at = ?, data_size = ?, data_payload = ?
 		WHERE id = ?`,
-		time.Now().UTC(), upd.size, upd.data, id.String(),
+		time.Now().UTC(), upd.Size, upd.Data, id.String(),
 	)
 	return err
 }
@@ -207,6 +205,13 @@ func (d *sqliteDB) GetCharacter(ctx context.Context, id uuid.UUID) (*schema.Char
 	c.Slot = int(slot.Int32)
 	if deletedAt.Valid {
 		c.DeletedAt = &deletedAt.Time
+	}
+
+	// Overlay any queued update that hasn't been flushed yet, so a read that
+	// follows a write sees what was written rather than the last committed state.
+	if upd, ok := d.buf.Peek(id); ok {
+		c.Data.Size = upd.Size
+		c.Data.Data = upd.Data
 	}
 
 	// Load the versions slice (Versions []CharacterData).
@@ -266,6 +271,13 @@ func (d *sqliteDB) GetCharacters(ctx context.Context, steamid string) (map[int]s
 		if deletedAt.Valid {
 			c.DeletedAt = &deletedAt.Time
 		}
+
+		// Overlay any queued update that hasn't been flushed yet.
+		if upd, ok := d.buf.Peek(c.ID); ok {
+			c.Data.Size = upd.Size
+			c.Data.Data = upd.Data
+		}
+
 		chars[c.Slot] = c
 	}
 	return chars, rows.Err()
@@ -301,6 +313,10 @@ func (d *sqliteDB) SoftDeleteCharacter(ctx context.Context, id uuid.UUID, expira
 
 	now := time.Now().UTC()
 	expiresAt := now.Add(expiration)
+
+	// A queued update would otherwise be written back onto the character after
+	// it was deleted, resurrecting the data the caller just asked us to remove.
+	d.buf.Drop(id)
 
 	return d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		var steamID string
@@ -342,6 +358,10 @@ func (d *sqliteDB) DeleteCharacter(ctx context.Context, id uuid.UUID) error {
 	ctx, span := oida.Start(ctx, "DELETE character", oida.KindDatabase)
 	defer span.End()
 	span.SetAttribute("uuid", id.String())
+
+	// Drop before deleting: the row is about to be gone, so a queued update for
+	// it can never be applied again.
+	d.buf.Drop(id)
 
 	return d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		// character_versions are deleted by ON DELETE CASCADE.
@@ -454,8 +474,15 @@ func (d *sqliteDB) CopyCharacter(ctx context.Context, id uuid.UUID, steamid stri
 			return err
 		}
 
+		// Prefer the queued payload over the committed row, otherwise a copy
+		// taken shortly after a save silently duplicates the older data.
+		if upd, ok := d.buf.Peek(id); ok {
+			dataSize = upd.Size
+			dataPayload = upd.Data
+		}
+
 		// Ensure the target user exists.
-		if _, err := tx.ExecContext(ctx, 
+		if _, err := tx.ExecContext(ctx,
 			`INSERT INTO users (id) VALUES (?) ON CONFLICT(id) DO NOTHING`, steamid,
 		); err != nil {
 			return err
@@ -518,6 +545,10 @@ func (d *sqliteDB) RollbackCharacter(ctx context.Context, id uuid.UUID, ver int)
 	span.SetAttribute("uuid", id.String())
 	span.SetAttribute("version", ver)
 
+	// Any queued update holds pre-rollback data. Flushing it afterwards would
+	// silently undo the rollback, so discard it.
+	d.buf.Drop(id)
+
 	return d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		var createdAt time.Time
 		var size int
@@ -552,6 +583,9 @@ func (d *sqliteDB) RollbackCharacterToLatest(ctx context.Context, id uuid.UUID) 
 	ctx, span := oida.Start(ctx, "UPDATE character rollback latest", oida.KindDatabase)
 	defer span.End()
 	span.SetAttribute("uuid", id.String())
+
+	// See RollbackCharacter: the queued update predates the rollback.
+	d.buf.Drop(id)
 
 	return d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
 		var createdAt time.Time

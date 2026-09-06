@@ -10,7 +10,7 @@ import (
 	"os"
 
 	"github.com/msrevive/nexus2/internal/database"
-	"github.com/google/uuid"
+	"github.com/msrevive/nexus2/internal/database/coalesce"
 	"github.com/titpetric/oida"
 	_ "modernc.org/sqlite"
 )
@@ -24,15 +24,6 @@ type writeOp struct {
 	resp chan error
 }
 
-// pendingUpdate holds the latest state for a character that has been
-// updated but not yet flushed to the database.
-type pendingUpdate struct {
-	size       int
-	data       string
-	backupMax  int
-	backupTime time.Duration
-}
-
 type sqliteDB struct {
 	db *sql.DB
 
@@ -40,14 +31,9 @@ type sqliteDB struct {
 	// so all DB writes are naturally serialized — no locking needed for writes.
 	writeCh chan writeOp
 
-	// flushInterval controls how often the coalescing buffer is drained.
-	flushInterval time.Duration
-
-	// pendingUpdates is the coalescing map. When UpdateCharacter is called,
-	// we just overwrite the entry for that character ID. On each flush tick,
-	// all pending entries are committed in a single transaction.
-	coalesceMu     sync.Mutex
-	pendingUpdates map[uuid.UUID]pendingUpdate
+	// buf coalesces character updates so repeated saves for the same character
+	// collapse into one write. See internal/database/coalesce.
+	buf *coalesce.Buffer
 
 	done chan struct{}
 	wg   sync.WaitGroup
@@ -57,10 +43,8 @@ type sqliteDB struct {
 
 func New() *sqliteDB {
 	return &sqliteDB{
-		writeCh:        make(chan writeOp, 512),
-		flushInterval:  5 * time.Second,
-		pendingUpdates: make(map[uuid.UUID]pendingUpdate),
-		done:           make(chan struct{}),
+		writeCh: make(chan writeOp, 512),
+		done:    make(chan struct{}),
 	}
 }
 
@@ -98,17 +82,58 @@ func (d *sqliteDB) Connect(cfg database.Config, opts database.Options) error {
 	d.db = db
 	d.Options = opts
 
-	d.wg.Add(2)
+	d.buf = coalesce.New(coalesce.Config{
+		Interval:  cfg.FlushInterval,
+		Threshold: cfg.FlushThreshold,
+		Name:      "sqlite",
+		Logger:    opts.Logger,
+	}, d.applyUpdates)
+
+	d.wg.Add(1)
 	go d.writeWorker()
-	go d.flushWorker()
+	d.buf.Start()
 
 	return nil
 }
 
 func (d *sqliteDB) Disconnect() error {
+	if d.db == nil {
+		return nil
+	}
+
+	// Stop the buffer first. Its final flush is a write, and every write goes
+	// through writeWorker — so the writer has to still be alive to serve it.
+	// Tearing them down in the other order deadlocks: the flush parks on a
+	// response that nobody is left to send.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := d.buf.Stop(ctx); err != nil && d.Logger != nil {
+		d.Logger.Error("sqlite: final flush error", "error", err)
+	}
+
 	close(d.done)
 	d.wg.Wait()
 	return d.db.Close()
+}
+
+// applyUpdates commits a batch of coalesced character updates in one
+// transaction. It is the ApplyFunc handed to the buffer.
+func (d *sqliteDB) applyUpdates(ctx context.Context, batch []coalesce.Entry) error {
+	ctx, span := oida.Start(ctx, "UPDATE characters (flush)", oida.KindDatabase)
+	defer span.End()
+	span.SetAttribute("characters", len(batch))
+
+	err := d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
+		for _, e := range batch {
+			if err := applyCharacterUpdate(ctx, tx, e.ID, e.Update); err != nil {
+				return fmt.Errorf("flush update for %s: %w", e.ID, err)
+			}
+		}
+		return nil
+	})
+	span.RecordError(err)
+	return err
 }
 
 // SyncToDisk drains the coalescing buffer, then issues a passive WAL checkpoint
@@ -116,8 +141,14 @@ func (d *sqliteDB) Disconnect() error {
 // the flush the buffered updates aren't in the WAL yet, so there'd be nothing
 // for the checkpoint to fold back.
 func (d *sqliteDB) SyncToDisk(ctx context.Context) error {
+	// The sync and GC crons are scheduled before Connect runs, so a tick can
+	// land while the connection is still being established.
+	if d.db == nil {
+		return database.ErrNotAvailable
+	}
+
 	return d.observe(ctx, "sqlite SyncToDisk", func(ctx context.Context) error {
-		if err := d.flushPendingUpdates(ctx); err != nil {
+		if err := d.buf.Flush(ctx); err != nil {
 			return err
 		}
 
@@ -130,14 +161,25 @@ func (d *sqliteDB) SyncToDisk(ctx context.Context) error {
 	})
 }
 
-// RunGC flushes pending updates and then purges any soft-deleted characters
-// whose expiration timestamp has passed.
+// RunGC purges any soft-deleted characters whose expiration timestamp has passed.
+//
+// It flushes first so updates queued before the purge are written rather than
+// discarded, but that flush is advisory: the buffer tolerates a character
+// vanishing underneath it, so a flush failure must not stop garbage collection
+// from running.
+//
+// There is deliberately no attempt to evict the purged IDs from the buffer.
+// Only soft-deleted characters can expire, SoftDeleteCharacter already drops
+// whatever was queued for them, and nothing can queue an update for a character
+// it can no longer look up — so there would be nothing to evict.
 func (d *sqliteDB) RunGC(ctx context.Context) error {
+	if d.db == nil {
+		return database.ErrNotAvailable
+	}
+
 	return d.observe(ctx, "sqlite RunGC", func(ctx context.Context) error {
-		// Flush first: purging a row that still has a queued update would make the
-		// next flush fail on it, and a failed flush drops the whole snapshot.
-		if err := d.flushPendingUpdates(ctx); err != nil {
-			return err
+		if err := d.buf.Flush(ctx); err != nil && d.Logger != nil {
+			d.Logger.Warn("sqlite: flush before GC failed, collecting anyway", "error", err)
 		}
 
 		ctx, span := oida.Start(ctx, "DELETE expired characters", oida.KindDatabase)
@@ -231,60 +273,6 @@ func (d *sqliteDB) writeWorker() {
 			}
 		}
 	}
-}
-
-// flushWorker ticks on flushInterval and drains the coalescing buffer.
-// On shutdown it performs one final flush so no updates are lost.
-func (d *sqliteDB) flushWorker() {
-	defer d.wg.Done()
-	ticker := time.NewTicker(d.flushInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			if err := d.flushPendingUpdates(context.Background()); err != nil && d.Logger != nil {
-				d.Logger.Error("sqlite: flush error", "error", err)
-			}
-
-		case <-d.done:
-			if err := d.flushPendingUpdates(context.Background()); err != nil && d.Logger != nil {
-				d.Logger.Error("sqlite: final flush error", "error", err)
-			}
-			return
-		}
-	}
-}
-
-// flushPendingUpdates atomically swaps the coalescing map for a fresh one,
-// then commits all coalesced updates in a single transaction. N calls to
-// UpdateCharacter for the same character between ticks become exactly 1
-// database write.
-func (d *sqliteDB) flushPendingUpdates(ctx context.Context) error {
-	d.coalesceMu.Lock()
-	if len(d.pendingUpdates) == 0 {
-		d.coalesceMu.Unlock()
-		return nil
-	}
-	// Swap out the map so callers can keep writing while we flush.
-	snapshot := d.pendingUpdates
-	d.pendingUpdates = make(map[uuid.UUID]pendingUpdate)
-	d.coalesceMu.Unlock()
-
-	ctx, span := oida.Start(ctx, "UPDATE characters (flush)", oida.KindDatabase)
-	defer span.End()
-	span.SetAttribute("characters", len(snapshot))
-
-	err := d.exec(ctx, func(ctx context.Context, tx *sql.Tx) error {
-		for id, upd := range snapshot {
-			if err := applyCharacterUpdate(ctx, tx, id, upd); err != nil {
-				return fmt.Errorf("flush update for %s: %w", id, err)
-			}
-		}
-		return nil
-	})
-	span.RecordError(err)
-	return err
 }
 
 // migrate creates the schema on first run. Queries are idempotent (IF NOT EXISTS).

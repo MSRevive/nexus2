@@ -270,7 +270,7 @@ func Run(args []string) (error) {
 	/////////////////////////
 	// Core
 	/////////////////////////
-	fmt.Println("\nNexus2 is now running. Press CTRL-C to exit.\n")
+	fmt.Print("\nNexus2 is now running. Press CTRL-C to exit.\n\n")
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, syscall.SIGINT, syscall.SIGTERM)
 	<-s
