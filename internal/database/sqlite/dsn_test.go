@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/msrevive/nexus2/internal/database"
 
@@ -48,6 +49,52 @@ func TestConnectAppliesDSNPragmas(t *testing.T) {
 		require.NoError(t, db.db.QueryRow("PRAGMA synchronous").Scan(&sync))
 		require.Equal(t, 1, sync) // 0=OFF 1=NORMAL 2=FULL 3=EXTRA
 	})
+
+	// Off by default, and the schema's ON DELETE CASCADE clauses do nothing
+	// without it.
+	t.Run("foreign_keys are enforced", func(t *testing.T) {
+		var fk int
+		require.NoError(t, db.db.QueryRow("PRAGMA foreign_keys").Scan(&fk))
+		require.Equal(t, 1, fk)
+	})
+}
+
+// The cascade the schema declares has to actually fire, otherwise deleting a
+// character silently leaks its version history and its deleted_characters
+// reference — the latter leaving GetUser advertising a character that is gone.
+func TestDeleteCharacterCascadesToDependents(t *testing.T) {
+	db := newFileDB(t)
+	ctx := t.Context()
+
+	id := seedCharacter(t, db, "steam1", 0, 1, "data")
+	require.NoError(t, db.UpdateCharacter(ctx, id, 2, "v1", 5, 0))
+	flush(t, db)
+
+	countDependents := func() (versions, refs int) {
+		t.Helper()
+		require.NoError(t, db.db.QueryRow(
+			`SELECT COUNT(*) FROM character_versions WHERE character_id = ?`, id.String()).Scan(&versions))
+		require.NoError(t, db.db.QueryRow(
+			`SELECT COUNT(*) FROM deleted_characters WHERE character_id = ?`, id.String()).Scan(&refs))
+		return
+	}
+
+	require.NoError(t, db.SoftDeleteCharacter(ctx, id, -1*time.Second))
+
+	versions, refs := countDependents()
+	require.Equal(t, 1, versions)
+	require.Equal(t, 1, refs)
+
+	require.NoError(t, db.RunGC(ctx))
+
+	versions, refs = countDependents()
+	require.Zero(t, versions, "version history must not outlive the character")
+	require.Zero(t, refs, "the deleted_characters reference must not outlive the character")
+
+	u, err := db.GetUser(ctx, "steam1")
+	require.NoError(t, err)
+	require.NotContains(t, u.DeletedCharacters, 0,
+		"a purged character must not still be listed as restorable")
 }
 
 // SyncToDisk folds the WAL back into the main database file, so it needs a real

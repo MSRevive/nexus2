@@ -60,7 +60,12 @@ func (d *sqliteDB) Connect(cfg database.Config, opts database.Options) error {
 	// _synchronous / _busy_timeout spelling is mattn/go-sqlite3's and is silently
 	// ignored by this driver, which left the database in the default rollback
 	// journal with no busy timeout.
-	dsn := fmt.Sprintf("%s?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)", cfg.SQLite.Path)
+	//
+	// foreign_keys is off by default in SQLite and is a per-connection setting,
+	// so without it every ON DELETE CASCADE in the schema below is decorative:
+	// deleting a character left its character_versions and deleted_characters
+	// rows orphaned forever. Postgres enforces these unconditionally.
+	dsn := fmt.Sprintf("%s?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)", cfg.SQLite.Path)
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return err
