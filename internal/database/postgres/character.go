@@ -308,12 +308,15 @@ func (d *postgresDB) LookUpCharacterID(ctx context.Context, steamid string, slot
 // SoftDeleteCharacter sets deleted_at + expires_at on the character and records
 // the slot in deleted_characters so it can be restored or GC'd later.
 func (d *postgresDB) SoftDeleteCharacter(ctx context.Context, id uuid.UUID, expiration time.Duration) error {
-	now := time.Now().UTC()
-	expiresAt := now.Add(expiration)
-
 	ctx, span := oida.Start(ctx, "UPDATE character deleted", oida.KindDatabase)
 	defer span.End()
 	span.SetAttribute("uuid", id.String())
+
+	now := time.Now().UTC()
+	var expiresAt pgtype.Timestamptz
+	if expiration != 0 {
+		expiresAt = pgtype.Timestamptz{Time: now.Add(expiration), Valid: true}
+	}
 
 	// A queued update would otherwise be written back onto the character after
 	// it was deleted, resurrecting the data the caller just asked us to remove.

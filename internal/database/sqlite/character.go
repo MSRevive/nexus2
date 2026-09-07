@@ -312,7 +312,10 @@ func (d *sqliteDB) SoftDeleteCharacter(ctx context.Context, id uuid.UUID, expira
 	span.SetAttribute("uuid", id.String())
 
 	now := time.Now().UTC()
-	expiresAt := now.Add(expiration)
+	var expiresAt sql.NullTime
+	if expiration != 0 {
+		expiresAt = sql.NullTime{Time: now.Add(expiration), Valid: true}
+	}
 
 	// A queued update would otherwise be written back onto the character after
 	// it was deleted, resurrecting the data the caller just asked us to remove.
